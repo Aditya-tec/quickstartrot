@@ -138,6 +138,35 @@ describe('errors', () => {
     expect(c.state.sleeps).toEqual([]);
   });
 
+  it('an ApiError carries the Retry-After of the answer, in seconds, when there is a usable one', async () => {
+    const server = createServer((req, res) => {
+      req.resume();
+      req.on('end', () => {
+        const after =
+          req.url === '/internal/a'
+            ? '17'
+            : req.url === '/internal/b'
+              ? 'Wed, 21 Oct 2026 07:28:00 GMT'
+              : undefined;
+        res
+          .writeHead(429, {
+            'content-type': 'application/json',
+            ...(after ? { 'retry-after': after } : {}),
+          })
+          .end('{}');
+      });
+    });
+    servers.push(server);
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', () => r()));
+    const { port } = server.address() as AddressInfo;
+    const client = createApiClient({ baseUrl: `http://127.0.0.1:${port}`, secret: SECRET });
+    const at = async (p: string) =>
+      ((await client.post(p, {}).catch((e: unknown) => e)) as ApiError).retryAfterS;
+    expect(await at('/internal/a')).toBe(17);
+    expect(await at('/internal/b')).toBeNull(); // an HTTP date is not worth parsing here
+    expect(await at('/internal/c')).toBeNull();
+  });
+
   it('a 500 is not retried either (the request may have been processed)', async () => {
     const api = await fake(() => ({ status: 500 }));
     const client = createApiClient({ baseUrl: api.url, secret: SECRET, sleep: clock().sleep });

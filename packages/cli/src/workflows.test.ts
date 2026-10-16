@@ -267,6 +267,27 @@ describe('write permissions are granted to exactly the jobs that need them', () 
   });
 });
 
+describe('the runner image is pinned, so a moving label cannot change what the jobs run on', () => {
+  const jobs = all.flatMap(({ file, wf }) =>
+    Object.entries(wf.jobs).map(([name, j]) => ({ file, name, runsOn: j['runs-on'] })),
+  );
+
+  it('there are jobs to check', () => {
+    expect(jobs.length).toBeGreaterThanOrEqual(10);
+  });
+
+  it.each(jobs.map((j) => [`${j.file}/${j.name}`, j.runsOn] as const))(
+    '%s runs on ubuntu-24.04',
+    (_where, runsOn) => {
+      expect(runsOn).toBe('ubuntu-24.04');
+    },
+  );
+
+  it('no workflow mentions a moving runner label anywhere', () => {
+    for (const { file, raw } of all) expect(code(raw), file).not.toMatch(/ubuntu-latest/);
+  });
+});
+
 describe('supply chain: every action is pinned to a full commit SHA', () => {
   const uses = all.flatMap(({ file, wf, raw }) =>
     Object.values(wf.jobs).flatMap((j) =>

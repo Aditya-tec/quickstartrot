@@ -150,6 +150,7 @@ export async function planCommand(
           overrides.goldenPlan ?? ((t, extraction) => loadGoldenPlan(targetsDir, t, extraction)),
         log,
         now: () => new Date(),
+        sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
         writeOutput: (name, value) => writeOutput(`${name}=${value}\n`),
         writeSummary: (md) => writeSummary(`${md}\n`),
       },

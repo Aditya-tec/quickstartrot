@@ -13,6 +13,48 @@ only**: they have no API to reach, so they prove the pipeline works, not that a 
 wired up. Resend is the model case: its SDK prints the 401 and exits 0, so the log shows the client
 reached the endpoint.
 
+## P7 follow-up: the first real runs, and the tidy-up commit
+
+### What the first real runs showed (2026-10-16, probes #1 to #5)
+
+- **It works in production.** Real Actions runs on the deployed API: valid cycles, runs and step results in Supabase, 25 of 33
+  step logs uploaded and publicly readable (gzip). The two things listed as unverified in the P7 notes are now verified: the
+  multipart `PUT` to a signed Storage URL works **without** an `apikey` header, and the report job needs no Supabase key.
+- **Setup mistake that cost one run:** `API_BASE_URL` was first added as a _secret_; the workflow reads a _variable_. The message
+  named it ("API_BASE_URL must be set"), which is what it should do.
+- **Two Groq limits, not one.** Run #3 deferred 3 tools on the per-minute limit (TPM 8,000 on `openai/gpt-oss-120b`: two
+  parallel compiles of 3-4k tokens each exceed it); run #4 deferred 2 on the **daily** limit (TPD 200,000), because the key is
+  shared with local development. `/internal/compile` handled both as designed: `deferred`, queue item, no status change.
+  The API's budget guard cannot see tokens spent by other clients of the same key; a second key (Render only) fixed it.
+- **Timings (5 runs, 2-3 shards):** plan 86-113 s (Playwright install 20-46 s, the crawl+compile 24-80 s), execute 30-70 s per
+  shard (about 15 s of that is checkout + pnpm + install, the rest is the tools), report 50-76 s (40-63 s in `qsr report`
+  itself: three sequential API calls per tool against a free Render instance), whole run 229-247 s. Artifacts are tiny:
+  plans 7-15 KB, results 2-12 KB per shard.
+- **Slowest tools:** `drizzle-node` 21.0 s and `vitest-node` 18.2 s (both are one big `npm install`, 16.6 s for the slowest
+  step); everything else is 2.4-5.1 s. `hono-node` stops at its manual step (SKIPPED, NEEDS_CREDENTIALS).
+- **Possible later savings, none urgent:** cache the Playwright browser in the plan job (about 20-45 s); post runs in `qsr report`
+  with a small concurrency; a Groq `Retry-After` above 60 s is still slept for 60 s inside the API before it defers, which is
+  pointless for a daily limit (run #4's plan took 80 s for that reason). Left alone because a test pins the 60 s cap.
+
+### The tidy-up commit
+
+- **Every job runs on `ubuntu-24.04`** (all 11 jobs, 6 workflows). `ubuntu-latest` was due to move to Ubuntu 26 on 2026-10-19.
+  A workflow test requires the exact label and forbids `ubuntu-latest` anywhere.
+- **Node 20 warnings removed.** Each flagged action was moved to the newest release whose `action.yml` declares
+  `runs.using: node24` (read at the pinned SHA), every SHA resolved with `git ls-remote` and re-checked against the GitHub API,
+  and every input our workflows pass was confirmed to still exist. The new releases are recent: `setup-node` 7.1.0,
+  `upload-artifact` 7.0.2 and `download-artifact` 8.0.2 are 9 days old, `codeql-action` 4.39.0 is 1 day old (the previous 3.39.0
+  was released the same day it was pinned). Full list in the commit message.
+- **`qsr plan` compiles one tool at a time.** Pages are still crawled together (4, one per domain); once they are in, compile calls
+  run sequentially in slug order, so the order is deterministic. A rate limit (HTTP 429 or 5xx from the API, or a `deferred`
+  answer with `llm_unavailable`/`llm_timeout`) waits for its Retry-After (30 s if none) and retries **once**; a Retry-After over
+  2 minutes (a daily limit) and our own `llm_budget` are not retried. After that the tool is deferred exactly as the budget guard
+  defers it: the last accepted plan flagged stale, else an informational skip. The whole phase is capped at 15 minutes; tools
+  not reached are asked once with `modelAllowed: false` (cache or stale plan only, a miss is `deferred` with `llm_timeout`).
+  Deferral is never a `COMPILER_ERROR` and never changes a status (the plan job posts no runs).
+- **API/compiler support for that:** `LlmError.retryAfterS` keeps the provider's last Retry-After; the `deferred` response has
+  `retryAfterSeconds`; `CompileBody.modelAllowed` (default true); `ApiError.retryAfterS` reads a numeric `Retry-After`.
+
 ## Findings from P7 (probe pipeline: plan / execute / report and the workflows)
 
 ### Pre-flight answers

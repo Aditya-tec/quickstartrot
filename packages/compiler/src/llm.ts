@@ -38,6 +38,8 @@ export class LlmError extends Error {
     message: string,
     readonly kind: 'unavailable' | 'rejected' | 'empty',
     readonly status: number | null = null,
+    /** The provider's last Retry-After, in seconds (uncapped: a daily limit says so), or null. */
+    readonly retryAfterS: number | null = null,
   ) {
     super(message);
   }
@@ -88,6 +90,7 @@ export function createGroqClient(options: GroqOptions): LlmClient {
       });
 
       let lastFailure = 'no attempt made';
+      let lastRetryAfterS: number | null = null;
       for (let attempt = 0; attempt <= maxRetries; attempt++) {
         let waitMs = 1000 * 2 ** attempt;
         try {
@@ -100,6 +103,7 @@ export function createGroqClient(options: GroqOptions): LlmClient {
             // Keep the provider's explanation: on the free tier it says WHICH limit was hit.
             lastFailure = `HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`;
             const retryAfter = Number(res.headers.get('retry-after'));
+            lastRetryAfterS = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter : null;
             if (retryAfter > 0) waitMs = Math.min(retryAfter, MAX_RETRY_AFTER_S) * 1000;
           } else if (!res.ok) {
             const detail = (await res.text()).slice(0, 300);
@@ -128,6 +132,8 @@ export function createGroqClient(options: GroqOptions): LlmClient {
       throw new LlmError(
         `model unavailable after ${maxRetries + 1} attempts (${lastFailure})`,
         'unavailable',
+        null,
+        lastRetryAfterS,
       );
     },
   };

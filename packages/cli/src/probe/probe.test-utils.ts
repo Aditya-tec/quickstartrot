@@ -121,7 +121,7 @@ export interface ApiCall {
 export interface FakeApiOptions {
   tools?: CycleTool[];
   /** Answer to POST /internal/compile; throw to simulate an API failure. */
-  compile?: (body: CompileBody) => unknown;
+  compile?: (body: CompileBody) => unknown | Promise<unknown>;
   cycleId?: string;
 }
 
@@ -141,7 +141,7 @@ export function fakeApi(options: FakeApiOptions = {}) {
         return { cycleId: options.cycleId ?? CYCLE, created: true, tools: options.tools ?? [] };
       if (path === '/internal/compile') {
         const reply = options.compile
-          ? options.compile(body as CompileBody)
+          ? await options.compile(body as CompileBody)
           : {
               status: 'ok',
               fromCache: false,

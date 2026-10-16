@@ -101,7 +101,10 @@ export async function compileForTool(
     .returning({ id: docSnapshots.id });
   const snapshotId = (snapshot as { id: string }).id;
 
-  const defer = async (reason: Deferral): Promise<CompileResponse> => {
+  const defer = async (
+    reason: Deferral,
+    retryAfterS: number | null = null,
+  ): Promise<CompileResponse> => {
     const [stale] = await db
       .select()
       .from(compiledPlans)
@@ -122,22 +125,24 @@ export async function compileForTool(
       snapshotId,
       stale: stale !== undefined,
       plan: stale ? toPayload(stale) : null,
+      retryAfterSeconds: retryAfterS === null ? null : Math.ceil(retryAfterS),
     };
   };
 
-  if (deps.llm === null) {
-    // No model at all: a cache hit can still be served, so look before giving up.
+  // No model at all, or the plan job says its time is up: a cache hit can still be served, so look first.
+  const modelOff = deps.llm === null || !body.modelAllowed;
+  if (modelOff) {
     const hit = await createDbPlanCache(db, tool, configHash).get({
       toolSlug: tool.slug,
       contentHash: extraction.contentHash,
       compilerVersion: COMPILER_VERSION,
     });
-    if (!hit) return defer('llm_unavailable');
+    if (!hit) return defer(body.modelAllowed ? 'llm_unavailable' : 'llm_timeout');
   }
 
   const guarded = new GuardedLlm({
     db,
-    inner: (deps.llm ?? NO_MODEL) as LlmClient,
+    inner: (modelOff ? NO_MODEL : (deps.llm as LlmClient)) as LlmClient,
     purpose: 'compile',
     budget: config.groqDailyTokenBudget,
     maxCalls: MAX_MODEL_CALLS,
@@ -188,7 +193,7 @@ export async function compileForTool(
   } catch (err) {
     if (err instanceof BudgetExceededError || err instanceof CallLimitError)
       return defer('llm_budget');
-    if (err instanceof LlmError) return defer('llm_unavailable');
+    if (err instanceof LlmError) return defer('llm_unavailable', err.retryAfterS);
     throw err;
   } finally {
     clearTimeout(timer);

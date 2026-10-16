@@ -16,7 +16,7 @@ import {
   type StepIR,
   type Target,
 } from '@qsr/core';
-import type { ApiClient } from '../api-client.js';
+import { ApiError, type ApiClient } from '../api-client.js';
 import { createLimiter, domainOf } from './crawl-pool.js';
 import { assignShards, defaultShardCount, type ShardTool } from './shards.js';
 
@@ -29,8 +29,12 @@ import { assignShards, defaultShardCount, type ShardTool } from './shards.js';
 // as pre-failed and reported without being executed.
 
 export const CRAWL_CONCURRENCY = 4;
-/** The compile endpoint calls a model; a small pool keeps a burst under the provider's per-minute limits. */
-export const COMPILE_CONCURRENCY = 2;
+/** The whole compile phase is capped: tools it does not reach are deferred, never failed. */
+export const COMPILE_PHASE_LIMIT_MS = 15 * 60_000;
+/** How long to wait before the one retry when the provider or the API did not say. */
+export const DEFAULT_RETRY_WAIT_S = 30;
+/** A longer Retry-After is a daily limit: waiting cannot help, so the tool is deferred at once. */
+export const MAX_RETRY_WAIT_S = 120;
 
 export interface PlanOptions {
   out: string;
@@ -53,6 +57,7 @@ export interface PlanDeps {
   goldenPlan(target: Target, extraction: Extraction): Promise<StepIR | null>;
   log: Logger;
   now(): Date;
+  sleep(ms: number): Promise<void>;
   /** Appends `name=value` to $GITHUB_OUTPUT. */
   writeOutput(name: string, value: string): Promise<void>;
   /** Appends Markdown to $GITHUB_STEP_SUMMARY. */
@@ -113,7 +118,6 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
   }
 
   const crawlLimit = createLimiter(deps.concurrency ?? CRAWL_CONCURRENCY);
-  const compileLimit = createLimiter(COMPILE_CONCURRENCY);
   const planned = new Map<string, Planned>();
 
   async function tellCrawlError(slug: string, reason: string, message: string): Promise<void> {
@@ -187,33 +191,20 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     };
   }
 
-  async function planReal(t: Target): Promise<Planned> {
-    let extraction: Extraction;
+  /** Crawls a real tool's page. A failure is the tool's pre-failed entry (and is told to the API). */
+  async function crawlReal(t: Target): Promise<{ extraction: Extraction } | { failed: Planned }> {
     try {
-      extraction = await crawlLimit(domainOf(t.docsUrl), () => deps.crawl(t));
+      return { extraction: await crawlLimit(domainOf(t.docsUrl), () => deps.crawl(t)) };
     } catch (err) {
       const failed = crawlFailure(t, err);
       if (failed.state === 'pre_failed')
         await tellCrawlError(t.slug, failed.preflight.reason, failed.preflight.message);
-      return failed;
+      return { failed };
     }
+  }
 
-    let response: CompileResponse;
-    try {
-      response = CompileResponse.parse(
-        await compileLimit(t.slug, () =>
-          api.post('/internal/compile', { cycleId, toolSlug: t.slug, extraction }),
-        ),
-      );
-    } catch (err) {
-      // The call itself failed. That says nothing about the tool or its plan: skip it this cycle.
-      log.error(
-        { cycleId, toolSlug: t.slug, err: messageOf(err) },
-        'compile call failed; skipping the tool',
-      );
-      return { state: 'deferred', reason: 'llm_unavailable' };
-    }
-
+  /** What /internal/compile said about a tool, as a plan entry. */
+  function toPlanned(response: CompileResponse, extraction: Extraction): Planned {
     switch (response.status) {
       case 'ok':
         return response.plan.ir === null
@@ -276,12 +267,123 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     }
   }
 
+  type Attempt =
+    | { kind: 'response'; response: CompileResponse }
+    | { kind: 'http'; status: number; retryAfterS: number | null; err: unknown }
+    | { kind: 'other'; err: unknown };
+
+  /** One /internal/compile call. `modelAllowed: false` asks for the cache or the stale plan only. */
+  async function askCompile(
+    t: Target,
+    extraction: Extraction,
+    modelAllowed: boolean,
+  ): Promise<Attempt> {
+    try {
+      const body = {
+        cycleId,
+        toolSlug: t.slug,
+        extraction,
+        ...(modelAllowed ? {} : { modelAllowed: false }),
+      };
+      return {
+        kind: 'response',
+        response: CompileResponse.parse(await api.post('/internal/compile', body)),
+      };
+    } catch (err) {
+      if (err instanceof ApiError && (err.status === 429 || err.status >= 500))
+        return { kind: 'http', status: err.status, retryAfterS: err.retryAfterS, err };
+      return { kind: 'other', err };
+    }
+  }
+
+  /** Seconds to wait before the one retry, or null when waiting cannot help or is not warranted. */
+  function retryWaitS(a: Attempt): number | null {
+    let wait: number | null = null;
+    if (a.kind === 'http') wait = a.retryAfterS ?? DEFAULT_RETRY_WAIT_S;
+    else if (
+      a.kind === 'response' &&
+      a.response.status === 'deferred' &&
+      // our own token budget is not a rate limit: a retry would change nothing
+      (a.response.reason === 'llm_unavailable' || a.response.reason === 'llm_timeout')
+    )
+      wait = a.response.retryAfterSeconds ?? DEFAULT_RETRY_WAIT_S;
+    return wait !== null && wait <= MAX_RETRY_WAIT_S ? wait : null;
+  }
+
+  /**
+   * Compiles one tool. A rate limit or a 5xx waits for its Retry-After (30 s if it gave none) and tries ONCE
+   * more; after that the tool is deferred exactly as the budget guard defers it: the last accepted plan,
+   * flagged stale, if there is one, else an informational skip. Never a verdict on the tool.
+   */
+  async function compileReal(
+    t: Target,
+    extraction: Extraction,
+    outOfTime: boolean,
+  ): Promise<Planned> {
+    const deferWithoutModel = async (
+      reason: 'llm_unavailable' | 'llm_timeout',
+    ): Promise<Planned> => {
+      const a = await askCompile(t, extraction, false);
+      return a.kind === 'response'
+        ? toPlanned(a.response, extraction)
+        : { state: 'deferred', reason };
+    };
+
+    if (outOfTime) {
+      log.warn(
+        { cycleId, toolSlug: t.slug },
+        'the compile phase ran out of time; deferring the tool',
+      );
+      return deferWithoutModel('llm_timeout');
+    }
+
+    let attempt = await askCompile(t, extraction, true);
+    const wait = retryWaitS(attempt);
+    if (wait !== null) {
+      log.warn(
+        { cycleId, toolSlug: t.slug, waitS: wait },
+        'the model or the API is rate limited; waiting once before retrying',
+      );
+      await deps.sleep(wait * 1000);
+      attempt = await askCompile(t, extraction, true);
+    }
+
+    if (attempt.kind === 'response') return toPlanned(attempt.response, extraction);
+    log.error(
+      { cycleId, toolSlug: t.slug, err: messageOf(attempt.err) },
+      'compile call failed; deferring the tool',
+    );
+    // The call failing says nothing about the tool or its plan. A plain skip, unless the API can still
+    // hand us the cache or the stale plan without the model.
+    return attempt.kind === 'http'
+      ? deferWithoutModel('llm_unavailable')
+      : { state: 'deferred', reason: 'llm_unavailable' };
+  }
+
+  // ---- phase 1: crawl everything, concurrently (4 at a time, one page per domain)
+  const crawledReal = new Map<string, Extraction>();
   await Promise.all(
     selected.map(async ({ target: t }) => {
-      const outcome = t.slug.startsWith('canary-') ? await planCanary(t) : await planReal(t);
-      planned.set(t.slug, outcome);
+      if (t.slug.startsWith('canary-')) {
+        planned.set(t.slug, await planCanary(t));
+        return;
+      }
+      const result = await crawlReal(t);
+      if ('failed' in result) planned.set(t.slug, result.failed);
+      else crawledReal.set(t.slug, result.extraction);
     }),
   );
+
+  // ---- phase 2: compile one tool at a time, in slug order, inside a 15-minute cap
+  const phaseStart = deps.now().getTime();
+  const bySlug = new Map(selected.map(({ target: t }) => [t.slug, t]));
+  for (const slug of [...crawledReal.keys()].sort()) {
+    const outOfTime = deps.now().getTime() - phaseStart >= COMPILE_PHASE_LIMIT_MS;
+    planned.set(
+      slug,
+      await compileReal(bySlug.get(slug) as Target, crawledReal.get(slug) as Extraction, outOfTime),
+    );
+  }
 
   // ---- shards: over the tools that will actually run
   const shardTools: ShardTool[] = selected

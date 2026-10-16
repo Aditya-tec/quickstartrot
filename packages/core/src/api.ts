@@ -79,6 +79,11 @@ export const CompileBody = z.object({
   /** Exactly one of these: the crawled page, or why crawling failed. */
   extraction: Extraction.optional(),
   crawlError: CrawlFailure.optional(),
+  /**
+   * false when the plan job has run out of time (its compile phase is capped): the cache and the tool's last
+   * accepted plan are still served, but the model is not asked. A miss is then deferred as llm_timeout.
+   */
+  modelAllowed: z.boolean().default(true),
 });
 export type CompileBody = z.infer<typeof CompileBody>;
 
@@ -124,6 +129,8 @@ export const CompileResponse = z.discriminatedUnion('status', [
     snapshotId: Uuid,
     stale: z.boolean(),
     plan: PlanPayload.nullable(),
+    /** What the provider asked us to wait (Retry-After, seconds); null when it did not say. */
+    retryAfterSeconds: z.number().int().min(0).nullable().default(null),
   }),
 ]);
 export type CompileResponse = z.infer<typeof CompileResponse>;

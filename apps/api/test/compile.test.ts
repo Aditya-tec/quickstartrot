@@ -178,6 +178,82 @@ d('a cache miss compiles, stores and logs', () => {
   });
 });
 
+d(
+  'modelAllowed: false (the plan job ran out of time): the cache and the stale plan, never the model',
+  () => {
+    it('a cache hit is still served, with no model call', async () => {
+      const cycleId = await setup();
+      t.llm.push(goodPlanJson());
+      await compile(cycleId);
+      const before = (await calls()).length;
+      const res = await compile(cycleId, { modelAllowed: false });
+      expect(res.json()).toMatchObject({ status: 'ok', fromCache: true, stale: false });
+      expect((await calls()).length).toBe(before);
+    });
+
+    it('a miss is deferred as llm_timeout, with the most recent accepted plan marked stale', async () => {
+      const cycleId = await setup();
+      t.llm.push(goodPlanJson());
+      const first = (await compile(cycleId)).json();
+      const changed = docsExtraction({
+        blocks: docsBlocks([
+          {
+            index: 5,
+            kind: 'prose',
+            lang: null,
+            text: 'New docs.',
+            filenameHint: null,
+            headingPath: ['Quickstart'],
+          },
+        ]),
+      });
+      const res = await t.signed('/internal/compile', {
+        cycleId,
+        toolSlug: 'acme-node',
+        extraction: changed,
+        modelAllowed: false,
+      });
+      expect(res.json()).toMatchObject({ status: 'deferred', reason: 'llm_timeout', stale: true });
+      expect(res.json().plan.id).toBe(first.plan.id);
+      expect(t.llm.calls).toBe(1); // only the first compile used the model
+      expect(await queue()).toHaveLength(0); // a stale plan exists: nothing to tell a person
+    });
+
+    it('a miss with no earlier plan is an informational skip, never COMPILER_ERROR', async () => {
+      const cycleId = await setup();
+      const res = await compile(cycleId, { modelAllowed: false });
+      expect(res.json()).toMatchObject({
+        status: 'deferred',
+        reason: 'llm_timeout',
+        stale: false,
+        plan: null,
+      });
+      expect(t.llm.calls).toBe(0);
+      expect(await plans()).toHaveLength(0);
+      expect((await queue()).map((q) => q.reason)).toEqual(['compile_deferred']);
+    });
+
+    it('works with no model configured at all', async () => {
+      const none = await startTestApp(dbUrl as string, { llm: null });
+      await none.signed('/internal/targets/sync', {
+        targets: [targetInput('acme-node', { level: 3 })],
+      });
+      const cycle = await none.signed('/internal/cycles', {
+        trigger: 'manual',
+        gitSha: 'abcdef1234567',
+      });
+      const res = await none.signed('/internal/compile', {
+        cycleId: cycle.json().cycleId,
+        toolSlug: 'acme-node',
+        extraction: docsExtraction(),
+        modelAllowed: false,
+      });
+      expect(res.json()).toMatchObject({ status: 'deferred', reason: 'llm_timeout' });
+      await none.close();
+    });
+  },
+);
+
 d('rejected twice is COMPILER_ERROR (ours, never the vendor)', () => {
   it('returns compiler_error with the plan row, queues an item for a person, and never calls the model again for the same docs', async () => {
     const cycleId = await setup();
@@ -382,6 +458,56 @@ d('a model failure is deferred, never COMPILER_ERROR', () => {
     expect(logged[0]).toMatchObject({ ok: false, purpose: 'compile' });
     expect(logged[0]?.error).toMatch(/429/);
     await app.close();
+  });
+
+  it('a provider 429 deferral says how long the provider asked to wait; a 5xx without the header says null', async () => {
+    const withHeader = await startTestApp(dbUrl as string, {
+      rawLlm: groqWith([tooMany(), tooMany()], [], { n: 0 }),
+    });
+    await withHeader.signed('/internal/targets/sync', {
+      targets: [targetInput('acme-node', { level: 3 })],
+    });
+    const cycle = await withHeader.signed('/internal/cycles', {
+      trigger: 'manual',
+      gitSha: 'abcdef1234567',
+    });
+    const asked = await withHeader.signed('/internal/compile', {
+      cycleId: cycle.json().cycleId,
+      toolSlug: 'acme-node',
+      extraction: docsExtraction(),
+    });
+    expect(asked.json()).toMatchObject({
+      status: 'deferred',
+      reason: 'llm_unavailable',
+      retryAfterSeconds: 3,
+    });
+    await withHeader.close();
+
+    const noHeader = await startTestApp(dbUrl as string, {
+      rawLlm: groqWith(
+        [new Response('x', { status: 503 }), new Response('x', { status: 503 })],
+        [],
+        { n: 0 },
+      ),
+    });
+    await noHeader.signed('/internal/targets/sync', {
+      targets: [targetInput('acme-node', { level: 3 })],
+    });
+    const cycle2 = await noHeader.signed('/internal/cycles', {
+      trigger: 'manual',
+      gitSha: 'abcdef1234567',
+    });
+    const none = await noHeader.signed('/internal/compile', {
+      cycleId: cycle2.json().cycleId,
+      toolSlug: 'acme-node',
+      extraction: docsExtraction(),
+    });
+    expect(none.json()).toMatchObject({
+      status: 'deferred',
+      reason: 'llm_unavailable',
+      retryAfterSeconds: null,
+    });
+    await noHeader.close();
   });
 
   it('provider 429 then success: one retry is enough', async () => {

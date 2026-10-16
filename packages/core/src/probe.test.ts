@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CompileBody,
+  CompileResponse,
   CycleTool,
   Manifest,
   PlanFile,
@@ -242,6 +244,29 @@ describe('cycle tools and runner env keys', () => {
   it('the runner env records a stale plan and the shard under fixed keys', () => {
     expect(RUNNER_ENV_KEYS.planStale).toBe('plan_stale');
     expect(RUNNER_ENV_KEYS.shard).toBe('shard');
+  });
+});
+
+describe('compile request and response additions (P7 tidy-up)', () => {
+  const base = { cycleId: CYCLE, toolSlug: 'acme-node', crawlError: { reason: 'x', message: 'y' } };
+
+  it('CompileBody takes modelAllowed, true unless said otherwise', () => {
+    expect(CompileBody.parse(base).modelAllowed).toBe(true);
+    expect(CompileBody.parse({ ...base, modelAllowed: false }).modelAllowed).toBe(false);
+  });
+
+  it('a deferred answer carries retryAfterSeconds, null when the provider gave none', () => {
+    const deferred = {
+      status: 'deferred',
+      reason: 'llm_unavailable',
+      snapshotId: CYCLE,
+      stale: false,
+      plan: null,
+    };
+    expect(CompileResponse.parse(deferred)).toMatchObject({ retryAfterSeconds: null });
+    expect(CompileResponse.parse({ ...deferred, retryAfterSeconds: 42 })).toMatchObject({
+      retryAfterSeconds: 42,
+    });
   });
 });
 

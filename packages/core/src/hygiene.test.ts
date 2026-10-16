@@ -138,7 +138,8 @@ describe('source hygiene', () => {
     const findings = scan(ROOTS, REPO);
     const report = findings.map((f) => `${f.file}:${f.line}:${f.column} ${f.codePoint}`);
     expect(report).toEqual([]);
-  });
+    // The walk covers every package directory, so under a parallel monorepo run it can take a few seconds.
+  }, 30_000);
 
   it('the guard catches every forbidden range (self-test)', () => {
     for (const [lo, hi] of FORBIDDEN_RANGES) {

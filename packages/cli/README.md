@@ -35,7 +35,9 @@ qsr report --results results/ --plans plans/ --cycle <id>
 ```
 
 - **plan** wakes the API, syncs the targets, creates the cycle (idempotent on `GITHUB_RUN_ID` + attempt), crawls every
-  enabled target (concurrency 4, one page per domain at a time) and asks `/internal/compile` for a plan. It writes
+  enabled target (concurrency 4, one page per domain at a time), then asks `/internal/compile` for a plan one tool at a time in
+  slug order (a rate limit waits for its Retry-After, default 30 s, and retries once; the whole phase is capped at 15 minutes;
+  whatever is not compiled in time is deferred, never failed). It writes
   `plans/<slug>.json` (a `PlanFile`: ready, pre_failed or deferred) and `plans/manifest.json`, and prints `cycle` and
   `shards` to `$GITHUB_OUTPUT`. A plan from a budget deferral is run and flagged `stale`.
 - **execute** runs its shard's tools one after another in Docker, retries a transient failure once after 60 s, guards each

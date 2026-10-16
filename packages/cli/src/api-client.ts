@@ -43,6 +43,8 @@ export class ApiError extends Error {
     readonly title: string,
     readonly detail: string | undefined,
     readonly route: string,
+    /** The Retry-After of the answer in whole seconds, when it was a plain number; null otherwise. */
+    readonly retryAfterS: number | null = null,
   ) {
     super(`${route} failed: ${status} ${title}${detail ? `: ${detail}` : ''}`);
     this.name = 'ApiError';
@@ -100,7 +102,12 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     } catch {
       detail = text.slice(0, 200) || undefined;
     }
-    return new ApiError(res.status, title, detail, route);
+    const header = Number(res.headers.get('retry-after'));
+    const retryAfterS =
+      res.headers.get('retry-after') !== null && Number.isInteger(header) && header >= 0
+        ? header
+        : null;
+    return new ApiError(res.status, title, detail, route, retryAfterS);
   }
 
   async function parseJson<T>(res: Response, route: string, schema?: z.ZodType<T>): Promise<T> {

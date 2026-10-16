@@ -49,7 +49,14 @@ interface Setup {
   concurrency?: number;
 }
 
+const START_MS = Date.parse('2026-10-16T12:00:00.000Z');
+/** A fake clock: it moves only when something sleeps or a fake compile call "takes time". */
+const clock = { ms: START_MS };
+const sleepLog: number[] = [];
+
 async function plan(s: Setup = {}) {
+  clock.ms = START_MS;
+  sleepLog.length = 0;
   const real = s.real ?? [target('acme-node'), target('bolt-node')];
   const all = [...real, ...canaries];
   const fake = fakeApi({
@@ -71,7 +78,11 @@ async function plan(s: Setup = {}) {
       }),
     goldenPlan: s.golden ?? (async () => ir('canary')),
     log: logger,
-    now: () => new Date('2026-10-16T12:00:00.000Z'),
+    now: () => new Date(clock.ms),
+    sleep: async (ms) => {
+      sleepLog.push(ms);
+      clock.ms += ms;
+    },
     writeOutput: async (name, value) => void (outputs[name] = value),
     writeSummary: async (md) => void summaries.push(md),
     ...(s.concurrency ? { concurrency: s.concurrency } : {}),
@@ -86,7 +97,7 @@ async function plan(s: Setup = {}) {
     ...s.options,
   };
   const result = await runPlan(options, deps);
-  return { result, fake, outputs, summaries, crawled, logger };
+  return { result, fake, outputs, summaries, crawled, logger, sleeps: [...sleepLog] };
 }
 
 const readPlan = async (slug: string): Promise<PlanFile> =>
@@ -328,6 +339,306 @@ describe('the four compile outcomes', () => {
     expect(
       logger.lines.some((l) => l.level === 'error' && l.fields['toolSlug'] === 'acme-node'),
     ).toBe(true);
+  });
+});
+
+describe('the compile phase: crawl together, compile one at a time, in order', () => {
+  const okReply = () => ({
+    status: 'ok',
+    fromCache: false,
+    stale: false,
+    snapshotId: PLAN_ID,
+    plan: planPayload(),
+  });
+  const deferred = (over: Record<string, unknown> = {}) => ({
+    status: 'deferred',
+    reason: 'llm_unavailable',
+    snapshotId: PLAN_ID,
+    stale: false,
+    plan: null,
+    retryAfterSeconds: null,
+    ...over,
+  });
+  const staleDeferred = (over: Record<string, unknown> = {}) =>
+    deferred({ stale: true, plan: planPayload({ contentHash: 'b'.repeat(64) }), ...over });
+  const real3 = [target('b-node'), target('c-node'), target('a-node')];
+  const compileBodies = (calls: { path: string; body: unknown }[]): CompileBody[] =>
+    calls.filter((c) => c.path === '/internal/compile').map((c) => c.body as CompileBody);
+  const callsFor = (calls: { path: string; body: unknown }[], slug: string) =>
+    compileBodies(calls).filter((b) => b.toolSlug === slug);
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const http = (status: number, retryAfterS: number | null = null) =>
+    new ApiError(status, 'x', undefined, 'POST /internal/compile', retryAfterS);
+
+  it('compile calls never overlap and go in slug order, however the crawls finished', async () => {
+    const order: string[] = [];
+    let active = 0;
+    let overlap = false;
+    await plan({
+      real: real3,
+      // a-node crawls slowest: crawling is concurrent, compiling must not follow the order crawls finish in
+      crawl: async (t) => {
+        await wait(t.slug === 'a-node' ? 30 : t.slug === 'b-node' ? 15 : 1);
+        return extractionFor(t);
+      },
+      api: {
+        compile: async (b) => {
+          active += 1;
+          if (active > 1) overlap = true;
+          order.push(b.toolSlug);
+          await wait(5);
+          active -= 1;
+          return okReply();
+        },
+      },
+    });
+    expect(overlap).toBe(false);
+    expect(order).toEqual(['a-node', 'b-node', 'c-node']);
+  });
+
+  it('crawling still overlaps: the compile phase starts only once the pages are in', async () => {
+    let active = 0;
+    let peak = 0;
+    await plan({
+      real: real3,
+      crawl: async (t) => {
+        active += 1;
+        peak = Math.max(peak, active);
+        await wait(15);
+        active -= 1;
+        return extractionFor(t);
+      },
+    });
+    expect(peak).toBeGreaterThan(1);
+  });
+
+  it('a 429 from the API once: waits its Retry-After, retries once, and the plan is accepted', async () => {
+    let n = 0;
+    const r = await plan({
+      api: {
+        compile: (b) => {
+          if (b.toolSlug === 'acme-node' && n++ === 0) throw http(429, 12);
+          return okReply();
+        },
+      },
+    });
+    expect(r.sleeps).toEqual([12_000]);
+    expect(callsFor(r.fake.calls, 'acme-node')).toHaveLength(2);
+    expect((await readPlan('acme-node')).state).toBe('ready');
+  });
+
+  it('a 5xx from the API with no Retry-After waits the 30 s default', async () => {
+    let n = 0;
+    const r = await plan({
+      api: {
+        compile: (b) => {
+          if (b.toolSlug === 'acme-node' && n++ === 0) throw http(500);
+          return okReply();
+        },
+      },
+    });
+    expect(r.sleeps).toEqual([30_000]);
+  });
+
+  it('a provider rate limit reported as a deferral is retried once too: its Retry-After, else 30 s', async () => {
+    let first = true;
+    const a = await plan({
+      api: {
+        compile: (b) => {
+          if (b.toolSlug === 'acme-node' && first) {
+            first = false;
+            return deferred({ retryAfterSeconds: 8 });
+          }
+          return okReply();
+        },
+      },
+    });
+    expect(a.sleeps).toEqual([8_000]);
+    expect((await readPlan('acme-node')).state).toBe('ready');
+
+    let again = true;
+    const b = await plan({
+      api: {
+        compile: (body) => {
+          if (body.toolSlug === 'acme-node' && again) {
+            again = false;
+            return deferred({ reason: 'llm_timeout' });
+          }
+          return okReply();
+        },
+      },
+    });
+    expect(b.sleeps).toEqual([30_000]);
+  });
+
+  it('429 twice: never a third try. With an earlier plan it runs flagged stale, without one it is an informational skip', async () => {
+    const twice = (withStale: boolean) => ({
+      compile: (b: CompileBody) =>
+        b.toolSlug === 'acme-node' ? (withStale ? staleDeferred() : deferred()) : okReply(),
+    });
+    const stale = await plan({ api: twice(true) });
+    expect(callsFor(stale.fake.calls, 'acme-node')).toHaveLength(2);
+    expect(await readPlan('acme-node')).toMatchObject({ state: 'ready', plan: { stale: true } });
+
+    const none = await plan({ api: twice(false) });
+    expect(callsFor(none.fake.calls, 'acme-node')).toHaveLength(2);
+    expect(await readPlan('acme-node')).toMatchObject({
+      state: 'deferred',
+      reason: 'llm_unavailable',
+    });
+  });
+
+  it('the API failing twice with a 5xx asks once more, without the model, for the cache or the stale plan', async () => {
+    const r = await plan({
+      api: {
+        compile: (b) => {
+          if (b.toolSlug !== 'acme-node') return okReply();
+          if (b.modelAllowed === false) return staleDeferred({ reason: 'llm_timeout' });
+          throw http(503);
+        },
+      },
+    });
+    expect(callsFor(r.fake.calls, 'acme-node').map((c) => c.modelAllowed)).toEqual([
+      undefined,
+      undefined,
+      false,
+    ]);
+    expect(await readPlan('acme-node')).toMatchObject({ state: 'ready', plan: { stale: true } });
+  });
+
+  it('...and if even that fails, the tool is a plain informational skip', async () => {
+    await plan({
+      api: {
+        compile: (b) => {
+          if (b.toolSlug !== 'acme-node') return okReply();
+          throw http(503);
+        },
+      },
+    });
+    expect(await readPlan('acme-node')).toMatchObject({
+      state: 'deferred',
+      reason: 'llm_unavailable',
+    });
+  });
+
+  it('a Retry-After longer than 2 minutes (a daily limit) is not waited for: deferred at once', async () => {
+    const r = await plan({
+      api: {
+        compile: (b) =>
+          b.toolSlug === 'acme-node' ? deferred({ retryAfterSeconds: 7_200 }) : okReply(),
+      },
+    });
+    expect(r.sleeps).toEqual([]);
+    expect(callsFor(r.fake.calls, 'acme-node')).toHaveLength(1);
+    expect((await readPlan('acme-node')).state).toBe('deferred');
+  });
+
+  it('our own token budget (llm_budget) is not retried: waiting cannot help', async () => {
+    const r = await plan({
+      api: {
+        compile: (b) =>
+          b.toolSlug === 'acme-node' ? deferred({ reason: 'llm_budget' }) : okReply(),
+      },
+    });
+    expect(r.sleeps).toEqual([]);
+    expect(callsFor(r.fake.calls, 'acme-node')).toHaveLength(1);
+    expect(await readPlan('acme-node')).toMatchObject({ state: 'deferred', reason: 'llm_budget' });
+  });
+
+  it('an error that is not an HTTP answer (a malformed response) is not retried either', async () => {
+    const r = await plan({
+      api: { compile: (b) => (b.toolSlug === 'acme-node' ? { garbage: true } : okReply()) },
+    });
+    expect(r.sleeps).toEqual([]);
+    expect(callsFor(r.fake.calls, 'acme-node')).toHaveLength(1);
+    expect((await readPlan('acme-node')).state).toBe('deferred');
+  });
+
+  describe('the 15-minute cap on the whole phase (fake clock)', () => {
+    const ten = Array.from({ length: 10 }, (_, i) => target(`t${String(i).padStart(2, '0')}-node`));
+
+    it('tools not reached in time are asked once without the model: cache or stale plan, else a skip', async () => {
+      const r = await plan({
+        real: ten,
+        api: {
+          compile: (b) => {
+            if (b.modelAllowed === false)
+              return b.toolSlug === 't09-node'
+                ? staleDeferred({ reason: 'llm_timeout' })
+                : deferred({ reason: 'llm_timeout' });
+            clock.ms += 2 * 60_000; // every real compile "takes" two minutes
+            return okReply();
+          },
+        },
+      });
+      const bodies = compileBodies(r.fake.calls);
+      // starts at minutes 0, 2, ... 14 are inside the cap: 8 tools; the 9th would start at minute 16
+      expect(bodies.filter((b) => b.modelAllowed !== false).map((b) => b.toolSlug)).toEqual(
+        ten.slice(0, 8).map((t) => t.slug),
+      );
+      expect(bodies.filter((b) => b.modelAllowed === false).map((b) => b.toolSlug)).toEqual([
+        't08-node',
+        't09-node',
+      ]);
+      expect(await readPlan('t08-node')).toMatchObject({
+        state: 'deferred',
+        reason: 'llm_timeout',
+      });
+      expect(await readPlan('t09-node')).toMatchObject({ state: 'ready', plan: { stale: true } });
+      expect((await readPlan('t07-node')).state).toBe('ready');
+    });
+
+    it('time spent waiting for a retry counts against the cap too', async () => {
+      // every tool is rate limited once for 100 s: 9 tools use 900 s = 15 minutes, so the 10th is out of time
+      const limited = new Set<string>();
+      const r = await plan({
+        real: ten,
+        api: {
+          compile: (b) => {
+            if (b.modelAllowed === false) return deferred({ reason: 'llm_timeout' });
+            if (!limited.has(b.toolSlug)) {
+              limited.add(b.toolSlug);
+              return deferred({ retryAfterSeconds: 100 });
+            }
+            return okReply();
+          },
+        },
+      });
+      const bodies = compileBodies(r.fake.calls);
+      expect(bodies.filter((b) => b.modelAllowed === false).map((b) => b.toolSlug)).toEqual([
+        't09-node',
+      ]);
+      expect(bodies.filter((b) => b.modelAllowed !== false)).toHaveLength(18);
+    });
+
+    it('everything finishing in time never uses the no-model call', async () => {
+      const r = await plan({ real: ten });
+      expect(compileBodies(r.fake.calls).filter((b) => b.modelAllowed === false)).toHaveLength(0);
+    });
+  });
+
+  it('deferral never becomes a verdict: no COMPILER_ERROR entry, no run posted, only skips or flagged plans', async () => {
+    const r = await plan({
+      real: real3,
+      api: {
+        compile: (b) =>
+          b.toolSlug === 'a-node'
+            ? deferred()
+            : b.toolSlug === 'b-node'
+              ? staleDeferred()
+              : deferred({ reason: 'llm_budget' }),
+      },
+    });
+    const files = await Promise.all(['a-node', 'b-node', 'c-node'].map(readPlan));
+    expect(files.map((f) => f.state)).toEqual(['deferred', 'ready', 'deferred']);
+    for (const f of files) {
+      expect(f.state).not.toBe('pre_failed');
+      expect(JSON.stringify(f)).not.toContain('COMPILER_ERROR');
+    }
+    // the plan job never posts runs or finishes the cycle, so no status can move
+    expect(r.fake.paths().filter((p) => p === '/internal/runs' || p.endsWith('/finish'))).toEqual(
+      [],
+    );
   });
 });
 

@@ -122,6 +122,28 @@ describe('createGroqClient: failures', () => {
     expect(sleeps).toEqual([7000, 60_000]);
   });
 
+  it('keeps the provider Retry-After on the error it finally throws, uncapped, so a caller can decide whether waiting is worth it', async () => {
+    const limited = (retryAfter?: string) =>
+      new Response('slow down', {
+        status: 429,
+        ...(retryAfter ? { headers: { 'retry-after': retryAfter } } : {}),
+      });
+    const withHeader = harness([limited('20'), limited('7200')], { maxRetries: 1 });
+    const err = (await withHeader.client.complete(messages).catch((e: unknown) => e)) as LlmError;
+    expect(err).toBeInstanceOf(LlmError);
+    expect(err.kind).toBe('unavailable');
+    expect(err.retryAfterS).toBe(7200); // the LAST answer: a daily limit says so
+
+    const without = harness(
+      [new Response('x', { status: 503 }), new Response('x', { status: 503 })],
+      {
+        maxRetries: 1,
+      },
+    );
+    const err2 = (await without.client.complete(messages).catch((e: unknown) => e)) as LlmError;
+    expect(err2.retryAfterS).toBeNull();
+  });
+
   it('retries four times by default, which rides out a one-minute free-tier window', async () => {
     const limited = () => new Response('x', { status: 429, headers: { 'retry-after': '15' } });
     const { client, requests } = harness([limited(), limited(), limited(), limited(), ok('{}')]);
