@@ -115,11 +115,20 @@ export async function seed(db: Db): Promise<void> {
     .values({
       toolId: healthy.id,
       contentHash: 'seed-hash-1',
+      configHash: 'seed-config',
       compilerVersion: 'seed',
       model: 'seed-model',
       ir: { irVersion: 1, steps: [] },
       groundingReport: { ok: true, violations: [] },
       accepted: true,
+      truncation: {
+        truncated: false,
+        totalBlocks: 0,
+        includedBlocks: 0,
+        omittedBlocks: 0,
+        omittedBlockIndexes: [],
+        clippedBlockIndexes: [],
+      },
     })
     .returning();
 

@@ -6,6 +6,7 @@ export const CRAWL_ERROR_REASONS = [
   'network',
   'missing_root', // extract.root never became visible
   'no_code_blocks', // usually a selector that needs updating, or the docs moved
+  'variant_not_found', // extract.variants is configured but the docs no longer show the markers
 ] as const;
 export type CrawlErrorReason = (typeof CRAWL_ERROR_REASONS)[number];
 

@@ -34,9 +34,17 @@ jobs:
       - run: pnpm typecheck
       # Docker is preinstalled on ubuntu-latest: the executor and canary integration tests must RUN here,
       # so a missing Docker fails the build instead of silently skipping them.
+      # A throwaway Postgres for the API integration tests: no Supabase secrets in CI. QSR_REQUIRE_DB makes a
+      # missing database a failure instead of a silent skip; the live-Supabase RLS tests stay gated behind secrets.
+      - run: docker compose -f docker-compose.test.yml up -d --wait
       - run: pnpm test
         env:
           QSR_REQUIRE_DOCKER: '1'
+          QSR_REQUIRE_DB: '1'
+          QSR_TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:54329/qsr_test
+      - name: Stop the test database
+        if: always()
+        run: docker compose -f docker-compose.test.yml down -v
       # The pre-commit secret gate must actually block: these tests stage a fake secret in a scratch
       # repository and fail if the gate lets it through (or silently skips because nothing can scan).
       - run: pnpm test:scripts

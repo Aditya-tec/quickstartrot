@@ -336,3 +336,66 @@ describe('failure handling', () => {
     expect(existsSync(path.join(traceDir, 'fixture-0.zip'))).toBe(false);
   });
 });
+
+describe('fixture: variants (extract.variants)', () => {
+  const variants = { splitOn: ['//\\s*ESM', '//\\s*(?:CommonJs|CJS)'], prefer: 'ESM' };
+  const t = (extra: Partial<TargetInput['extract']> = {}, page = '/variants.html') =>
+    target(page, { variants, ...extra });
+  const failure = async (tt: Target): Promise<CrawlError> => {
+    const err = await run(tt).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(CrawlError);
+    return err as CrawlError;
+  };
+
+  it("keeps the preferred variant plus the shared tail, drops the other variant's blocks, and records it", async () => {
+    const e = await run(t());
+    const text = code(e).map((b) => b.text);
+    expect(text).toHaveLength(3); // install, the first server, the ESM plugin block (the CommonJs block is gone)
+    expect(text[1]).toContain("import Acme from 'acme'");
+    expect(text[1]).toContain('acme.listen({ port: 3000 })');
+    expect(text[1]).not.toContain('require(');
+    expect(text[1]).not.toMatch(/^\/\/ (ESM|CommonJs)$/m);
+    expect(text[2]).toBe(
+      "import Acme from 'acme'\nimport routes from './routes.js'\nconst acme = Acme()\nacme.register(routes)",
+    );
+    expect(e.blocks.map((b) => b.index)).toEqual(e.blocks.map((_, i) => i));
+    expect(e.variants).toMatchObject({ prefer: 'ESM' });
+    expect(e.variants?.blocks.map((b) => [b.action, b.keptMarker, b.markers])).toEqual([
+      ['kept_variant', '// ESM', ['// ESM', '// CommonJs']],
+      ['kept_variant', '// ESM', ['// ESM']],
+      ['dropped_block', null, ['// CommonJs']],
+    ]);
+  });
+
+  it('prefer CommonJs gives the other variant', async () => {
+    const e = await run(t({ variants: { ...variants, prefer: 'CommonJs' } }));
+    const text = code(e).map((b) => b.text);
+    expect(text[1]).toContain("require('acme')({");
+    expect(text[1]).not.toContain('import Acme');
+  });
+
+  it('the content hash reflects the variant that was kept, and is stable', async () => {
+    const esm = await run(t());
+    const again = await run(t());
+    const cjs = await run(t({ variants: { ...variants, prefer: 'CommonJs' } }));
+    expect(again.contentHash).toBe(esm.contentHash);
+    expect(cjs.contentHash).not.toBe(esm.contentHash);
+    // without variants configured the page is extracted as written, with both alternatives
+    const raw = await run(target('/variants.html'));
+    expect(raw.variants).toBeUndefined();
+    expect(code(raw)[1]?.text).toContain('// CommonJs');
+    expect(raw.contentHash).not.toBe(esm.contentHash);
+  });
+
+  it('variant_not_found when variants are configured but the page has no marker', async () => {
+    const err = await failure(t({}, '/quickstart-basic.html'));
+    expect(err.reason).toBe('variant_not_found');
+    expect(err.retriable).toBe(false);
+  });
+
+  it('variant_not_found when a block has markers but not the preferred one', async () => {
+    const err = await failure(t({}, '/variants-missing-preferred.html'));
+    expect(err.reason).toBe('variant_not_found');
+    expect(err.message).toMatch(/none matches "ESM"/);
+  });
+});

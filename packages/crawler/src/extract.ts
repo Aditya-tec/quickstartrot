@@ -6,6 +6,7 @@ import { CrawlError } from './errors.js';
 import { contentHash, normalizeBlocks, type RawBlock } from './normalize.js';
 import { collectBlocks } from './page-script.js';
 import { assertRobotsAllowed, botUserAgent, type FetchLike } from './robots.js';
+import { applyVariants } from './variants.js';
 
 export interface ExtractOptions {
   browser: Browser;
@@ -166,7 +167,9 @@ async function crawlPage(
     root: cfg.root,
     codeBlocks: cfg.codeBlocks,
   });
-  const blocks = normalizeBlocks(raw, cfg.ignoreBlocksMatching);
+  const normalized = normalizeBlocks(raw, cfg.ignoreBlocksMatching);
+  const resolved = cfg.variants ? applyVariants(normalized, cfg.variants) : null;
+  const blocks = resolved ? resolved.blocks : normalized;
   const finalUrl = page.url();
 
   if (!blocks.some((b) => b.kind === 'code')) {
@@ -185,7 +188,8 @@ async function crawlPage(
     title: await page.title(),
     fetchedAt: now().toISOString(),
     blocks,
-    contentHash: contentHash(blocks),
+    contentHash: contentHash(blocks, resolved?.report),
+    ...(resolved ? { variants: resolved.report } : {}),
   };
 }
 

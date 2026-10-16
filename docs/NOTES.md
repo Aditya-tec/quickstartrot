@@ -5,35 +5,6 @@ Decisions and findings that are not in the spec and not obvious from the code. N
 
 ## Carry-forward (requested, not implemented yet)
 
-### P6: key the plan cache on a config hash, not on `--refresh`
-
-`compiled_plans` is unique on `(tool_id, content_hash, compiler_version)` (spec section 5). A plan also
-depends on the target file: its `placeholders`, `level` and `language` change what the model is told and
-what the validator accepts, but changing them does not change the docs hash. Today the only remedy is
-`qsr compile <slug> --refresh`.
-
-- Add `config_hash` (hash of `placeholders + level + language`) to `compiled_plans`, to its unique key and
-  to the cache lookup. The file cache in `packages/compiler/src/cache.ts` takes the same field.
-- The `tools.config_hash` column already exists (the full YAML); the plan key needs the narrower hash so
-  that editing `notes`, `owners` or `name` does not recompile.
-- This is a change to the spec's unique key, so tell the owner when doing it.
-
-### P6: store the truncation record and the P5 results
-
-- `compiled_plans` needs a `truncation jsonb not null` column (the `CompiledPlan.truncation` object, see
-  "Long pages" in the compiler README). Until it exists the API cannot store it, and a plan built from part
-  of a page would look complete in the database.
-- `/runs/[id]` should show "page truncated: N blocks not shown to the compiler", and a truncated plan must
-  never be the evidence for a published BROKEN without a human looking at that. (The compiler already caps
-  such a plan at L2 unless it has an install, a file write and a run step.)
-- `runs.failure_class`, `failure_signature`, `failed_step_id` and `classifier_rule` already exist (P1):
-  ingest fills them from `@qsr/classifier`. `llm.fallback` answers must be listed in the admin queue.
-- The API builds `StatusContext` from the database: `openIncident`, `recentlyResolvedIncidents` (the engine
-  applies the 7-day window itself, so passing more than 7 days is harmless) and `previousReachedLevel` (the
-  `reached_level` of the tool's previous valid-cycle run). `cycleValid` is the cycle's `valid` flag.
-- A `FALSE_POSITIVE` review resolves the incident and resets the streaks (spec section 10): that is an admin
-  action in the API, not part of `evaluate`.
-
 ### P9: choose the 50 targets for an L3 path
 
 Bias the target list toward funded devtool SDKs whose quickstart can be tested at L3 with a dummy key
@@ -41,6 +12,88 @@ Bias the target list toward funded devtool SDKs whose quickstart can be tested a
 only**: they have no API to reach, so they prove the pipeline works, not that a vendor's endpoint is
 wired up. Resend is the model case: its SDK prints the 401 and exits 0, so the log shows the client
 reached the endpoint.
+
+## Findings from P6 (API, DB-backed cache, cycle finish)
+
+### What was carried over from P5, and where it landed
+
+- **Plan cache key** is now `(tool_id, content_hash, config_hash, compiler_version)` (migration 0003; a change to the
+  spec's unique key, flagged to the owner). `config_hash` = `compileConfigHash(target)` in `@qsr/core`: a hash of
+  `placeholders`, `level`, `language` and `extract.variants`, so editing `notes`, `owners` or `name` does not recompile.
+- **`compiled_plans.truncation jsonb not null`** stores what the model did not see. The compile response carries it.
+- **`StatusContext`** is built in `apps/api/src/services/incidents.ts` (`incidentContext`): `cycleValid` from the cycle,
+  `openIncident`, `recentlyResolvedIncidents` (the 7-day window is applied by the engine) and `previousReachedLevel`
+  from the tool's previous valid-cycle run. `FALSE_POSITIVE` is an admin action (`admin-actions.ts`), not part of `evaluate`.
+- **Classifier output** (class, rule id, signature, failed step id) is stored on `runs` at ingest. `llm.fallback`
+  answers are queued for the admin.
+
+### Block variants (crawler, not compiler)
+
+`extract.variants: { splitOn: [regex…], prefer: regex }` splits a code block at marker lines and keeps the preferred
+sub-block (plus any shared preamble and tail), dropping the marker line. The choice is recorded in
+`Extraction.variants` and covered by `contentHash`, so the hash reflects what runs. A configured target whose
+markers do not match is `CrawlError('variant_not_found')`: the page changed shape, and that must be visible.
+`fastify-node` uses it with `prefer: ESM`. Result of `qsr run fastify-node`: **L2 PASS** (was L1 FAIL, `DOCS_SNIPPET_ERROR`), from a plan the model compiled
+under `COMPILER_VERSION` 2026-10-16.5 (`npm i fastify`, `package.json`, `index.js`; syntax and import checks pass).
+Earlier in the day the Groq quota was exhausted and a hand-built, grounding-validated plan was used to prove the
+crawler change; the model plan replaced it once the quota reset. `resend-node` (L3 PASS) and `vitest-node` (L2 PASS)
+were recompiled and re-run the same way.
+
+### Token budget and the Groq quota
+
+The Groq free tier allows 200,000 tokens a day; the API's own budget is `GROQ_DAILY_TOKEN_BUDGET` (default 150,000)
+against the sum of `llm_calls` over the last 24 h. Over budget: no call, `deferred` with `reason: "llm_budget"` plus
+the tool's most recent accepted plan (any compiler version) marked `stale: true`; with none, the tool is skipped this
+cycle and an informational admin-queue item is added. A quota error, a 429/5xx after one Retry-After, or the 100 s
+timeout is `deferred` too, **never** `COMPILER_ERROR` and never an input to a status. At most 2 model calls per
+compile request. Token counts are estimated up front (`budget.ts`, 2.9 characters per token, 1,500 expected output
+tokens), then the provider's real counts are logged to `llm_calls`.
+
+### Cycle finish
+
+`POST /internal/cycles/:id/finish` runs in one transaction: `FOR UPDATE` on the cycle, idempotent (the stored result is
+returned when it is already finished), canary check against `CANARY_EXPECTATIONS` (a wrong or **missing** canary
+makes the cycle `valid = false`: no transitions, one `cycle_ignored` note), then per tool the final attempt, tool row
+`FOR UPDATE`, `evaluate`, persist, apply events. After commit and best effort: incident enrichment (docs diff into
+`public-artifacts`, version diff from `runner_env.resolved`, LLM summary under the budget) then the web revalidation
+hook. Neither can fail the request; an enrichment failure creates an admin-queue item.
+`targets/_canary/canaries.json` and `CANARY_EXPECTATIONS` are pinned together by a CLI test.
+
+### Migrations
+
+`0003_api_p6` (applied to the live Supabase 2026-10-16): `compiled_plans.config_hash` (not null, in the unique key),
+`compiled_plans.truncation`, `probe_cycles.gh_run_attempt` and `finish_result`, `tools.is_canary` (generated from
+`slug LIKE 'canary-%'`), `incidents.version_diff`, table `admin_queue_items` (RLS on, no anon access); indexes
+`llm_calls(created_at)`, `submissions(ip_hash, created_at)`, unique `probe_cycles(gh_run_id, gh_run_attempt)`
+(partial, idempotent cycles), `admin_queue_items(state, created_at)` and unique `(run_id, reason)` (partial); the three
+public views are recreated without canaries. `0004_status_engine_inputs` (applied live 2026-10-16): `runs.reached_level`,
+`runs.skip_reason`, `tools.disabled_reason` (`file_removed`, which a re-sync may undo, vs `admin`, which it may not).
+Why 0004 is separate: it was found while building `StatusRun`; 0003 was already applied and applied migrations are never edited.
+After both, the live RLS tests pass 32/32.
+
+### What P7 needs from this API
+
+The probe workflow signs every `/internal/*` call with `INGEST_HMAC_SECRET` (use `createApiClient` from `@qsr/cli`;
+it re-signs on each retry). Call `wakeApi()` first. Order of one cycle:
+
+1. `POST /internal/targets/sync` with the parsed targets (idempotent; a removed file disables the tool with `disabled_reason = file_removed`).
+2. `POST /internal/cycles` `{trigger, gitSha, ghRunId, ghRunAttempt}` → `{cycleId, created, tools[]}`. Idempotent on `(ghRunId, ghRunAttempt)`, so a re-run of the plan job is safe. `tools[]` includes the four canaries (`isCanary`): they MUST be run every cycle, otherwise the cycle is invalid.
+3. Per tool, crawl, then `POST /internal/compile` `{cycleId, toolSlug, extraction | crawlError}`. Handle all four answers: `ok`, `compiler_error`, `crawl_error`, `deferred`. On `deferred`, run the `stale` plan if there is one (the result is still a real run) and skip the tool otherwise; do not report a failure.
+4. Execute in the sandbox (no secrets, no API calls). Then, from the reporting job, per attempt: `POST /internal/uploads` `{cycleId, toolSlug, attempt, files:[{stepId, ordinal}]}` → signed URLs; PUT the gzipped redacted logs; then `POST /internal/runs` `{runResult, logPaths: {stepId: path}}`. Idempotent on `(cycleId, toolSlug, attempt)`; paths are re-validated as belonging to the run. Body limit 5 MB.
+5. `POST /internal/cycles/:id/finish`, then read `FinishResponse`. Always call it, even when a tool was skipped; a tool with no run in the cycle is left unchanged.
+6. `POST /admin/gc` nightly (HMAC, same as `/internal`).
+
+Cold start: 30-60 s on the free tier; `wakeApi()` waits up to 3 minutes. P8: the revalidation call sends header
+`x-revalidate-secret: <REVALIDATE_SECRET>` to `REVALIDATE_URL` with the JSON body `{"source":"api","cycleId":"…"}`; the web route must check it.
+
+### Decisions the owner should know about
+
+- `/submissions` stores only an HMAC of the IP (keyed by `SUBMISSION_IP_SECRET`), 5 per day per hash. The URL is never fetched automatically.
+- Admin auth: 5 failed attempts per 15 minutes per client blocks that client, and a blocked client is refused without the token being compared.
+- `render.yaml` sets `NODE_VERSION` and `NODE_ENV` as plain values (they are constants, not secrets); every other variable is `sync: false`.
+- The smoke script's signed POST creates one harmless cycle (`git_sha = smoke-test`, `gh_run_id = 1`), reused on every run.
+- A bug found by the new Storage test: `Storage.list` returned names relative to the prefix, so `/admin/gc` would have removed the wrong paths. Fixed before it shipped.
+- `turbo.json` now declares `QSR_REQUIRE_DOCKER`, `QSR_SKIP_DOCKER_TESTS`, `QSR_REQUIRE_DB` and `QSR_TEST_DATABASE_URL` for the `test` task. Turbo's strict env mode had been stripping them: the API database tests would have **skipped silently in CI**, and `QSR_REQUIRE_DOCKER` from P4 was likely never reaching the executor tests either (they ran only because Docker is present). They are in the cache key, so a cached "skipped" result is never replayed.
 
 ## Findings from P5 (classifier, status engine, and the four fixes made first)
 

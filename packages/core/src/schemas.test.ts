@@ -314,3 +314,78 @@ describe('status engine types', () => {
     ).toBe(false);
   });
 });
+
+describe('Target extract.variants', () => {
+  const variants = { splitOn: ['//\s*ESM', '//\s*(?:CommonJs|CJS)'], prefer: 'ESM' };
+  const withVariants = (v: unknown) => ({
+    ...validTarget,
+    extract: { ...validTarget.extract, variants: v },
+  });
+
+  it('is optional and absent by default', () => {
+    expect(Target.parse(validTarget).extract.variants).toBeUndefined();
+  });
+
+  it('parses splitOn regexes and a preferred variant', () => {
+    expect(Target.parse(withVariants(variants)).extract.variants).toEqual(variants);
+  });
+
+  it.each([
+    ['no markers', { splitOn: [], prefer: 'ESM' }],
+    ['an empty preference', { splitOn: ['//\s*ESM'], prefer: '' }],
+    ['a marker that is not a valid regex', { splitOn: ['//(ESM'], prefer: 'ESM' }],
+    ['a preference that is not a valid regex', { splitOn: ['//\s*ESM'], prefer: '(ESM' }],
+    ['an empty marker pattern', { splitOn: [''], prefer: 'ESM' }],
+    ['an unknown key', { splitOn: ['//\s*ESM'], prefer: 'ESM', extra: 1 }],
+  ])('rejects %s', (_name, v) => {
+    expect(Target.safeParse(withVariants(v)).success).toBe(false);
+  });
+});
+
+describe('Extraction.variants (what the crawler chose)', () => {
+  const base = {
+    url: 'https://example.com/a',
+    finalUrl: 'https://example.com/a',
+    title: 'Quickstart',
+    fetchedAt: '2026-10-16T00:00:00Z',
+    blocks: [],
+    contentHash: 'abc',
+  };
+
+  it('is optional', () => {
+    expect(Extraction.parse(base).variants).toBeUndefined();
+  });
+
+  it('records the preference and, per affected block, what was kept and which markers were removed', () => {
+    const report = {
+      prefer: 'ESM',
+      blocks: [
+        {
+          originalIndex: 8,
+          blockIndex: 7,
+          action: 'kept_variant',
+          keptMarker: '// ESM',
+          markers: ['// ESM', '// CommonJs'],
+        },
+        {
+          originalIndex: 20,
+          blockIndex: null,
+          action: 'dropped_block',
+          keptMarker: null,
+          markers: ['// CommonJs'],
+        },
+      ],
+    };
+    expect(Extraction.parse({ ...base, variants: report }).variants).toEqual(report);
+  });
+
+  it('rejects an unknown action', () => {
+    const report = {
+      prefer: 'ESM',
+      blocks: [
+        { originalIndex: 1, blockIndex: 1, action: 'merged', keptMarker: null, markers: [] },
+      ],
+    };
+    expect(Extraction.safeParse({ ...base, variants: report }).success).toBe(false);
+  });
+});

@@ -155,3 +155,34 @@ describe('contentHash', () => {
     expect(contentHash(blocks)).toBe(expected);
   });
 });
+
+describe('contentHash with a variants report', () => {
+  const blocks = normalizeBlocks(
+    [{ kind: 'code', lang: 'js', text: 'a()', filenameHint: null, headingPath: [] }],
+    [],
+  );
+  const report = { prefer: 'ESM', blocks: [] };
+
+  it('is unchanged when there is no report: existing hashes stay valid', () => {
+    expect(contentHash(blocks, undefined)).toBe(contentHash(blocks));
+  });
+
+  it('includes the preference and the removed markers, so the hash is of what we run', () => {
+    const withReport = contentHash(blocks, report);
+    expect(withReport).not.toBe(contentHash(blocks));
+    expect(contentHash(blocks, { ...report, prefer: 'CJS' })).not.toBe(withReport);
+    const marked = {
+      ...report,
+      blocks: [
+        {
+          originalIndex: 0,
+          blockIndex: 0,
+          action: 'kept_variant' as const,
+          keptMarker: '// ESM',
+          markers: ['// ESM', '// CJS'],
+        },
+      ],
+    };
+    expect(contentHash(blocks, marked)).not.toBe(withReport);
+  });
+});

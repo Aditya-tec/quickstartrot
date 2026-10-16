@@ -9,3 +9,8 @@ export * from './work-path.js';
 export * from './install.js';
 export * from './output-patterns.js';
 export * from './status.js';
+export * from './canary.js';
+export * from './hmac.js';
+export * from './api.js';
+export * from './canonical.js';
+export * from './content-hash.js';

@@ -14,18 +14,27 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.2.1",
+    "@qsr/classifier": "workspace:*",
+    "@qsr/compiler": "workspace:*",
     "@qsr/core": "workspace:*",
     "@qsr/db": "workspace:*",
-    "@qsr/compiler": "workspace:*",
-    "@qsr/classifier": "workspace:*",
     "@qsr/status": "workspace:*",
+    "diff": "9.0.0",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "5.12.7",
+    "fastify-type-provider-zod": "7.0.0",
+    "postgres": "^3.4.9",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

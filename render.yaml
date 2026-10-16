@@ -1,0 +1,64 @@
+# Render Blueprint for the QuickstartRot API (spec sections 4 and 11). One free web service.
+# Free instances sleep after 15 minutes without traffic and take 30-60 s to wake; the probe workflow
+# handles that with `wakeApi()` (see DEPLOY.md). Secrets are declared with `sync: false`: Render asks for
+# them in the dashboard when the Blueprint is first applied and they never live in this file.
+services:
+  - type: web
+    name: quickstartrot-api
+    runtime: node
+    plan: free
+    # Region is chosen in the dashboard when the Blueprint is applied; pick the one closest to the Supabase project.
+    autoDeploy: true
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter api... build
+    startCommand: node apps/api/dist/server.js
+    healthCheckPath: /health
+    envVars:
+      # Constants, not secrets. NODE_ENV=production turns off the localhost CORS origins.
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+
+      # ---- required (the service refuses to start without them)
+      - key: DATABASE_URL # Supabase TRANSACTION pooler URL (port 6543), not the direct connection
+        sync: false
+      - key: INGEST_HMAC_SECRET # same value as the GitHub Actions secret of the same name
+        sync: false
+      - key: ADMIN_TOKEN # Bearer token for /admin/*
+        sync: false
+      - key: SUBMISSION_IP_SECRET # keys the HMAC that turns an IP into ip_hash
+        sync: false
+
+      # ---- LLM (without GROQ_API_KEY every cache miss is answered `deferred`)
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_DAILY_TOKEN_BUDGET # default 150000
+        sync: false
+      - key: COMPILER_MODEL # optional override of the default model
+        sync: false
+
+      # ---- Supabase Storage (without these /internal/uploads and /admin/gc answer 503)
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # ---- web app integration
+      - key: WEB_ORIGIN # the Vercel domain(s), comma separated; CORS allow-list
+        sync: false
+      - key: REVALIDATE_URL # the web app's revalidation endpoint (P8); optional until then
+        sync: false
+      - key: REVALIDATE_SECRET
+        sync: false
+
+      # ---- optional
+      - key: TURNSTILE_SECRET # enables the CAPTCHA check on POST /submissions
+        sync: false
+      - key: COMPILE_TIMEOUT_MS # default 100000
+        sync: false
+      - key: RATE_LIMIT_PER_MINUTE # default 120
+        sync: false
+      - key: LOG_LEVEL # default info
+        sync: false
+      - key: TRUST_PROXY # default true (Render terminates TLS in front of the service)
+        sync: false

@@ -1,0 +1,25 @@
+# A throwaway Postgres for the API integration tests (spec section 14: "API ingest + cycle finish against a
+# local Postgres (docker compose)"). CI needs no Supabase secrets: init.sql creates the Supabase roles the
+# migrations assume, and the tests apply every migration themselves.
+#
+#   docker compose -f docker-compose.test.yml up -d --wait
+#   QSR_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54329/qsr_test pnpm --filter @qsr/api test
+#   docker compose -f docker-compose.test.yml down -v
+services:
+  db:
+    # Pinned by digest, like the sandbox images (a moving tag is a supply-chain risk).
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: qsr_test
+    ports:
+      - '127.0.0.1:54329:5432'
+    volumes:
+      - ./docker/test-db/init.sql:/docker-entrypoint-initdb.d/01-supabase-roles.sql:ro
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d qsr_test']
+      interval: 2s
+      timeout: 3s
+      retries: 30

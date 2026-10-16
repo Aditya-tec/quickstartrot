@@ -10,3 +10,4 @@ export {
 } from './normalize.js';
 export { startFixtureServer, type FixtureServer } from './testing/fixture-server.js';
 export { launchBrowser } from './browser.js';
+export { applyVariants, type VariantsResult } from './variants.js';

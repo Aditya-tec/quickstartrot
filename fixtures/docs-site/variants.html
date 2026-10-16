@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Variants</title>
+  </head>
+  <body>
+    <main>
+      <h1>Getting Started</h1>
+      <h2>Install</h2>
+      <pre><code class="language-bash">npm i acme</code></pre>
+
+      <h2>Your first server</h2>
+      <p>Let's write our first server:</p>
+      <pre><code class="language-js">// Require the framework and instantiate it
+
+// ESM
+import Acme from 'acme'
+
+const acme = Acme({
+  logger: true
+})
+// CommonJs
+const acme = require('acme')({
+  logger: true
+})
+
+// Declare a route
+acme.get('/', function (request, reply) {
+  reply.send({ hello: 'world' })
+})
+
+acme.listen({ port: 3000 })</code></pre>
+
+      <h2>Your first plugin</h2>
+      <pre><code class="language-js">// ESM
+import Acme from 'acme'
+import routes from './routes.js'
+const acme = Acme()
+acme.register(routes)</code></pre>
+      <pre><code class="language-js">// CommonJs
+const acme = require('acme')()
+acme.register(require('./routes'))</code></pre>
+    </main>
+  </body>
+</html>

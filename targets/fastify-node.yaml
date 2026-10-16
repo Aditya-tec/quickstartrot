@@ -8,4 +8,11 @@ runtime:
   nodeVersion: '22'
 extract:
   root: 'article'
-notes: 'Crawl checked by eye 2026-10-16 (P2). 24 code blocks: install, server.js in ESM and CommonJS variants (the compiler must pick one), then plugin and CLI sections that go beyond the quickstart.'
+  # The page shows ESM and CommonJS side by side, in one block ("// ESM" ... "// CommonJs" ... shared code)
+  # or in two blocks. Run literally that is a SyntaxError, so the crawler keeps the ESM variant.
+  variants:
+    splitOn:
+      - '//\s*ESM'
+      - '//\s*(?:CommonJs|CommonJS|CJS)'
+    prefer: 'ESM'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 24 code blocks: install, server.js in ESM and CommonJS variants, then plugin and CLI sections that go beyond the quickstart. P6: extract.variants keeps the ESM variant (the shared tail after the alternatives is kept).'

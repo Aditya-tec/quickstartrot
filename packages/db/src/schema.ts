@@ -47,6 +47,9 @@ export const tools = pgTable(
     config: jsonb('config').notNull(), // full parsed YAML
     configHash: text('config_hash').notNull(),
     enabled: boolean('enabled').notNull().default(true),
+    // Why a tool is off: its target file was removed (a re-sync may bring it back) or an admin paused it
+    // (a re-sync must NOT re-enable it: vendor opt-out). Null while enabled.
+    disabledReason: text('disabled_reason'),
     status: toolStatus('status').notNull().default('UNKNOWN'),
     statusSince: tstz('status_since'),
     consecutiveFailures: integer('consecutive_failures').notNull().default(0),
@@ -57,6 +60,8 @@ export const tools = pgTable(
     lastFailureClass: failureClass('last_failure_class'),
     lastRunAt: tstz('last_run_at'),
     createdAt: tstz('created_at').notNull().defaultNow(),
+    // Canaries (targets/_canary) are harness probes, not tracked tools: never in the status engine or the public views.
+    isCanary: boolean('is_canary').generatedAlwaysAs(sql`slug LIKE 'canary-%'`),
   },
   (t) => [
     check('tools_language_check', sql`${t.language} in ('node','python')`),
@@ -88,32 +93,49 @@ export const compiledPlans = pgTable(
       .notNull()
       .references(() => tools.id),
     contentHash: text('content_hash').notNull(),
+    // Hash of the compile-relevant target fields (placeholders, level, language, extract.variants).
+    configHash: text('config_hash').notNull(),
     compilerVersion: text('compiler_version').notNull(), // bump to invalidate cache
     model: text('model').notNull(),
     ir: jsonb('ir'), // Step IR, null if rejected
     groundingReport: jsonb('grounding_report').notNull(),
     accepted: boolean('accepted').notNull(),
+    // What the model did not see of a long page (P5): a plan from part of a page must never look complete.
+    truncation: jsonb('truncation').notNull(),
     createdAt: tstz('created_at').notNull().defaultNow(),
   },
   (t) => [
-    unique('compiled_plans_tool_id_content_hash_compiler_version_key').on(
+    unique('compiled_plans_tool_content_config_version_key').on(
       t.toolId,
       t.contentHash,
+      t.configHash,
       t.compilerVersion,
     ),
   ],
 );
 
-export const probeCycles = pgTable('probe_cycles', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  trigger: text('trigger').notNull(), // cron | manual | target_pr
-  gitSha: text('git_sha').notNull(),
-  ghRunId: bigint('gh_run_id', { mode: 'number' }),
-  canaryOk: boolean('canary_ok'), // null until canaries report
-  valid: boolean('valid'), // false => runs ignored by status engine
-  startedAt: tstz('started_at').notNull().defaultNow(),
-  finishedAt: tstz('finished_at'),
-});
+export const probeCycles = pgTable(
+  'probe_cycles',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    trigger: text('trigger').notNull(), // cron | manual | target_pr
+    gitSha: text('git_sha').notNull(),
+    ghRunId: bigint('gh_run_id', { mode: 'number' }),
+    // With gh_run_id this makes cycle creation idempotent: a retried plan job must not create a second cycle.
+    ghRunAttempt: smallint('gh_run_attempt').notNull().default(1),
+    canaryOk: boolean('canary_ok'), // null until canaries report
+    valid: boolean('valid'), // false => runs ignored by status engine
+    startedAt: tstz('started_at').notNull().defaultNow(),
+    finishedAt: tstz('finished_at'),
+    // The stored outcome of POST /internal/cycles/:id/finish, returned unchanged on a repeat call.
+    finishResult: jsonb('finish_result'),
+  },
+  (t) => [
+    uniqueIndex('probe_cycles_gh_run_key')
+      .on(t.ghRunId, t.ghRunAttempt)
+      .where(sql`${t.ghRunId} is not null`),
+  ],
+);
 
 export const runs = pgTable(
   'runs',
@@ -133,6 +155,9 @@ export const runs = pgTable(
     failureSignature: text('failure_signature'), // sha256 of normalized error
     failedStepId: text('failed_step_id'),
     classifierRule: text('classifier_rule'), // rule id or 'llm'
+    // The status engine reads both (spec section 10): the level reached, and why a run was skipped.
+    reachedLevel: smallint('reached_level').notNull().default(0),
+    skipReason: text('skip_reason'), // 'manual_step' or null
     imageDigest: text('image_digest').notNull(),
     runnerEnv: jsonb('runner_env').notNull(), // node/python version, runner os, region
     durationMs: integer('duration_ms').notNull(),
@@ -181,6 +206,7 @@ export const incidents = pgTable(
     lastPassingRunId: uuid('last_passing_run_id').references(() => runs.id),
     docsChanged: boolean('docs_changed'), // content hash differs between the two runs
     docsDiffPath: text('docs_diff_path'),
+    versionDiff: jsonb('version_diff'), // runner_env.resolved: last passing run vs first failing run
     summary: text('summary'), // LLM draft, edited by reviewer
     suggestedFix: text('suggested_fix'),
     openedAt: tstz('opened_at').notNull().defaultNow(),
@@ -206,27 +232,65 @@ export const incidentEvents = pgTable('incident_events', {
   at: tstz('at').notNull().defaultNow(),
 });
 
-export const submissions = pgTable('submissions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  docsUrl: text('docs_url').notNull(),
-  contact: text('contact'),
-  note: text('note'),
-  ipHash: text('ip_hash').notNull(),
-  status: text('status').notNull().default('NEW'), // NEW | ACCEPTED | REJECTED
-  createdAt: tstz('created_at').notNull().defaultNow(),
-});
+export const submissions = pgTable(
+  'submissions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    docsUrl: text('docs_url').notNull(),
+    contact: text('contact'),
+    note: text('note'),
+    ipHash: text('ip_hash').notNull(),
+    status: text('status').notNull().default('NEW'), // NEW | ACCEPTED | REJECTED
+    createdAt: tstz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('submissions_ip_hash_created_at_idx').on(t.ipHash, t.createdAt)],
+);
 
-export const llmCalls = pgTable('llm_calls', {
-  id: bigserial('id', { mode: 'number' }).primaryKey(),
-  purpose: text('purpose').notNull(), // compile | classify | summarize
-  model: text('model').notNull(),
-  tokensIn: integer('tokens_in'),
-  tokensOut: integer('tokens_out'),
-  latencyMs: integer('latency_ms').notNull(),
-  ok: boolean('ok').notNull(),
-  error: text('error'),
-  createdAt: tstz('created_at').notNull().defaultNow(),
-});
+export const llmCalls = pgTable(
+  'llm_calls',
+  {
+    id: bigserial('id', { mode: 'number' }).primaryKey(),
+    purpose: text('purpose').notNull(), // compile | classify | summarize
+    model: text('model').notNull(),
+    tokensIn: integer('tokens_in'),
+    tokensOut: integer('tokens_out'),
+    latencyMs: integer('latency_ms').notNull(),
+    ok: boolean('ok').notNull(),
+    error: text('error'),
+    createdAt: tstz('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('llm_calls_created_at_idx').on(t.createdAt)],
+);
+
+/**
+ * Things for a person to look at (spec section 11, GET /admin/queue): UNKNOWN and LLM-made classifications,
+ * crawl/compile/config errors, deferred compiles, enrichment failures. Never an incident, never public.
+ */
+export const adminQueueItems = pgTable(
+  'admin_queue_items',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    reason: text('reason').notNull(), // AdminQueueReason, or compile_deferred | enrichment_failed | llm_classified
+    toolId: uuid('tool_id').references(() => tools.id),
+    runId: uuid('run_id').references(() => runs.id),
+    cycleId: uuid('cycle_id').references(() => probeCycles.id),
+    incidentId: uuid('incident_id').references(() => incidents.id),
+    detail: jsonb('detail')
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    state: text('state').notNull().default('OPEN'), // OPEN | DONE
+    createdAt: tstz('created_at').notNull().defaultNow(),
+    resolvedAt: tstz('resolved_at'),
+  },
+  (t) => [
+    check('admin_queue_items_state_check', sql`${t.state} in ('OPEN','DONE')`),
+    index('admin_queue_items_state_created_at_idx').on(t.state, t.createdAt),
+    // One item per (run, reason): ingest and cycle finish can both be retried.
+    uniqueIndex('admin_queue_items_run_reason_key')
+      .on(t.runId, t.reason)
+      .where(sql`${t.runId} is not null`),
+  ],
+);
 
 /** Every base table, for RLS enforcement and tests. */
 export const BASE_TABLES = [
@@ -240,6 +304,7 @@ export const BASE_TABLES = [
   'incident_events',
   'submissions',
   'llm_calls',
+  'admin_queue_items',
 ] as const;
 
 /** The only relations the anon role may select (spec section 5, public read path). */

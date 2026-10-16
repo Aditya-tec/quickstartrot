@@ -17,7 +17,8 @@
     "qsr": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node packages/cli/dist/main.js",
     "prepare": "husky",
     "secrets:check": "node scripts/secrets-check.mjs",
-    "test:scripts": "node --test \"scripts/*.test.mjs\""
+    "test:scripts": "node --test \"scripts/*.test.mjs\"",
+    "smoke:api": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/smoke-api.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

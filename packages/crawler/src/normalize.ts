@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { ExtractionBlock } from '@qsr/core';
 
 /** A block as read from the page, before normalization and indexing. */
@@ -139,11 +138,4 @@ export function normalizeBlocks(
   return out;
 }
 
-/**
- * sha256(JSON.stringify(blocks.map(b => [b.kind, b.lang, b.text]))). Prose wording changes
- * change the hash on purpose: compiles are cached and cheap.
- */
-export function contentHash(blocks: readonly ExtractionBlock[]): string {
-  const payload = JSON.stringify(blocks.map((b) => [b.kind, b.lang, b.text]));
-  return createHash('sha256').update(payload).digest('hex');
-}
+export { contentHash } from '@qsr/core';

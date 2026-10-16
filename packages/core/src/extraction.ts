@@ -11,6 +11,21 @@ export const ExtractionBlock = z.object({
 });
 export type ExtractionBlock = z.infer<typeof ExtractionBlock>;
 
+/** What the crawler did with variant markers (target `extract.variants`), recorded so the run can show it. */
+export const VariantsReport = z.object({
+  prefer: z.string(),
+  blocks: z.array(
+    z.object({
+      originalIndex: z.number().int(), // index before blocks were dropped and renumbered
+      blockIndex: z.number().int().nullable(), // index in `blocks`; null when the whole block was dropped
+      action: z.enum(['kept_variant', 'dropped_block']),
+      keptMarker: z.string().nullable(), // the marker line of the variant that was kept
+      markers: z.array(z.string()), // every marker line removed from the block
+    }),
+  ),
+});
+export type VariantsReport = z.infer<typeof VariantsReport>;
+
 export const Extraction = z.object({
   url: z.url(),
   finalUrl: z.url(), // after redirects
@@ -18,6 +33,7 @@ export const Extraction = z.object({
   fetchedAt: z.iso.datetime(),
   blocks: z.array(ExtractionBlock),
   contentHash: z.string(), // sha256 over normalized blocks
+  variants: VariantsReport.optional(),
 });
 export type Extraction = z.infer<typeof Extraction>;
 
