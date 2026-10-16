@@ -1,0 +1,44 @@
+name: validate-targets
+
+# A pull request that adds or changes a target (targets/**) is checked without any secret: every YAML must
+# parse with the core schema, and the changed pages get a crawl dry run (robots.txt respected, nothing
+# compiled, nothing sent anywhere). `pull_request`, never `pull_request_target`: a fork's code and
+# YAML run with a read-only token and no secrets.
+on:
+  pull_request:
+    paths:
+      - 'targets/**'
+
+concurrency:
+  group: validate-targets-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @qsr/crawler exec playwright install --with-deps chromium
+      - name: Validate every target, then crawl the ones this pull request touches
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          slugs="$(git diff --name-only --diff-filter=AM "origin/${BASE_REF}...HEAD" -- 'targets/*.yaml' | xargs -r -n1 basename -s .yaml | paste -sd, -)"
+          pnpm qsr validate
+          if [ -n "$slugs" ]; then
+            pnpm qsr validate --crawl --only "$slugs"
+          fi

@@ -22,13 +22,22 @@ Usage:
   qsr compile <slug> [--json] [--refresh] [--targets <dir>] [--cache-dir <dir>]
   qsr run     <slug> [--json] [--refresh] [--local-images | --image <ref>] [--out <dir>] [--targets <dir>]
   qsr classify <run-result.json> [--json] [--llm] [--targets <dir>]
+  qsr plan     [--out plans] [--shards N] [--only a,b] [--targets <dir>]
+  qsr execute  --shard N [--plans plans] [--out results]
+  qsr report   --cycle <id> [--results results] [--plans plans]
+  qsr gc
+  qsr validate [--targets <dir>] [--only a,b] [--crawl]
 
 Commands (phase that implements them):
   crawl     Crawl one target's docs page and print the extraction            (P2)
   compile   Crawl, then compile into a grounded Step IR plan (cached)        (P3)
   run       Crawl + compile + execute in Docker locally, no database         (P4)
   classify  Classify a stored RunResult: class, rule id, signature, evidence  (P5)
-  plan | execute | report    Probe pipeline stages                           (P7)
+  plan      Probe pipeline: sync, crawl, compile, shard (plan job)             (P7)
+  execute   Probe pipeline: run one shard in Docker (execute job, no secrets)  (P7)
+  report    Probe pipeline: upload logs, post runs, finish the cycle           (P7)
+  gc        Ask the API to delete expired logs, diffs and traces               (P7)
+  validate  Check every target file; --crawl does a dry-run crawl              (P7)
 
 Environment (a .env file in the working directory is loaded):
   GROQ_API_KEY         needed only when a plan is not already cached

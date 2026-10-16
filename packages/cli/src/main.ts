@@ -2,6 +2,13 @@
 import pino from 'pino';
 import { classifyCommand } from './classify.js';
 import { compileCommand, crawlCommand, loadDotEnv, USAGE } from './commands.js';
+import { executeCommand } from './probe/execute-command.js';
+import {
+  gcCommand,
+  planCommand,
+  reportCommand,
+  validateCommand,
+} from './probe/pipeline-commands.js';
 import { runCommand } from './run.js';
 import { TargetFileError } from './targets.js';
 
@@ -21,10 +28,15 @@ async function main(argv: string[]): Promise<number> {
     case 'classify':
       return classifyCommand(rest, log);
     case 'plan':
+      return planCommand(rest, log);
     case 'execute':
+      return executeCommand(rest, log);
     case 'report':
-      process.stderr.write(`"${command}" is not implemented yet (see usage)\n\n${USAGE}`);
-      return 2;
+      return reportCommand(rest, log);
+    case 'gc':
+      return gcCommand(rest, log);
+    case 'validate':
+      return validateCommand(rest, log);
     default:
       process.stderr.write(USAGE);
       return command === undefined || command === '--help' || command === '-h' ? 0 : 2;

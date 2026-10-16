@@ -51,6 +51,7 @@ d('POST /internal/cycles', () => {
       language: 'node',
       level: 2,
       isCanary: true,
+      lastDurationMs: null,
     });
     expect(body.tools[1].isCanary).toBe(false);
     const [row] = await cycles();

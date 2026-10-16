@@ -1,11 +1,12 @@
 import { createHmac } from 'node:crypto';
+import { SAFE_STEP_ID } from '@qsr/core';
 
 // Where a run's step logs live in the `public-artifacts` bucket. The bucket is public-read, so paths must be
 // unguessable, and cycle ids are NOT secret (the public views expose them): the run directory carries an
 // HMAC of (cycle, tool, attempt) under the ingest secret. The server can recompute it, so /internal/runs
 // re-validates a reported path by exact equality instead of storing what it handed out.
 
-export const SAFE_STEP_ID = /^[A-Za-z0-9._-]{1,64}$/;
+export { SAFE_STEP_ID };
 
 function token(secret: string, cycleId: string, toolSlug: string, attempt: number): string {
   return createHmac('sha256', secret)

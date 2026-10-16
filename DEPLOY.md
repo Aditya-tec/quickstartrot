@@ -133,3 +133,88 @@ the submission form does, and it is merely slower while the API wakes.
 
 Change it on Render (Environment → edit → the service redeploys), and change the GitHub Actions secret to match for `INGEST_HMAC_SECRET`.
 Requests signed with the old value are refused with 401 until both match.
+
+## First real probe run
+
+Do this after the smoke script (step 6) passes. The first run uses three real tools, so a problem is cheap to find.
+
+### What must be set first
+
+| Where                                               | Name                 | Kind     | Needed by         | Value                                                                                     |
+| --------------------------------------------------- | -------------------- | -------- | ----------------- | ----------------------------------------------------------------------------------------- |
+| GitHub → Settings → Secrets and variables → Actions | `INGEST_HMAC_SECRET` | secret   | plan, report      | the same value as on Render (step 5)                                                      |
+|                                                     | `API_BASE_URL`       | variable | plan, report      | the Render URL, no trailing slash (step 5)                                                |
+|                                                     | `SUPABASE_ANON_KEY`  | variable | report, snapshot  | the PUBLIC anon key (Supabase → Project Settings → API). Not the service-role key         |
+|                                                     | `SUPABASE_URL`       | variable | snapshot          | `https://<ref>.supabase.co`                                                               |
+|                                                     | `WEB_BASE_URL`       | variable | report (optional) | the Vercel URL once the site exists (phase P8); until then run ids are shown as short ids |
+
+Never add the service-role key, the Groq key or the admin token to GitHub: only the API (Render) holds them.
+The **execute** job reads no secret and no variable at all; a test fails the build if it ever does.
+
+Also check:
+
+- Storage buckets `public-artifacts` and `private-artifacts` exist (step 1). Log uploads go to the first.
+- Apply the pending database migration from your machine: `pnpm --filter @qsr/db db:migrate`
+  (it adds `0005_public_pass_rate`: the public pass rate ignores runs that never reached the executor).
+- Optional: create an issue label named `harness` (red). It is created automatically the first time an issue is opened.
+
+### Run it
+
+GitHub → **Actions** → **probe** → **Run workflow** → in `only` put three slugs, for example
+
+```
+chalk-node,dotenv-python,resend-node
+```
+
+(or with the GitHub CLI: `gh workflow run probe.yml -f only=chalk-node,dotenv-python,resend-node`).
+The four canaries always run in addition, because a cycle without them is invalid. A cold start adds up to a minute at the
+beginning of the plan and report jobs.
+
+### What a healthy run looks like
+
+The `plan` job summary lists each tool as `ready`. The `execute` jobs (one per shard) each print how many tools ran. The
+`report` job summary looks like this:
+
+```
+### Probe cycle 5d1b8c1e-...: valid
+
+3 passed, 0 failed (3 tools, 4 canaries)
+
+| Tool            | Level   | Outcome | Class | Duration | Plan | Run      |
+| ---             | ---     | ---     | ---   | ---      | ---  | ---      |
+| chalk-node      | L3 / L3 | PASS    |       | 4.1 s    |      | 0f9d2c1e |
+| dotenv-python   | L3 / L3 | PASS    |       | 9.8 s    |      | 7a31b0c2 |
+| resend-node     | L3 / L3 | PASS    |       | 5.6 s    |      | c8e4d210 |
+| canary-fail-dep | L0 / L3 | FAIL    | DEPENDENCY_RESOLUTION | 3.2 s | |  ...     |
+...
+```
+
+The canaries `canary-fail-*` show **FAIL**; that is their expected answer and the cycle is still **valid**. In the database
+(Supabase → Table editor) there is one new `probe_cycles` row with `valid = true` and `finished_at` set, one `runs` row per
+tool, and `step_results` rows whose `log_path` points into `public-artifacts`.
+
+Things that are normal on a first run: `stale plan` is not shown (the model was asked), a tool may show `SKIPPED` with
+`deferred: llm_budget` if the day's Groq budget is spent, and a pre-failed tool shows `CRAWL_ERROR` or `COMPILER_ERROR` in
+`Class` with the reason in `Plan`. None of these change a tool's status.
+
+### If it fails, send me
+
+1. The link of the Actions run.
+2. The **summary** of the failing job (the text under "Summary" at the top of the run page), copied as text.
+3. The last 40 lines of the failing step's log (click the red step). If the red job is `execute`, also say which shard.
+4. If `report` failed: the Render log lines around that time (Render → your service → Logs), filtered by the word `internal`.
+5. If a canary shows the wrong result: the downloaded artifact `results-0` (Actions run page → Artifacts), unzipped,
+   the file for that canary.
+
+Do not paste secrets. Logs never contain them (they are redacted twice), but check before you paste.
+
+Quick diagnosis:
+
+| Symptom                                                           | Likely cause                                                                                              |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `plan` fails with "did not wake up within 3 minutes"              | the Render service is not running, or `API_BASE_URL` is wrong                                             |
+| `plan`/`report` fail with 401                                     | `INGEST_HMAC_SECRET` differs between GitHub and Render                                                    |
+| `report` warns "log upload was refused" (runs are still recorded) | Storage buckets missing, or the gateway wants a key: set the variable `SUPABASE_ANON_KEY`                 |
+| Summary says the cycle is **INVALID**                             | a canary behaved differently; the summary names which. No status was changed. A `harness` issue is opened |
+| A `harness` issue appears with "harness error rate"               | more than 5% of tools produced no result (a shard crashed or timed out); re-run, then send me the logs    |
+| `execute` fails with "Docker is not reachable"                    | a GitHub runner problem; re-run the failed job                                                            |

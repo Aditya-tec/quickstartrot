@@ -6,21 +6,21 @@ provider, deployed to Render's free tier (see [DEPLOY.md](../../DEPLOY.md)). The
 
 ## Endpoints
 
-| Route                                      | Auth       | Purpose                                                                                     |
-| ------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------- |
-| `GET /health`                              | none       | `{status, db, time}`; used by Render and by `wakeApi()`                                     |
-| `POST /submissions`                        | rate limit | a visitor suggests a docs URL (https only, public hosts only, never fetched automatically)  |
-| `POST /internal/targets/sync`              | HMAC       | upsert the target files; a removed file disables its tool                                   |
-| `POST /internal/cycles`                    | HMAC       | start a cycle, list the enabled tools; idempotent on `(ghRunId, ghRunAttempt)`              |
-| `POST /internal/compile`                   | HMAC       | plan-cache lookup, else the compiler (token budget, 2 model calls, 100 s)                   |
-| `POST /internal/uploads`                   | HMAC       | signed Storage upload URLs for a run's logs                                                 |
-| `POST /internal/runs`                      | HMAC       | ingest a `RunResult`, classify it; idempotent on `(cycleId, toolSlug, attempt)`; 5 MB limit |
-| `POST /internal/cycles/:id/finish`         | HMAC       | canary check, status engine, incidents, enrichment, web revalidation                        |
-| `GET /admin/queue`                         | Bearer     | pending incidents and informational items                                                   |
-| `POST /admin/incidents/:id/confirm`        | Bearer     | publish an incident (a human reviewed it)                                                   |
-| `POST /admin/incidents/:id/false-positive` | Bearer     | resolve it and reset the streaks                                                            |
-| `POST /admin/tools/:slug/disable`          | Bearer     | disable a tool for good (a re-sync cannot re-enable it)                                     |
-| `POST /admin/gc`                           | HMAC       | delete expired logs, false-positive diffs and traces                                        |
+| Route                                      | Auth       | Purpose                                                                                                                             |
+| ------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /health`                              | none       | `{status, db, time}`; used by Render and by `wakeApi()`                                                                             |
+| `POST /submissions`                        | rate limit | a visitor suggests a docs URL (https only, public hosts only, never fetched automatically)                                          |
+| `POST /internal/targets/sync`              | HMAC       | upsert the target files; a removed file disables its tool                                                                           |
+| `POST /internal/cycles`                    | HMAC       | start a cycle, list the enabled tools; idempotent on `(ghRunId, ghRunAttempt)`                                                      |
+| `POST /internal/compile`                   | HMAC       | plan-cache lookup, else the compiler (token budget, 2 model calls, 100 s)                                                           |
+| `POST /internal/uploads`                   | HMAC       | signed Storage upload URLs for a run's logs                                                                                         |
+| `POST /internal/runs`                      | HMAC       | ingest a `RunResult` (optionally with a `preflight` failure), classify it; idempotent on `(cycleId, toolSlug, attempt)`; 5 MB limit |
+| `POST /internal/cycles/:id/finish`         | HMAC       | canary check, status engine, incidents, enrichment, web revalidation                                                                |
+| `GET /admin/queue`                         | Bearer     | pending incidents and informational items                                                                                           |
+| `POST /admin/incidents/:id/confirm`        | Bearer     | publish an incident (a human reviewed it)                                                                                           |
+| `POST /admin/incidents/:id/false-positive` | Bearer     | resolve it and reset the streaks                                                                                                    |
+| `POST /admin/tools/:slug/disable`          | Bearer     | disable a tool for good (a re-sync cannot re-enable it)                                                                             |
+| `POST /admin/gc`                           | HMAC       | delete expired logs, false-positive diffs and traces                                                                                |
 
 HMAC: headers `X-QSR-Timestamp` (unix seconds) and `X-QSR-Signature: sha256=<hex>` over `timestamp + "." + rawBody`,
 300 s window (`signRequest` / `verifyRequest` in `@qsr/core`, 100% covered). Errors are `application/problem+json`

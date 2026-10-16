@@ -13,6 +13,79 @@ only**: they have no API to reach, so they prove the pipeline works, not that a 
 wired up. Resend is the model case: its SDK prints the 401 and exits 0, so the log shows the client
 reached the endpoint.
 
+## Findings from P7 (probe pipeline: plan / execute / report and the workflows)
+
+### Pre-flight answers
+
+- **Canaries are rows in `tools`, and they are never public.** `/internal/targets/sync` takes any valid target, so
+  `targets/_canary/*` sync like the rest (the plan job sends real targets and canaries in one call). `tools.is_canary`
+  (generated from `slug LIKE 'canary-%'`, migration 0003) is excluded by all three public views. New test
+  (`apps/api/test/preflight.test.ts`): after a whole cycle, `SET LOCAL ROLE anon` and select from `public_tools`,
+  `public_runs` and `public_incidents` returns no canary, even with a CONFIRMED incident planted on one; anon cannot read
+  the base tables at all. No migration was needed for this.
+- **Pre-execution failures had no clean path in P6** (the compile endpoint queued an admin item but no run existed, so the
+  history showed nothing). Added the smallest one: an optional `preflight` object beside `runResult` on
+  `POST /internal/runs` (`{stage, failureClass: CRAWL_ERROR | COMPILER_ERROR, reason, message}`). `RunResult` is unchanged.
+  The API stores a run with outcome FAIL, that class, signature `<class>:<reason>`, rule `preflight`, no steps and level 0, and
+  refuses a preflight run that has steps, a level, a failed step or an outcome other than FAIL. The engine already maps these
+  classes to "unchanged state + admin queue item"; finish now de-duplicates that item against the one the compile endpoint
+  queued, so one problem is one item. A `deferred` entry with no plan posts nothing (informational skip).
+
+### Decisions and deviations the owner should know about
+
+- **Migration 0005 (`public_pass_rate`, NOT yet applied to the live database).** `public_tools.pass_rate_30d` counted every
+  FAIL as a verdict. A pre-flight FAIL, and a FAIL on a stale plan, are not verdicts, so they no longer count. Apply with
+  `pnpm --filter @qsr/db db:migrate`. Nothing else depends on it; until then the pass rate is merely pessimistic.
+- **A FAIL on a stale plan is not evidence against the vendor.** A stale plan is the tool's last accepted plan, used because
+  the model was not asked (token budget), so a failure may only mean the docs moved on. `finish` hands the engine a
+  COMPILER_ERROR for such a run (queue item "failed with a stale plan", no streak, no incident); the stored run keeps its
+  true class. A PASS on a stale plan counts normally. Runs carry `runner_env.plan_stale = "true"`.
+- **Each shard runs `canary-pass-node` (spec), which needs a rule.** Shard 0 runs it as itself; shards 1..N-1 run it as a
+  _guard_ into `results/guards/shard-N/`. The report posts a guard only when it did NOT pass, as attempt `10 + shard` of
+  `canary-pass-node`; the API's canary check looks at the final attempt, so a broken runner invalidates the cycle. A shard
+  that produced no results at all does NOT invalidate it: its tools get HARNESS_ERROR runs (queue items only), the other
+  shards' results stand. `UploadsBody.attempt` now allows up to 20 for this.
+- **The report job also downloads the `plans` artifact** and `qsr report` takes `--plans` (spec shape downloads only results):
+  it needs the manifest and the pre-failed entries to know what was planned.
+- **`qsr execute` does not start the fixture server unless a plan refers to it.** No canary plan does (the fixture pages
+  are only crawled, in the plan job, which does start the server). The code path exists and is tested.
+- **Workflow inputs go through `env:`, never into the script text** (`--only "$ONLY"`), unlike the spec's inline sketch. A
+  test forbids `github.event`, `inputs.` and branch names inside any `run:`.
+- **`qsr validate`** (used by `validate-targets.yml`) also refuses a non-canary `docsUrl` that is not a public https URL (same
+  validator as `/submissions`, moved to `@qsr/core`) and a placeholder value that looks like a real credential. A fork PR
+  cannot aim the runner's crawler at `http://169.254.169.254/` or `localhost`.
+- **P6 gaps fixed on the way:** `createSignedUpload` now sends `x-upsert` (a re-run report signs the same path again);
+  `SAFE_STEP_ID` and the URL validator moved to core so the report job and the API share them.
+- **`turbo.json` passes the test env** (`QSR_REQUIRE_DB` etc.) since P6; unchanged here.
+- **Pinned actions** (full SHA + version comment, all workflows including ci and images): checkout 4.4.0, pnpm/action-setup 4.4.0,
+  setup-node 4.4.0, cache 4.3.0, upload-artifact 4.6.2, download-artifact 4.3.0, codeql-action 3.39.0, gitleaks-action 2.3.9,
+  setup-buildx 3.12.0, login-action 3.7.0, build-push 6.19.2. Each was resolved with `git ls-remote` and re-checked against
+  the GitHub commits API. actionlint runs in CI from a digest-pinned image over `.github/workflows/*.yml`.
+
+### What was verified, and what was not
+
+Verified locally with `pnpm probe:local` (real Docker, real Chromium, real Groq, a local API and Postgres, a stand-in for
+Supabase Storage speaking the same REST shape): plan -> 2 shards -> report with 4 canaries + 4 real tools gave a valid
+cycle, 8 runs, 37 step results, 28 uploaded logs, no duplicates; the same cycle reported twice returned identical run ids;
+a canary with a wrong expected outcome made the cycle invalid and moved no tool state; dropping shard 1's results turned its
+tools into HARNESS_ERROR runs (queue items, statuses unchanged); a token budget of 1 produced a flagged stale plan that ran.
+
+**Not verified:** the real GitHub Actions run; the log upload to real Supabase Storage (the multipart `PUT` to a signed URL, and
+whether the gateway wants an `apikey` header: the report sends `SUPABASE_ANON_KEY` if the variable is set), because the live
+project had no buckets yet; issue creation through `GITHUB_TOKEN` (tested against a fake `fetch` only). DEPLOY.md has
+"First real probe run" with what to send if any of these fails.
+
+### What P8 needs from this
+
+- `runs` now holds rows that never executed: outcome `FAIL`, `failure_class` CRAWL_ERROR or COMPILER_ERROR, no steps, level 0,
+  `classifier_rule = 'preflight'`. Show them as "not run" with the reason (the signature is `<class>:<reason>`), not as a
+  vendor failure. `runner_env.plan_stale = "true"` marks a stale-plan run: show it.
+- The report's run links are `<WEB_BASE_URL>/runs/<run id>`; the run page route should be `/runs/[id]`.
+- `public_tools.pass_rate_30d` excludes both kinds above (after migration 0005).
+- Step logs are gzip files in `public-artifacts` at `logs/<cycle>/<tool>-<attempt>-<token>/NN-<step>.log.gz`, listed in
+  `public_runs.steps[].log_path`; the web must gunzip them (they are stored as `application/gzip`).
+- The API (not the report job) calls the web revalidation hook at cycle finish, and only for a valid cycle (P6).
+
 ## Findings from P6 (API, DB-backed cache, cycle finish)
 
 ### What was carried over from P5, and where it landed

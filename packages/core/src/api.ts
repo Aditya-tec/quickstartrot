@@ -57,6 +57,8 @@ export const CycleTool = z.object({
   language: Language,
   level: z.number().int(),
   isCanary: z.boolean(),
+  /** Duration of the tool's last final run, so the plan job can shard heaviest first. */
+  lastDurationMs: z.number().int().min(0).nullable().default(null),
 });
 export const CycleResponse = z.object({
   cycleId: Uuid,
@@ -130,7 +132,7 @@ export type CompileResponse = z.infer<typeof CompileResponse>;
 export const UploadsBody = z.object({
   cycleId: Uuid,
   toolSlug: z.string(),
-  attempt: z.number().int().min(1).max(10),
+  attempt: z.number().int().min(1).max(20),
   files: z
     .array(
       z.object({ stepId: z.string().min(1).max(64), ordinal: z.number().int().min(0).max(255) }),
@@ -155,10 +157,23 @@ export const UploadsResponse = z.object({
 export type UploadsResponse = z.infer<typeof UploadsResponse>;
 
 // ---- POST /internal/runs
+/**
+ * A run that never reached the executor: the crawl or the compile failed (spec section 10: CRAWL_ERROR and
+ * COMPILER_ERROR never change a status and never open an incident; they are listed for a person). Sent
+ * beside a synthetic RunResult (outcome FAIL, no steps), which keeps the RunResult contract unchanged.
+ */
+export const PreflightFailure = z.object({
+  stage: z.enum(['crawl', 'compile']),
+  failureClass: z.enum(['CRAWL_ERROR', 'COMPILER_ERROR']),
+  reason: z.string().min(1).max(100),
+  message: z.string().max(2000),
+});
+export type PreflightFailure = z.infer<typeof PreflightFailure>;
 export const RunBody = z.object({
   runResult: RunResult,
   /** stepId -> storage path returned by /internal/uploads. */
   logPaths: z.record(z.string(), z.string()).default({}),
+  preflight: PreflightFailure.optional(),
 });
 export type RunBody = z.infer<typeof RunBody>;
 export const ClassificationPayload = z.object({

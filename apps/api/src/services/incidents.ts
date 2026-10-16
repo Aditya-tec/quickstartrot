@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, ne } from 'drizzle-orm';
 import type { StatusEvent } from '@qsr/core';
 import {
   adminQueueItems,
@@ -140,7 +140,22 @@ export async function applyEvent(
         at: when,
       });
       return;
-    case 'admin_queue':
+    case 'admin_queue': {
+      // The compile endpoint may already have queued this very problem (a crawl or compile failure) for
+      // the cycle, without a run: one problem, one item.
+      const [same] = await tx
+        .select({ id: adminQueueItems.id })
+        .from(adminQueueItems)
+        .where(
+          and(
+            eq(adminQueueItems.toolId, tool.id),
+            eq(adminQueueItems.cycleId, cycleId),
+            eq(adminQueueItems.reason, event.reason),
+            eq(adminQueueItems.state, 'OPEN'),
+            isNull(adminQueueItems.runId),
+          ),
+        );
+      if (same) return;
       await tx
         .insert(adminQueueItems)
         .values({
@@ -156,6 +171,7 @@ export async function applyEvent(
         })
         .onConflictDoNothing();
       return;
+    }
     case 'cycle_ignored':
       return;
   }

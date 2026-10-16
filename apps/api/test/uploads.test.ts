@@ -57,6 +57,12 @@ d('log path helpers', () => {
 });
 
 d('POST /internal/uploads', () => {
+  it('accepts attempt numbers up to 20: a shard\x27s canary guard is reported as a later attempt', async () => {
+    const cycleId = await cycle();
+    expect((await upload(cycleId, { attempt: 20 })).statusCode).toBe(200);
+    expect((await upload(cycleId, { attempt: 21 })).statusCode).toBe(400);
+  });
+
   it('returns a signed upload URL per file, at the path the ingest will expect', async () => {
     const cycleId = await cycle();
     const res = await upload(cycleId);

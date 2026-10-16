@@ -1,0 +1,34 @@
+name: gc
+
+# Nightly storage cleanup (spec section 5, "Storage"): the API deletes step logs and docs diffs older than
+# 30 days (except those an incident links) and Playwright traces older than 14 days.
+on:
+  schedule:
+    - cron: '41 3 * * *' # off the hour
+  workflow_dispatch:
+
+concurrency:
+  group: gc
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  gc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm qsr gc
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          INGEST_HMAC_SECRET: ${{ secrets.INGEST_HMAC_SECRET }}

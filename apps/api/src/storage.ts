@@ -56,7 +56,12 @@ export function createSupabaseStorage(options: SupabaseStorageOptions): Storage 
       const res = await call(
         'create signed upload',
         `${base}/object/upload/sign/${bucket}/${encodePath(path)}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' },
+        {
+          method: 'POST',
+          // x-upsert: a retried report signs the same path again, and the object may already exist.
+          headers: { 'Content-Type': 'application/json', 'x-upsert': 'true' },
+          body: '{}',
+        },
       );
       const body = (await res.json()) as { url?: unknown; token?: unknown };
       if (typeof body.url !== 'string' || typeof body.token !== 'string')

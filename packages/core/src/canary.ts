@@ -73,3 +73,9 @@ export function compileConfigHash(target: Target): string {
   };
   return hashJson(relevant);
 }
+
+/**
+ * The canary every shard runs (spec section 12), so each runner machine proves itself before its tools'
+ * results are trusted. The other canaries run in shard 0 only.
+ */
+export const GUARD_CANARY = 'canary-pass-node';

@@ -5,10 +5,17 @@ import { RunOutcome, StepOutcome } from './taxonomy.js';
 export const TAIL_MAX_BYTES = 4096; // stdout/stderr tails kept in the database
 export const STEP_LOG_MAX_BYTES = 256 * 1024; // full redacted step log, before gzip
 
+/** A step id that is safe in a storage path. The report job and the API both check it. */
+export const SAFE_STEP_ID = /^[A-Za-z0-9._-]{1,64}$/;
+
 /** Keys the executor writes into `runnerEnv` (spec sections 9 and 10). All values are strings. */
 export const RUNNER_ENV_KEYS = {
   /** JSON object {"package": "version"} of top-level dependencies after the last install step. */
   resolved: 'resolved',
+  /** 'true' when the run used the tool's last accepted plan because the model was not asked. */
+  planStale: 'plan_stale',
+  /** The probe shard (a number as a string) whose runner executed the plan. */
+  shard: 'shard',
 } as const;
 
 /** Reads `runnerEnv.resolved` back into a map; an absent or malformed value is an empty map. */

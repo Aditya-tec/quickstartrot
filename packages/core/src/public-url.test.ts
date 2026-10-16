@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateSubmissionUrl } from './submission-url.js';
+import { validateSubmissionUrl } from './public-url.js';
 
 // Spec section 14: /submissions takes URL validation (https only, no IPs or private hosts). A submission is
 // never fetched automatically, so this is defence in depth against a human following a hostile link and

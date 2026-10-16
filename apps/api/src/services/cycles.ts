@@ -1,6 +1,6 @@
 import { and, asc, eq, sql } from 'drizzle-orm';
 import type { CycleBody, CycleResponse } from '@qsr/core';
-import { probeCycles, tools, type Db } from '@qsr/db';
+import { probeCycles, runs, tools, type Db } from '@qsr/db';
 
 /**
  * POST /internal/cycles: create a probe cycle and list the enabled tools. Idempotent on
@@ -38,6 +38,7 @@ export async function createCycle(db: Db, body: CycleBody, now: Date): Promise<C
 
   const enabled = await db
     .select({
+      id: tools.id,
       slug: tools.slug,
       name: tools.name,
       docsUrl: tools.docsUrl,
@@ -49,6 +50,14 @@ export async function createCycle(db: Db, body: CycleBody, now: Date): Promise<C
     .where(eq(tools.enabled, true))
     .orderBy(asc(tools.slug));
 
+  // Duration of each tool's most recent final run, so the plan job can shard heaviest first.
+  const last = await db
+    .selectDistinctOn([runs.toolId], { toolId: runs.toolId, durationMs: runs.durationMs })
+    .from(runs)
+    .where(sql`${runs.durationMs} > 0`)
+    .orderBy(runs.toolId, sql`${runs.startedAt} desc`, sql`${runs.attempt} desc`);
+  const durations = new Map(last.map((r) => [r.toolId, r.durationMs]));
+
   return {
     cycleId,
     created,
@@ -59,6 +68,7 @@ export async function createCycle(db: Db, body: CycleBody, now: Date): Promise<C
       language: t.language as 'node' | 'python',
       level: t.level,
       isCanary: t.isCanary ?? false,
+      lastDurationMs: durations.get(t.id) ?? null,
     })),
   };
 }

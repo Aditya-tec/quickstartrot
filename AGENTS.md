@@ -47,6 +47,19 @@ Backslash escapes (`\n`, `\S`, `​`) in Bash heredocs and some write paths get 
 
 `apps/api` integration tests run against a throwaway Postgres (`docker compose -f docker-compose.test.yml up -d --wait`, then `QSR_TEST_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:54329/qsr_test`), never Supabase, and apply every migration themselves. They skip without the variable unless `QSR_REQUIRE_DB=1` (set in `ci.yml`). The live-Supabase RLS tests in `packages/db` stay gated behind secrets. Never edit an applied migration: add a new one and apply it with `pnpm --filter @qsr/db db:migrate`. `src/budget.ts` in `apps/api` and the HMAC verifier in `core` stay at 100% coverage. `DEPLOY.md` is the ordered Render checklist.
 
+## Workflows (P7)
+
+- Every `uses:` is pinned to a full 40-character commit SHA with its version in a comment. Resolve a new one with
+  `git ls-remote --tags https://github.com/<owner>/<repo>` (take the peeled `^{}` commit of an annotated tag) and check it
+  with `GET /repos/<owner>/<repo>/commits/<sha>`; never write a SHA from memory. `packages/cli/src/workflows.test.ts` fails
+  the build on an unpinned action.
+- `probe.yml` splits trust: `plan` and `report` have the secrets, `execute` has none (no `secrets.`, no `vars.`, `permissions: {}`,
+  checkout with `persist-credentials: false`), and only `report` may have `issues: write`. Only `snapshot.yml` may have `contents: write`.
+  No workflow uses `pull_request_target`, and no `run:` block interpolates event data or inputs (pass them through `env:`).
+- `packages/cli/src/probe/execute.ts` and `execute-command.ts` must not import the API client or read API settings (a test pins it).
+- CI runs actionlint (pinned image) over `.github/workflows/*.yml`; a finding fails the build. Run it locally the same way.
+- `pnpm probe:local` runs plan -> execute -> report against a local API and Postgres before anything is deployed.
+
 ## Secret gate (pre-commit)
 
 `pnpm secrets:check` scans the STAGED changes with gitleaks (a local binary, else the pinned Docker image) and exits non-zero on any finding, or when it cannot run (it fails closed). Husky runs it from `.husky/pre-commit`; `pnpm test:scripts` proves it blocks (a fake token staged in a scratch repo, and a real `git commit` refused). Never work around it by allowlisting a real value: `.gitleaks.toml` allowlists only documented placeholders. CI also scans the full history.

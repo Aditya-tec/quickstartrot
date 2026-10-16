@@ -34,7 +34,7 @@ jobs:
           - { name: node, tag: '22', dockerfile: docker/node.Dockerfile }
           - { name: python, tag: '3.12', dockerfile: docker/python.Dockerfile }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { persist-credentials: false }
 
       # GHCR wants lowercase names; the base image reference and its digest come from the Dockerfile,
@@ -43,14 +43,16 @@ jobs:
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           pinned="$(grep -m1 '^ARG BASE_IMAGE=' '${{ matrix.dockerfile }}' | cut -d= -f2-)"
-          echo "pinned=${pinned}" >> "$GITHUB_OUTPUT"
-          echo "digest=${pinned#*@}" >> "$GITHUB_OUTPUT"
-          echo "image=ghcr.io/${owner}/qsr-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
-          echo "mirror=ghcr.io/${owner}/mirror/${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+          {
+            echo "pinned=${pinned}"
+            echo "digest=${pinned#*@}"
+            echo "image=ghcr.io/${owner}/qsr-${{ matrix.name }}"
+            echo "mirror=ghcr.io/${owner}/mirror/${{ matrix.name }}"
+          } >> "$GITHUB_OUTPUT"
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -71,7 +73,7 @@ jobs:
             || { echo "::error::the mirrored base image does not have the pinned digest ${DIGEST}"; exit 1; }
 
       - id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: docker
           file: ${{ matrix.dockerfile }}

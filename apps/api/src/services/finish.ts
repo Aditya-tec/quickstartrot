@@ -4,6 +4,7 @@ import {
   checkCanaries,
   FinishResponse,
   RECURRENCE_WINDOW_DAYS,
+  RUNNER_ENV_KEYS,
   type CanaryObservation,
   type Logger,
   type StatusEvent,
@@ -42,14 +43,28 @@ const stateOf = (t: ToolRow): ToolState => ({
   lastFailureClass: t.lastFailureClass,
 });
 
-const statusRunOf = (r: RunRow): StatusRun => ({
-  outcome: r.outcome,
-  failureClass: r.failureClass,
-  failureSignature: r.failureSignature,
-  reachedLevel: Math.min(4, Math.max(0, r.reachedLevel)),
-  skipReason: r.skipReason === 'manual_step' ? 'manual_step' : null,
-  finishedAt: r.finishedAt.toISOString(),
-});
+/** The model was not asked (token budget), so the run executed the tool's last accepted plan. */
+const usedStalePlan = (r: RunRow): boolean =>
+  (r.runnerEnv as Record<string, string> | null)?.[RUNNER_ENV_KEYS.planStale] === 'true';
+
+const STALE_NOTE =
+  ' (the run used a stale plan because the model was not asked, so the docs may have changed since it was made)';
+
+const statusRunOf = (r: RunRow): StatusRun => {
+  const base: StatusRun = {
+    outcome: r.outcome,
+    failureClass: r.failureClass,
+    failureSignature: r.failureSignature,
+    reachedLevel: Math.min(4, Math.max(0, r.reachedLevel)),
+    skipReason: r.skipReason === 'manual_step' ? 'manual_step' : null,
+    finishedAt: r.finishedAt.toISOString(),
+  };
+  // A FAIL on a stale plan is not evidence about the vendor: our plan may simply be out of date. For the
+  // engine it is a COMPILER_ERROR (a person looks, nothing changes). The stored run keeps its true class.
+  return r.outcome === 'FAIL' && usedStalePlan(r)
+    ? { ...base, failureClass: 'COMPILER_ERROR', failureSignature: null }
+    : base;
+};
 
 /** The highest attempt per tool: only the final attempt feeds the status engine (spec section 10). */
 function finalAttempts(rows: { run: RunRow; tool: ToolRow }[]): { run: RunRow; tool: ToolRow }[] {
@@ -134,11 +149,18 @@ export async function finishCycle(ctx: Ctx, cycleId: string, log: Logger): Promi
           .orderBy(desc(probeCycles.startedAt), desc(runs.attempt))
           .limit(1);
 
-        const { next, events } = evaluate(stateOf(current), run, {
+        const evaluated = evaluate(stateOf(current), run, {
           cycleValid: true,
           ...incident,
           previousReachedLevel: previous ? Math.min(4, Math.max(0, previous.level)) : null,
         });
+        const { next } = evaluated;
+        const events =
+          finalRun.outcome === 'FAIL' && usedStalePlan(finalRun)
+            ? evaluated.events.map((e) =>
+                e.type === 'admin_queue' ? { ...e, detail: `${e.detail}${STALE_NOTE}` } : e,
+              )
+            : evaluated.events;
 
         await tx
           .update(tools)

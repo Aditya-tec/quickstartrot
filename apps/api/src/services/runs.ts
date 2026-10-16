@@ -11,6 +11,7 @@ import {
   runSkipReason,
   Target,
   type ClassificationPayload,
+  type PreflightFailure,
   type RunBody,
   type RunResponse,
   type StepResult,
@@ -64,6 +65,8 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
     throw new HttpError(409, 'Conflict', 'This cycle is already finished.');
   if (!tool.enabled) throw new HttpError(409, 'Conflict', 'This tool is disabled.');
 
+  if (body.preflight) assertNeverExecuted(result);
+
   // ---- validation: nothing the runner says about plans, snapshots or log paths is trusted
   if (result.planId !== null) {
     const [plan] = await db
@@ -95,7 +98,11 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
     targetLevel: target.level,
     authErrorIsPass: failed?.kind === 'run' && target.expect.authErrorIsPass && target.level >= 3,
   });
-  const classification = input ? await classifyRun(ctx, input) : null;
+  const classification = body.preflight
+    ? preflightClassification(body.preflight)
+    : input
+      ? await classifyRun(ctx, input)
+      : null;
 
   // ---- store
   const durationMs = Math.max(0, Date.parse(result.finishedAt) - Date.parse(result.startedAt));
@@ -169,6 +176,36 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
     created: true,
     classification: classification ? toPayload(classification) : null,
   };
+}
+
+/**
+ * A run that never reached the executor (crawl or compile failed). The class is the one the plan job
+ * observed, the signature is stable per (class, reason), and no model is asked.
+ */
+function preflightClassification(p: PreflightFailure): Classification {
+  return {
+    failureClass: p.failureClass,
+    ruleId: 'preflight',
+    evidenceLine: p.message.split('\n')[0]?.slice(0, 300) ?? null,
+    signature: `${p.failureClass}:${p.reason}`,
+    source: 'rule',
+    confidence: null,
+  };
+}
+
+/** The synthetic run that carries a preflight object is exactly "failed before anything ran". */
+function assertNeverExecuted(result: RunBody['runResult']): void {
+  if (
+    result.outcome !== 'FAIL' ||
+    result.steps.length > 0 ||
+    result.reachedLevel !== 0 ||
+    result.failedStepId !== null
+  )
+    throw new HttpError(
+      400,
+      'Bad Request',
+      'A pre-flight failure is a FAIL with no steps, level 0 and no failed step.',
+    );
 }
 
 async function classifyRun(ctx: Ctx, input: ClassifyInput): Promise<Classification> {

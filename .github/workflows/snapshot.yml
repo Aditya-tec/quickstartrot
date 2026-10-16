@@ -1,0 +1,50 @@
+name: snapshot
+
+# Weekly: read the public views with the public anon key and commit data/weekly-status.json. The commit is a
+# public, diffable history, and it counts as repository activity, which keeps scheduled workflows enabled
+# (GitHub disables them after 60 days without any).
+on:
+  schedule:
+    - cron: '7 5 * * 1' # Mondays, off the hour
+  workflow_dispatch:
+
+concurrency:
+  group: snapshot
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # the only job in any workflow that may push
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - run: node scripts/weekly-snapshot.mjs --out data/weekly-status.json
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+      - name: Commit the snapshot if it changed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- data/weekly-status.json && [ -z "$(git ls-files --others --exclude-standard data/weekly-status.json)" ]; then
+            echo "no change"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/weekly-status.json
+          git commit -m "chore(data): weekly status snapshot"
+          # The checkout kept no credentials; authenticate this one push only.
+          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" push origin "HEAD:${GITHUB_REF_NAME}"

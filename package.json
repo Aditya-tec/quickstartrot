@@ -18,7 +18,8 @@
     "prepare": "husky",
     "secrets:check": "node scripts/secrets-check.mjs",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
-    "smoke:api": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/smoke-api.ts"
+    "smoke:api": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/smoke-api.ts",
+    "probe:local": "turbo run build --filter=@qsr/cli... --filter=@qsr/api... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-local.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

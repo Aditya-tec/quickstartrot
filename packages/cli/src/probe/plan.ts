@@ -1,0 +1,388 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { CrawlError } from '@qsr/crawler';
+import {
+  CompileResponse,
+  CycleResponse,
+  MANIFEST_FILE,
+  PROBE_FILE_VERSION,
+  type CycleTool,
+  type Extraction,
+  type Logger,
+  type Manifest,
+  type ManifestTool,
+  type PlanFile,
+  type PreflightFailure,
+  type StepIR,
+  type Target,
+} from '@qsr/core';
+import type { ApiClient } from '../api-client.js';
+import { createLimiter, domainOf } from './crawl-pool.js';
+import { assignShards, defaultShardCount, type ShardTool } from './shards.js';
+
+// `qsr plan` (spec section 12). Runs in the job that has the secrets and never executes docs code:
+//   wake the API, sync the targets, create the cycle, crawl every enabled target (concurrency 4, one page per
+//   domain at a time, robots.txt respected by the crawler), ask /internal/compile for a plan, write
+//   plans/<slug>.json and plans/manifest.json, and hand the shard list to the execute matrix.
+// Every compile outcome has a place: an accepted plan runs; a stale plan (the model was not asked) runs and
+// is flagged; a deferral without a plan is an informational skip; a crawl or compile failure is recorded
+// as pre-failed and reported without being executed.
+
+export const CRAWL_CONCURRENCY = 4;
+/** The compile endpoint calls a model; a small pool keeps a burst under the provider's per-minute limits. */
+export const COMPILE_CONCURRENCY = 2;
+
+export interface PlanOptions {
+  out: string;
+  /** Slugs to run. Empty means every enabled tool. The canaries always run. */
+  only: readonly string[];
+  /** Overrides the default of min(10, ceil(tools / 4)). */
+  shards?: number;
+  trigger: 'cron' | 'manual' | 'target_pr';
+  gitSha: string;
+  ghRunId?: number;
+  ghRunAttempt: number;
+}
+
+export interface PlanDeps {
+  api: Pick<ApiClient, 'wakeApi' | 'post'>;
+  targets: { real: readonly Target[]; canaries: readonly Target[] };
+  /** Crawls one page. Throws CrawlError (reason, message) when the page cannot be used. */
+  crawl(target: Target): Promise<Extraction>;
+  /** The committed plan of a canary, checked against the page as crawled now; null if there is none. */
+  goldenPlan(target: Target, extraction: Extraction): Promise<StepIR | null>;
+  log: Logger;
+  now(): Date;
+  /** Appends `name=value` to $GITHUB_OUTPUT. */
+  writeOutput(name: string, value: string): Promise<void>;
+  /** Appends Markdown to $GITHUB_STEP_SUMMARY. */
+  writeSummary(markdown: string): Promise<void>;
+  concurrency?: number;
+}
+
+export interface PlanResult {
+  cycleId: string;
+  shards: number;
+  manifest: Manifest;
+}
+
+type Planned =
+  | { state: 'ready'; plan: Extract<PlanFile, { state: 'ready' }>['plan'] }
+  | {
+      state: 'pre_failed';
+      preflight: PreflightFailure;
+      planId: string | null;
+      snapshotHash: string | null;
+    }
+  | { state: 'deferred'; reason: Extract<PlanFile, { state: 'deferred' }>['reason'] };
+
+const messageOf = (err: unknown): string => (err instanceof Error ? err.message : String(err));
+
+export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<PlanResult> {
+  const { api, log } = deps;
+  await api.wakeApi();
+
+  const all = [...deps.targets.real, ...deps.targets.canaries];
+  await api.post('/internal/targets/sync', { targets: all });
+  const cycle = CycleResponse.parse(
+    await api.post('/internal/cycles', {
+      trigger: options.trigger,
+      gitSha: options.gitSha,
+      ...(options.ghRunId === undefined ? {} : { ghRunId: options.ghRunId }),
+      ghRunAttempt: options.ghRunAttempt,
+    }),
+  );
+  const cycleId = cycle.cycleId;
+  log.info({ cycleId, enabled: cycle.tools.length, created: cycle.created }, 'cycle ready');
+
+  // The API decides what is enabled; the files say how to crawl it.
+  const localBySlug = new Map(all.map((t) => [t.slug, t]));
+  const only = new Set(options.only);
+  const selected: { target: Target; cycleTool: CycleTool }[] = [];
+  for (const tool of cycle.tools) {
+    const local = localBySlug.get(tool.slug);
+    if (!local) {
+      log.warn(
+        { cycleId, toolSlug: tool.slug },
+        'enabled in the API but has no target file here; skipped',
+      );
+      continue;
+    }
+    if (!tool.isCanary && only.size > 0 && !only.has(tool.slug)) continue;
+    selected.push({ target: local, cycleTool: tool });
+  }
+
+  const crawlLimit = createLimiter(deps.concurrency ?? CRAWL_CONCURRENCY);
+  const compileLimit = createLimiter(COMPILE_CONCURRENCY);
+  const planned = new Map<string, Planned>();
+
+  async function tellCrawlError(slug: string, reason: string, message: string): Promise<void> {
+    try {
+      await api.post('/internal/compile', {
+        cycleId,
+        toolSlug: slug,
+        crawlError: { reason: reason.slice(0, 100), message: message.slice(0, 2000) },
+      });
+    } catch (err) {
+      log.error(
+        { cycleId, toolSlug: slug, err: messageOf(err) },
+        'could not report the crawl error',
+      );
+    }
+  }
+
+  async function planCanary(t: Target): Promise<Planned> {
+    let extraction: Extraction;
+    try {
+      extraction = await crawlLimit(domainOf(t.docsUrl), () => deps.crawl(t));
+    } catch (err) {
+      return crawlFailure(t, err);
+    }
+    try {
+      const golden = await deps.goldenPlan(t, extraction);
+      if (golden === null) throw new Error('there is no committed golden plan for this canary');
+      return {
+        state: 'ready',
+        plan: {
+          planId: null,
+          snapshotHash: extraction.contentHash,
+          ir: golden,
+          stale: false,
+          compilerVersion: null,
+        },
+      };
+    } catch (err) {
+      log.error(
+        { cycleId, toolSlug: t.slug, err: messageOf(err) },
+        'canary golden plan is not usable',
+      );
+      return {
+        state: 'pre_failed',
+        preflight: {
+          stage: 'compile',
+          failureClass: 'COMPILER_ERROR',
+          reason: 'golden_plan_invalid',
+          message: messageOf(err).slice(0, 2000),
+        },
+        planId: null,
+        snapshotHash: extraction.contentHash,
+      };
+    }
+  }
+
+  function crawlFailure(t: Target, err: unknown): Planned {
+    const reason = err instanceof CrawlError ? err.reason : 'crawler_crash';
+    const message = messageOf(err);
+    log.warn({ cycleId, toolSlug: t.slug, reason, message }, 'crawl failed');
+    return {
+      state: 'pre_failed',
+      preflight: {
+        stage: 'crawl',
+        failureClass: 'CRAWL_ERROR',
+        reason,
+        message: message.slice(0, 2000),
+      },
+      planId: null,
+      snapshotHash: null,
+    };
+  }
+
+  async function planReal(t: Target): Promise<Planned> {
+    let extraction: Extraction;
+    try {
+      extraction = await crawlLimit(domainOf(t.docsUrl), () => deps.crawl(t));
+    } catch (err) {
+      const failed = crawlFailure(t, err);
+      if (failed.state === 'pre_failed')
+        await tellCrawlError(t.slug, failed.preflight.reason, failed.preflight.message);
+      return failed;
+    }
+
+    let response: CompileResponse;
+    try {
+      response = CompileResponse.parse(
+        await compileLimit(t.slug, () =>
+          api.post('/internal/compile', { cycleId, toolSlug: t.slug, extraction }),
+        ),
+      );
+    } catch (err) {
+      // The call itself failed. That says nothing about the tool or its plan: skip it this cycle.
+      log.error(
+        { cycleId, toolSlug: t.slug, err: messageOf(err) },
+        'compile call failed; skipping the tool',
+      );
+      return { state: 'deferred', reason: 'llm_unavailable' };
+    }
+
+    switch (response.status) {
+      case 'ok':
+        return response.plan.ir === null
+          ? { state: 'deferred', reason: 'llm_unavailable' }
+          : {
+              state: 'ready',
+              plan: {
+                planId: response.plan.id,
+                snapshotHash: extraction.contentHash,
+                ir: response.plan.ir,
+                stale: false,
+                compilerVersion: response.plan.compilerVersion,
+              },
+            };
+      case 'compiler_error': {
+        const why = response.plan.groundingReport.violations
+          .map((v) => `${v.stepId} ${v.rule}`)
+          .join(', ');
+        return {
+          state: 'pre_failed',
+          preflight: {
+            stage: 'compile',
+            failureClass: 'COMPILER_ERROR',
+            reason: 'rejected_twice',
+            message: `the plan failed the grounding validator twice${why ? `: ${why}` : ''}`.slice(
+              0,
+              2000,
+            ),
+          },
+          planId: response.plan.id,
+          snapshotHash: extraction.contentHash,
+        };
+      }
+      case 'crawl_error':
+        return {
+          state: 'pre_failed',
+          preflight: {
+            stage: 'crawl',
+            failureClass: 'CRAWL_ERROR',
+            reason: 'crawl_error',
+            message: 'the API recorded a crawl error for this tool',
+          },
+          planId: null,
+          snapshotHash: null,
+        };
+      case 'deferred':
+        return response.plan !== null && response.plan.ir !== null
+          ? {
+              state: 'ready',
+              plan: {
+                planId: response.plan.id,
+                // the page as crawled now: the plan is older, and the run says so (stale)
+                snapshotHash: extraction.contentHash,
+                ir: response.plan.ir,
+                stale: true,
+                compilerVersion: response.plan.compilerVersion,
+              },
+            }
+          : { state: 'deferred', reason: response.reason };
+    }
+  }
+
+  await Promise.all(
+    selected.map(async ({ target: t }) => {
+      const outcome = t.slug.startsWith('canary-') ? await planCanary(t) : await planReal(t);
+      planned.set(t.slug, outcome);
+    }),
+  );
+
+  // ---- shards: over the tools that will actually run
+  const shardTools: ShardTool[] = selected
+    .filter(({ target: t }) => planned.get(t.slug)?.state === 'ready')
+    .map(({ target: t, cycleTool }) => ({
+      slug: t.slug,
+      isCanary: cycleTool.isCanary,
+      weightMs: cycleTool.lastDurationMs,
+    }));
+  const shards = options.shards ?? defaultShardCount(shardTools.length);
+  const { primary, guards } = assignShards(shardTools, shards);
+
+  // ---- files
+  await mkdir(options.out, { recursive: true });
+  const manifestTools: ManifestTool[] = [];
+  for (const { target: t, cycleTool } of [...selected].sort((a, b) =>
+    a.target.slug < b.target.slug ? -1 : 1,
+  )) {
+    const p = planned.get(t.slug) as Planned;
+    const common = {
+      version: PROBE_FILE_VERSION,
+      toolSlug: t.slug,
+      cycleId,
+      isCanary: cycleTool.isCanary,
+      target: t,
+      weightMs: cycleTool.lastDurationMs,
+    } as const;
+    const file: PlanFile =
+      p.state === 'ready'
+        ? { ...common, state: 'ready', shard: primary[t.slug] as number, plan: p.plan }
+        : p.state === 'pre_failed'
+          ? {
+              ...common,
+              state: 'pre_failed',
+              preflight: p.preflight,
+              planId: p.planId,
+              snapshotHash: p.snapshotHash,
+            }
+          : { ...common, state: 'deferred', reason: p.reason };
+    await writeFile(path.join(options.out, `${t.slug}.json`), `${JSON.stringify(file, null, 2)}\n`);
+    manifestTools.push({
+      toolSlug: t.slug,
+      state: p.state,
+      shard: p.state === 'ready' ? (primary[t.slug] as number) : null,
+      stale: p.state === 'ready' && p.plan.stale,
+      isCanary: cycleTool.isCanary,
+    });
+  }
+  const manifest: Manifest = {
+    version: PROBE_FILE_VERSION,
+    cycleId,
+    createdAt: deps.now().toISOString(),
+    shards,
+    guards,
+    tools: manifestTools,
+  };
+  await writeFile(path.join(options.out, MANIFEST_FILE), `${JSON.stringify(manifest, null, 2)}\n`);
+
+  await deps.writeOutput('cycle', cycleId);
+  await deps.writeOutput('shards', JSON.stringify(Array.from({ length: shards }, (_, i) => i)));
+  await deps.writeSummary(renderPlanSummary(manifest, planned));
+  log.info(
+    {
+      cycleId,
+      shards,
+      ready: manifestTools.filter((t) => t.state === 'ready').length,
+      stale: manifestTools.filter((t) => t.stale).length,
+      preFailed: manifestTools.filter((t) => t.state === 'pre_failed').length,
+      deferred: manifestTools.filter((t) => t.state === 'deferred').length,
+    },
+    'plan written',
+  );
+  return { cycleId, shards, manifest };
+}
+
+function renderPlanSummary(manifest: Manifest, planned: ReadonlyMap<string, Planned>): string {
+  const rows = manifest.tools
+    .filter((t) => !t.isCanary)
+    .map((t) => {
+      const p = planned.get(t.toolSlug) as Planned;
+      const [plan, note] =
+        p.state === 'ready'
+          ? [
+              p.plan.stale ? 'stale plan' : 'ready',
+              p.plan.stale ? 'the model was not asked; last accepted plan' : '',
+            ]
+          : p.state === 'pre_failed'
+            ? [p.preflight.failureClass, `${p.preflight.reason}: ${p.preflight.message}`]
+            : ['skipped', `deferred: ${p.reason}`];
+      const cleaned = note.replaceAll('|', '\\|').replaceAll(/\s*\n\s*/g, ' ');
+      return `| ${t.toolSlug} | ${plan} | ${t.shard ?? '-'} | ${cleaned} |`;
+    });
+  const canaries = manifest.tools.filter((t) => t.isCanary).length;
+  return [
+    `### Probe plan for cycle ${manifest.cycleId}`,
+    '',
+    `${manifest.shards} shard${manifest.shards === 1 ? '' : 's'}, ${canaries} canaries.`,
+    '',
+    '| Tool | Plan | Shard | Note |',
+    '| --- | --- | --- | --- |',
+    ...rows,
+    '',
+  ].join('\n');
+}

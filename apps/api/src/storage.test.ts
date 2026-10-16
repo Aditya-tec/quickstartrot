@@ -42,6 +42,12 @@ describe('createSignedUpload', () => {
     );
   });
 
+  it('asks for an upsert, so a retried report can sign the same path again', async () => {
+    const { storage, calls } = make([json({ url: '/object/upload/sign/b/p?token=T', token: 'T' })]);
+    await storage.createSignedUpload('b', 'p');
+    expect((calls[0]?.init.headers as Record<string, string>)['x-upsert']).toBe('true');
+  });
+
   it('keeps an absolute URL that Storage returns', async () => {
     const { storage } = make([json({ url: 'https://other.example/up?token=T', token: 'T' })]);
     expect((await storage.createSignedUpload('b', 'p')).signedUrl).toBe(

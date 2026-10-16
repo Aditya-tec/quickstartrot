@@ -18,3 +18,4 @@ docs/SPEC.md
 .qsr-cache/
 .vitest/
 .qsr-runs/
+.probe-local/
