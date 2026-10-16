@@ -1,0 +1,12 @@
+slug: dotenv-python
+name: python-dotenv
+docsUrl: https://github.com/theskumar/python-dotenv
+language: python
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: 'article.markdown-body'
+  codeBlocks: 'div.highlight pre'
+notes: 'Replaces flask-python (P3 target review, 2026-10-16): the Flask quickstart page has no install command (it lives on a separate Installation page), so the compiled plan was a lone write_file and `import flask` would fail in a clean venv every time, a false BROKEN. Same flaw as Express and Pydantic, found when reading the compiled plans. This README has `pip install python-dotenv` followed by a snippet that loads a .env and exits, on the same page. GitHub README markup.'

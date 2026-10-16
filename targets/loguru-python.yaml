@@ -1,0 +1,12 @@
+slug: loguru-python
+name: Loguru
+docsUrl: https://loguru.readthedocs.io/en/stable/overview.html
+language: python
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: 'div.highlight pre'
+notes: 'Replaces pydantic-python (P3 target review, 2026-10-16): the Pydantic get-started page has no install command, so `import pydantic` would fail in a clean venv on every run (a false BROKEN). This Sphinx page has `pip install loguru` followed by a snippet that logs and exits, on the same page.'

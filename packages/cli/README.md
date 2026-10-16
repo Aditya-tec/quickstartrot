@@ -7,7 +7,7 @@ The `qsr` command line (spec sections 12 and 15). From the repo root, `pnpm qsr 
 | Command                           | Phase | Status      |
 | --------------------------------- | ----- | ----------- |
 | `qsr crawl <slug>`                | P2    | implemented |
-| `qsr compile <slug>`              | P3    | not yet     |
+| `qsr compile <slug>`              | P3    | implemented |
 | `qsr run <slug>`                  | P4    | not yet     |
 | `qsr plan` / `execute` / `report` | P7    | not yet     |
 
@@ -22,3 +22,13 @@ Exit codes: `0` ok, `1` crawl failed (`CRAWL_ERROR (<reason>)` on stderr), `2` u
 ## Library
 
 `loadTarget(dir, slug)`, `loadAllTargets(dir, { canaries })` and `parseTargetFile(file)` read `targets/<slug>.yaml` (or `targets/_canary/`), validate with the `Target` schema from `@qsr/core`, and require the slug to equal the file name.
+
+## `qsr compile`
+
+```sh
+pnpm qsr compile zod-node                # crawl, compile (or reuse the cached plan), print steps and the grounding report
+pnpm qsr compile zod-node --json         # { plan, fromCache, llmCalls } as JSON on stdout
+pnpm qsr compile zod-node --refresh      # ignore the cached plan, compile again, store the new one
+```
+
+Plans are cached in `.qsr-cache/` (git-ignored), keyed by (slug, content hash, `COMPILER_VERSION`). A second run on unchanged docs makes **zero model calls**; the logs on stderr show `plan cache hit` and no `llm call`. `GROQ_API_KEY` is only needed on a miss; set `QSR_COMPILER_MODEL` to change the model. Exit code 3 means the model was unreachable or refused the request.

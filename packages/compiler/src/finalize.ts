@@ -1,0 +1,43 @@
+import type { Step, StepIR, Target } from '@qsr/core';
+
+const NODE_OWN_INIT = /^(npm|pnpm|yarn)\s+init\b/;
+const PYTHON_OWN_VENV = /\bvenv\b|\bvirtualenv\b/;
+
+/**
+ * Deterministic adjustments applied to the model's plan BEFORE grounding. The model decides order
+ * and structure; everything the harness or the target config owns is set here, so the model cannot
+ * loosen it:
+ *  - expectations: exit code 0, no output assertions (v1 does not assert output), auth-error-as-pass
+ *    only for `run` steps of targets that ask for it at level 3+, timeouts capped by the target;
+ *  - maxLevelReachable never exceeds the level the target asserts;
+ *  - projectInit is the harness setup for the language unless the docs create their own project.
+ */
+export function finalizePlan(ir: StepIR, target: Target): StepIR {
+  const steps = ir.steps.map((step): Step => {
+    if (step.kind !== 'shell' && step.kind !== 'run') return step;
+    return {
+      ...step,
+      expect: {
+        exitCode: 0,
+        stdoutIncludes: [],
+        authErrorIsPass: step.kind === 'run' && target.expect.authErrorIsPass && target.level >= 3,
+        timeoutSec: Math.min(step.expect.timeoutSec, target.expect.timeoutSec),
+      },
+    };
+  });
+
+  const ownsProject = steps.some((s) =>
+    target.language === 'node'
+      ? (s.kind === 'write_file' && s.path.replace(/^\.\//, '') === 'package.json') ||
+        (s.kind === 'shell' && NODE_OWN_INIT.test(s.command.trim()))
+      : s.kind === 'shell' && PYTHON_OWN_VENV.test(s.command),
+  );
+  const harnessInit = target.language === 'node' ? 'npm_init' : 'python_venv';
+
+  return {
+    ...ir,
+    steps,
+    maxLevelReachable: Math.min(ir.maxLevelReachable, target.level),
+    projectInit: ownsProject ? 'none' : harnessInit,
+  };
+}

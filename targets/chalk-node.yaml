@@ -1,0 +1,12 @@
+slug: chalk-node
+name: Chalk
+docsUrl: https://github.com/chalk/chalk
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'article.markdown-body'
+  codeBlocks: 'div.highlight pre'
+notes: "Replaces express-node (P3 target review, 2026-10-16): the Express hello-world page has no install command, so its plan was a single write_file with nothing runnable and require('express') could never succeed, which would read as a false BROKEN. This README has `npm install chalk` and a snippet that prints and exits, on the same page. ESM import, so the harness sets type=module. GitHub README markup (div.highlight pre, highlight-source-* classes)."

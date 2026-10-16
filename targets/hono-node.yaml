@@ -8,4 +8,4 @@ runtime:
   nodeVersion: '22'
 extract:
   root: '.vp-doc'
-notes: 'Crawl checked by eye 2026-10-16 (P2). 13 code blocks. Starts with an interactive scaffolder (npm create hono@latest asks for a template), so expect a manual step early in the plan.'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 13 code blocks. The quickstart BEGINS with the interactive scaffolder `npm create hono@latest my-app`, which asks which template to use, so the correct compiled plan is a single manual step with a note saying so (enforced deterministically by the compiler, verified in P3). Everything after the scaffolder depends on its output and is dropped. Stays in the target list as the canary for that behaviour.'

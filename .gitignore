@@ -13,3 +13,7 @@ results/
 # Private planning docs: kept local until the owner decides to publish
 docs/SPEC.md
 *.pdf
+
+# Local plan cache for qsr compile
+.qsr-cache/
+.vitest/

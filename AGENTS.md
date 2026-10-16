@@ -30,3 +30,11 @@ P0 Foundations, P1 Core schemas + DB, P2 Crawler + fixtures, P3 Compiler + groun
 ## Commands
 
 `pnpm install` · `pnpm build` · `pnpm typecheck` · `pnpm test` · `pnpm lint` · `pnpm format:check`
+
+## Compiler cache rule
+
+`COMPILER_VERSION` (packages/compiler/src/prompt.ts) is part of the plan cache key. Bump it whenever anything that changes a compiled plan changes: the system prompt (a test pins its hash) or any pass in the compile pipeline (quarantine, content fill, finalize, validator). `packages/compiler/src/grounding` must stay at 100% coverage.
+
+## Writing source files with escapes
+
+Backslash escapes (`\n`, `\S`, `​`) in Bash heredocs and some write paths get mangled. Prefer Edit/Write for code containing them and re-read the result. `packages/core/src/hygiene.test.ts` fails the build if hidden Unicode characters reach the repo.

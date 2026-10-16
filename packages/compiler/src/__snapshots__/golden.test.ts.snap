@@ -1,0 +1,75 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`golden: quickstart-basic.html > crawls the fixture, compiles with the mocked reply and matches the IR snapshot 1`] = `
+{
+  "irVersion": 1,
+  "language": "node",
+  "maxLevelReachable": 3,
+  "notes": "Used npm; file name from the docs title bar.",
+  "projectInit": "npm_init",
+  "steps": [
+    {
+      "command": "npm install acme-sdk",
+      "expect": {
+        "authErrorIsPass": false,
+        "exitCode": 0,
+        "stdoutIncludes": [],
+        "timeoutSec": 180,
+      },
+      "id": "s1",
+      "kind": "shell",
+      "source": {
+        "blockIndex": 3,
+        "lineEnd": 1,
+        "lineStart": 1,
+      },
+    },
+    {
+      "command": "npm install --save-dev typescript",
+      "expect": {
+        "authErrorIsPass": false,
+        "exitCode": 0,
+        "stdoutIncludes": [],
+        "timeoutSec": 180,
+      },
+      "id": "s2",
+      "kind": "shell",
+      "source": {
+        "blockIndex": 3,
+        "lineEnd": 2,
+        "lineStart": 2,
+      },
+    },
+    {
+      "content": "import { Acme } from 'acme-sdk';
+
+const client = new Acme('qsr_dummy_key');
+await client.send({ to: 'dev@example.com' });",
+      "id": "s3",
+      "kind": "write_file",
+      "path": "index.ts",
+      "source": {
+        "blockIndex": 6,
+        "lineEnd": 4,
+        "lineStart": 1,
+      },
+    },
+    {
+      "command": "npx tsx index.ts",
+      "expect": {
+        "authErrorIsPass": true,
+        "exitCode": 0,
+        "stdoutIncludes": [],
+        "timeoutSec": 180,
+      },
+      "id": "s4",
+      "kind": "run",
+      "source": {
+        "blockIndex": 8,
+        "lineEnd": 1,
+        "lineStart": 1,
+      },
+    },
+  ],
+}
+`;
