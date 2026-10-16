@@ -1,0 +1,20 @@
+{
+  "canary-pass-node": { "outcome": "PASS", "failureClass": null, "outputIncludes": ["canary ok"] },
+  "canary-pass-python": {
+    "outcome": "PASS",
+    "failureClass": null,
+    "outputIncludes": ["canary ok"]
+  },
+  "canary-fail-drift": {
+    "outcome": "FAIL",
+    "failureClass": "API_DRIFT",
+    "failedStepId": "s3",
+    "outputIncludes": ["is not a function"]
+  },
+  "canary-fail-dep": {
+    "outcome": "FAIL",
+    "failureClass": "DEPENDENCY_RESOLUTION",
+    "failedStepId": "s1",
+    "outputIncludes": ["404"]
+  }
+}

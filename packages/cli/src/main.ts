@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import pino from 'pino';
 import { compileCommand, crawlCommand, loadDotEnv, USAGE } from './commands.js';
+import { runCommand } from './run.js';
 import { TargetFileError } from './targets.js';
 
 // Structured JSON logs go to stderr; stdout is reserved for results (and --json output).
@@ -15,6 +16,7 @@ async function main(argv: string[]): Promise<number> {
     case 'compile':
       return compileCommand(rest, log);
     case 'run':
+      return runCommand(rest, log);
     case 'plan':
     case 'execute':
     case 'report':

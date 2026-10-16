@@ -5,6 +5,24 @@ import { RunOutcome, StepOutcome } from './taxonomy.js';
 export const TAIL_MAX_BYTES = 4096; // stdout/stderr tails kept in the database
 export const STEP_LOG_MAX_BYTES = 256 * 1024; // full redacted step log, before gzip
 
+/** Keys the executor writes into `runnerEnv` (spec sections 9 and 10). All values are strings. */
+export const RUNNER_ENV_KEYS = {
+  /** JSON object {"package": "version"} of top-level dependencies after the last install step. */
+  resolved: 'resolved',
+} as const;
+
+/** Reads `runnerEnv.resolved` back into a map; an absent or malformed value is an empty map. */
+export function parseResolved(runnerEnv: Readonly<Record<string, string>>): Record<string, string> {
+  const raw = runnerEnv[RUNNER_ENV_KEYS.resolved];
+  if (raw === undefined) return {};
+  try {
+    const parsed = z.record(z.string(), z.string()).safeParse(JSON.parse(raw));
+    return parsed.success ? parsed.data : {};
+  } catch {
+    return {};
+  }
+}
+
 export const StepResult = z.object({
   stepId: z.string(),
   ordinal: z.number().int().min(0),
@@ -30,10 +48,9 @@ export const RunResult = z.object({
   failedStepId: z.string().nullable(),
   steps: z.array(StepResult),
   imageDigest: z.string(),
+  // Flat string record, exactly as in spec section 9. The version-drift capture of section 10
+  // ("runner_env.resolved") is stored inside it as a JSON string: see RUNNER_ENV_KEYS.resolved.
   runnerEnv: z.record(z.string(), z.string()),
-  // Spec section 10 "Version drift capture": resolved top-level versions, stored by the API as
-  // runner_env.resolved. Kept separate here because runnerEnv is a flat string record.
-  resolved: z.record(z.string(), z.string()).default({}),
   startedAt: z.iso.datetime(),
   finishedAt: z.iso.datetime(),
 });

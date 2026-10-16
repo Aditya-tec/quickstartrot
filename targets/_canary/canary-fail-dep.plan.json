@@ -1,0 +1,16 @@
+{
+  "irVersion": 1,
+  "language": "node",
+  "projectInit": "npm_init",
+  "maxLevelReachable": 1,
+  "notes": "Golden plan for the harness canary: the package does not exist, so the install step must fail with an npm 404.",
+  "steps": [
+    {
+      "kind": "shell",
+      "id": "s1",
+      "command": "npm install qsr-canary-nonexistent-package-7f3a9c1e",
+      "source": { "blockIndex": 3, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    }
+  ]
+}

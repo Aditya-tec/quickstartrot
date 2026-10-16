@@ -1,0 +1,30 @@
+{
+  "irVersion": 1,
+  "language": "python",
+  "projectInit": "python_venv",
+  "maxLevelReachable": 3,
+  "notes": "Golden plan for the harness canary: install the pinned package, create main.py, run it.",
+  "steps": [
+    {
+      "kind": "shell",
+      "id": "s1",
+      "command": "pip install six==1.16.0",
+      "source": { "blockIndex": 3, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    },
+    {
+      "kind": "write_file",
+      "id": "s2",
+      "path": "main.py",
+      "content": "import six\n\nassert six.PY3\nprint(\"canary ok\")",
+      "source": { "blockIndex": 6, "lineStart": 1, "lineEnd": 4 }
+    },
+    {
+      "kind": "run",
+      "id": "s3",
+      "command": "python main.py",
+      "source": { "blockIndex": 8, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    }
+  ]
+}

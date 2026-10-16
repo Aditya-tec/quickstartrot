@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   Extraction,
   FAILURE_CLASSES,
+  parseResolved,
+  RUNNER_ENV_KEYS,
   RunResult,
   StepIR,
   Target,
@@ -179,10 +181,44 @@ describe('RunResult', () => {
     finishedAt: '2026-10-16T00:01:00Z',
   };
 
-  it('parses and defaults matchedAuthPattern and resolved', () => {
+  it('parses and defaults matchedAuthPattern', () => {
     const r = RunResult.parse(run);
     expect(r.steps[0]?.matchedAuthPattern).toBeNull();
-    expect(r.resolved).toEqual({});
+  });
+
+  it('is exactly the spec section 9 shape: no extra top-level keys, runnerEnv is a flat string record', () => {
+    expect(Object.keys(RunResult.shape).sort()).toEqual(
+      [
+        'toolSlug',
+        'cycleId',
+        'attempt',
+        'planId',
+        'snapshotHash',
+        'outcome',
+        'reachedLevel',
+        'failedStepId',
+        'steps',
+        'imageDigest',
+        'runnerEnv',
+        'startedAt',
+        'finishedAt',
+      ].sort(),
+    );
+    expect(
+      RunResult.safeParse({ ...run, runnerEnv: { node: 'v22', nested: { a: 1 } } }).success,
+    ).toBe(false);
+  });
+
+  it('carries resolved versions in runnerEnv as a JSON string and reads them back', () => {
+    const env = {
+      node: 'v22.0.0',
+      [RUNNER_ENV_KEYS.resolved]: JSON.stringify({ resend: '4.0.1' }),
+    };
+    expect(RunResult.safeParse({ ...run, runnerEnv: env }).success).toBe(true);
+    expect(parseResolved(env)).toEqual({ resend: '4.0.1' });
+    expect(parseResolved({ node: 'v22' })).toEqual({});
+    expect(parseResolved({ resolved: 'not json' })).toEqual({});
+    expect(parseResolved({ resolved: '{"a": 1}' })).toEqual({});
   });
 
   it('rejects oversized tails, bad uuid and out-of-range level', () => {

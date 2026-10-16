@@ -14,7 +14,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --coverage",
+    "test:unit": "QSR_SKIP_DOCKER_TESTS=1 vitest run"
   },
   "dependencies": {
     "@qsr/core": "workspace:*",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@vitest/coverage-v8": "^5.0.4",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

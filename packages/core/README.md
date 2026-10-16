@@ -20,4 +20,6 @@ const ir = StepIR.safeParse(llmJson); // never trust LLM output without parsing
 | `GroundingReport`                               | 8            | Output of the deterministic grounding validator |
 | `RunResult`, `StepResult`                       | 9            | Executor output contract                        |
 
-`RunResult.resolved` carries the resolved top-level package versions (spec section 10, version drift capture); the API stores it as `runner_env.resolved`.
+`RunResult` is exactly the spec section 9 shape. The version-drift capture of section 10 (`runner_env.resolved`) is stored inside `runnerEnv` as a JSON string under `RUNNER_ENV_KEYS.resolved`; `parseResolved(runnerEnv)` reads it back.
+
+`redact(text, { secrets })` is the one place secrets are removed from captured output (spec sections 4 and 9): dummy keys, secret-looking tokens, the runner's home path and IP addresses, with ANSI stripped.

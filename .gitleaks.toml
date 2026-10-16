@@ -12,4 +12,9 @@ regexes = [
   '''re_123456789''',
   '''re_xxxxxxxxx''',
   '''qsr_dummy_key''',
+  # Inputs of the redaction tests, which must look like secrets to prove they get removed:
+  # an ascending hex run, and the base64 of "foobarbazqux123456".
+  '''0123456789abcdef''',
+  '''Zm9vYmFyYmF6cXV4MTIzNDU2''',
+  '''foobarbazqux123456''', # gitleaks also checks the decoded base64
 ]

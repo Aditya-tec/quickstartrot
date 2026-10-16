@@ -14,7 +14,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with: { persist-credentials: false }
@@ -32,7 +32,11 @@ jobs:
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
+      # Docker is preinstalled on ubuntu-latest: the executor and canary integration tests must RUN here,
+      # so a missing Docker fails the build instead of silently skipping them.
       - run: pnpm test
+        env:
+          QSR_REQUIRE_DOCKER: '1'
       - run: pnpm build
       - run: pnpm audit --prod
 

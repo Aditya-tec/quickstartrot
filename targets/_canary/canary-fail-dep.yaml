@@ -1,0 +1,14 @@
+slug: canary-fail-dep
+name: 'Canary: dependency failure quickstart'
+docsUrl: http://127.0.0.1:4177/canary/fail-dep.html
+language: node
+level: 1
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+expect:
+  authErrorIsPass: false
+  timeoutSec: 300
+notes: 'Harness canary (P4). Installs a package that does not exist, so it must always FAIL with output the classifier maps to DEPENDENCY_RESOLUTION (npm 404). Golden plan canary-fail-dep.plan.json.'

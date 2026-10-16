@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Canary: passing Python quickstart</title>
+  </head>
+  <body>
+    <main>
+      <h1>Canary: passing Python quickstart</h1>
+      <p>This page is a test fixture. Its quickstart must always pass.</p>
+      <h2>Install</h2>
+      <p>Install the package:</p>
+      <pre><code class="language-bash">pip install six==1.16.0</code></pre>
+      <h2>Use it</h2>
+      <p>Create a file named main.py:</p>
+      <pre><code class="language-python">import six
+
+assert six.PY3
+print("canary ok")</code></pre>
+      <p>Run it:</p>
+      <pre><code class="language-bash">python main.py</code></pre>
+    </main>
+  </body>
+</html>

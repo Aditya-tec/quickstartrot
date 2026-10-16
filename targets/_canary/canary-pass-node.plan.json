@@ -1,0 +1,30 @@
+{
+  "irVersion": 1,
+  "language": "node",
+  "projectInit": "npm_init",
+  "maxLevelReachable": 3,
+  "notes": "Golden plan for the harness canary: install the pinned package, create index.js, run it.",
+  "steps": [
+    {
+      "kind": "shell",
+      "id": "s1",
+      "command": "npm install is-number@7.0.0",
+      "source": { "blockIndex": 3, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    },
+    {
+      "kind": "write_file",
+      "id": "s2",
+      "path": "index.js",
+      "content": "const isNumber = require('is-number');\n\nif (!isNumber(5)) process.exit(1);\nconsole.log('canary ok');",
+      "source": { "blockIndex": 6, "lineStart": 1, "lineEnd": 4 }
+    },
+    {
+      "kind": "run",
+      "id": "s3",
+      "command": "node index.js",
+      "source": { "blockIndex": 8, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    }
+  ]
+}

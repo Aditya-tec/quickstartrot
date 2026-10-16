@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Canary: passing Node quickstart</title>
+  </head>
+  <body>
+    <main>
+      <h1>Canary: passing Node quickstart</h1>
+      <p>This page is a test fixture. Its quickstart must always pass.</p>
+      <h2>Install</h2>
+      <p>Install the package:</p>
+      <pre><code class="language-bash">npm install is-number@7.0.0</code></pre>
+      <h2>Use it</h2>
+      <p>Create a file named index.js:</p>
+      <pre><code class="language-js">const isNumber = require('is-number');
+
+if (!isNumber(5)) process.exit(1);
+console.log('canary ok');</code></pre>
+      <p>Run it:</p>
+      <pre><code class="language-bash">node index.js</code></pre>
+    </main>
+  </body>
+</html>

@@ -17,3 +17,4 @@ docs/SPEC.md
 # Local plan cache for qsr compile
 .qsr-cache/
 .vitest/
+.qsr-runs/

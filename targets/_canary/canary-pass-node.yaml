@@ -1,0 +1,14 @@
+slug: canary-pass-node
+name: 'Canary: passing Node quickstart'
+docsUrl: http://127.0.0.1:4177/canary/pass-node.html
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+expect:
+  authErrorIsPass: false
+  timeoutSec: 300
+notes: 'Harness canary (P4). Served from fixtures/docs-site/canary by a local static server on port 4177. Must always PASS; if it does not, the cycle is invalid. Uses the golden plan canary-pass-node.plan.json instead of the model so the canary tests the executor, not the compiler.'

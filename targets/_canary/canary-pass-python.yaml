@@ -1,0 +1,14 @@
+slug: canary-pass-python
+name: 'Canary: passing Python quickstart'
+docsUrl: http://127.0.0.1:4177/canary/pass-python.html
+language: python
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: 'main'
+expect:
+  authErrorIsPass: false
+  timeoutSec: 300
+notes: 'Harness canary (P4). Must always PASS. Golden plan canary-pass-python.plan.json.'

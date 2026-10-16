@@ -1,0 +1,30 @@
+{
+  "irVersion": 1,
+  "language": "node",
+  "projectInit": "npm_init",
+  "maxLevelReachable": 3,
+  "notes": "Golden plan for the harness canary: the snippet calls a function the package does not export, so the run step must fail with 'is not a function'.",
+  "steps": [
+    {
+      "kind": "shell",
+      "id": "s1",
+      "command": "npm install is-number@7.0.0",
+      "source": { "blockIndex": 3, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    },
+    {
+      "kind": "write_file",
+      "id": "s2",
+      "path": "index.js",
+      "content": "const { nonexistentFunction } = require('is-number');\n\nnonexistentFunction(5);",
+      "source": { "blockIndex": 6, "lineStart": 1, "lineEnd": 3 }
+    },
+    {
+      "kind": "run",
+      "id": "s3",
+      "command": "node index.js",
+      "source": { "blockIndex": 8, "lineStart": 1, "lineEnd": 1 },
+      "expect": { "exitCode": 0, "authErrorIsPass": false, "stdoutIncludes": [], "timeoutSec": 180 }
+    }
+  ]
+}

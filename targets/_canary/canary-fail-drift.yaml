@@ -1,0 +1,14 @@
+slug: canary-fail-drift
+name: 'Canary: API drift quickstart'
+docsUrl: http://127.0.0.1:4177/canary/fail-drift.html
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+expect:
+  authErrorIsPass: false
+  timeoutSec: 300
+notes: 'Harness canary (P4). The snippet calls a function the package does not export, so it must always FAIL with output the classifier maps to API_DRIFT (is not a function). Golden plan canary-fail-drift.plan.json.'

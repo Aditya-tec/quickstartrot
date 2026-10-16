@@ -22,7 +22,7 @@ export interface FixtureServer {
  */
 export async function startFixtureServer(
   dir: string,
-  opts: { redirects?: Record<string, string> } = {},
+  opts: { redirects?: Record<string, string>; port?: number } = {},
 ): Promise<FixtureServer> {
   const root = path.resolve(dir);
   const server: Server = createServer((req, res) => {
@@ -51,7 +51,10 @@ export async function startFixtureServer(
     })();
   });
 
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject); // e.g. EADDRINUSE: without this the promise would hang forever
+    server.listen(opts.port ?? 0, '127.0.0.1', resolve);
+  });
   const address = server.address();
   if (address === null || typeof address === 'string')
     throw new Error('fixture server failed to bind');

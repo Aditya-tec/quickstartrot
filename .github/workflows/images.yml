@@ -1,0 +1,94 @@
+name: images
+
+# Builds the two sandbox images (docker/*.Dockerfile) and pushes them to GHCR: weekly, and whenever
+# docker/ changes. The executor records the digest it actually ran, so a break can be correlated
+# with an image change. Spec sections 2, 9 and 12.
+on:
+  schedule:
+    - cron: '23 4 * * 1' # Mondays, off the hour
+  push:
+    branches: [main]
+    paths:
+      - 'docker/**'
+      - '.github/workflows/images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: images
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: node, tag: '22', dockerfile: docker/node.Dockerfile }
+          - { name: python, tag: '3.12', dockerfile: docker/python.Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+
+      # GHCR wants lowercase names; the base image reference and its digest come from the Dockerfile,
+      # which is the single place they are pinned.
+      - id: meta
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          pinned="$(grep -m1 '^ARG BASE_IMAGE=' '${{ matrix.dockerfile }}' | cut -d= -f2-)"
+          echo "pinned=${pinned}" >> "$GITHUB_OUTPUT"
+          echo "digest=${pinned#*@}" >> "$GITHUB_OUTPUT"
+          echo "image=ghcr.io/${owner}/qsr-${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+          echo "mirror=ghcr.io/${owner}/mirror/${{ matrix.name }}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Docker Hub rate-limits anonymous pulls, and the runners share IPs. Copy the pinned base image
+      # into GHCR once and build FROM that copy, by the same digest.
+      - name: Mirror the pinned base image to GHCR
+        env:
+          PINNED: ${{ steps.meta.outputs.pinned }}
+          DIGEST: ${{ steps.meta.outputs.digest }}
+          MIRROR: ${{ steps.meta.outputs.mirror }}
+        run: |
+          if ! docker buildx imagetools inspect "${MIRROR}@${DIGEST}" > /dev/null 2>&1; then
+            docker buildx imagetools create --tag "${MIRROR}:${{ matrix.tag }}" "${PINNED}"
+          fi
+          docker buildx imagetools inspect "${MIRROR}@${DIGEST}" > /dev/null \
+            || { echo "::error::the mirrored base image does not have the pinned digest ${DIGEST}"; exit 1; }
+
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            BASE_IMAGE=${{ steps.meta.outputs.mirror }}@${{ steps.meta.outputs.digest }}
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ matrix.tag }}
+            ${{ steps.meta.outputs.image }}:sha-${{ github.sha }}
+
+      - name: Record the digest
+        run: |
+          {
+            echo "### qsr-${{ matrix.name }}:${{ matrix.tag }}"
+            echo
+            echo '```'
+            echo "${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
