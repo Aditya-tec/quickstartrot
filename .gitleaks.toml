@@ -1,0 +1,15 @@
+title = "QuickstartRot gitleaks config"
+
+[extend]
+useDefault = true
+
+# The ONLY allowlisted values are the placeholders the spec itself uses for "a key from the docs"
+# and the dummy replacement the harness injects. They appear in tests and target files on purpose.
+# Do not widen this list: a real secret must always fail the build.
+[allowlist]
+description = "Obviously fake placeholder values used in tests, fixtures and targets"
+regexes = [
+  '''re_123456789''',
+  '''re_xxxxxxxxx''',
+  '''qsr_dummy_key''',
+]
