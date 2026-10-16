@@ -1,0 +1,17 @@
+slug: resend-node
+name: Resend (Node.js SDK)
+docsUrl: https://resend.com/docs/send-with-nodejs
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+placeholders:
+  're_xxxxxxxxx': 'qsr_dummy_key'
+  're_123456789': 'qsr_dummy_key'
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+notes: 'Crawl checked by eye 2026-10-16 (P2). 3 code blocks (npm install resend, RESEND_API_KEY env line, send example). root is #content because main also contains the On this page table of contents. L3: a 401 with a dummy key proves the wiring.'

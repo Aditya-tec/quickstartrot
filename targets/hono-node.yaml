@@ -1,0 +1,11 @@
+slug: hono-node
+name: Hono (Node.js)
+docsUrl: https://hono.dev/docs/getting-started/basic
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '.vp-doc'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 13 code blocks. Starts with an interactive scaffolder (npm create hono@latest asks for a template), so expect a manual step early in the plan.'

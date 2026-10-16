@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>mkdocs-material line numbers</title>
+  </head>
+  <body>
+    <main>
+      <h1>mkdocs-material line numbers</h1>
+
+      <p>The language class sits on a wrapper many levels above the code element:</p>
+      <div class="language-python highlight">
+        <table class="highlighttable">
+          <tbody>
+            <tr>
+              <td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1</span>
+<span class="normal">2</span></pre></div></td>
+              <td class="code"><div><pre><span></span><code>from fastapi import FastAPI
+app = FastAPI()
+</code></pre></div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>A container class must not leak into unrelated blocks</h2>
+      <div class="language-rust">
+        <pre><code>let a = 1;</code></pre>
+        <pre><code>let b = 2;</code></pre>
+      </div>
+    </main>
+  </body>
+</html>

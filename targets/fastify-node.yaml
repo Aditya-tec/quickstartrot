@@ -1,0 +1,11 @@
+slug: fastify-node
+name: Fastify (Node.js)
+docsUrl: https://fastify.dev/docs/latest/Guides/Getting-Started/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'article'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 24 code blocks: install, server.js in ESM and CommonJS variants (the compiler must pick one), then plugin and CLI sections that go beyond the quickstart.'

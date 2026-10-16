@@ -6,6 +6,8 @@ export type Db = PostgresJsDatabase<typeof schema>;
 
 export interface DbHandle {
   db: Db;
+  /** Raw postgres.js client, for NOTIFY and test fixtures. */
+  sql: postgres.Sql;
   close: () => Promise<void>;
 }
 
@@ -17,6 +19,7 @@ export function createDb(url: string, opts: { max?: number } = {}): DbHandle {
   const client = postgres(url, { max: opts.max ?? 5, prepare: false, onnotice: () => undefined });
   return {
     db: drizzle(client, { schema }),
+    sql: client,
     close: () => client.end({ timeout: 5 }),
   };
 }

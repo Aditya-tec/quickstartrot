@@ -1,0 +1,12 @@
+slug: flask-python
+name: Flask
+docsUrl: https://flask.palletsprojects.com/en/stable/quickstart/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: 'div.highlight pre'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 36 code blocks via Sphinx div.highlight pre. Dollar prompts stripped from the text-tagged terminal blocks, command output kept. flask run never exits, so only import/compile levels are meaningful.'

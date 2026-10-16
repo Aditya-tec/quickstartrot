@@ -32,7 +32,7 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
     handle = createDb(DATABASE_URL ?? '', { max: 1 });
     await seed(handle.db);
     // Make sure PostgREST has picked up the views.
-    await handle.db.$client.unsafe(`NOTIFY pgrst, 'reload schema'`);
+    await handle.sql.unsafe(`NOTIFY pgrst, 'reload schema'`);
     await new Promise((r) => setTimeout(r, 1500));
   }, 60_000);
 
@@ -107,8 +107,7 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
   });
 
   it('disabled tools disappear from every view (opt-out hides history)', async () => {
-    const { db } = handle;
-    await db.$client.unsafe(
+    await handle.sql.unsafe(
       `update tools set enabled = false where slug = '${SEED_SLUGS.confirmed}'`,
     );
     try {
@@ -121,7 +120,7 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
         expect(body).toEqual([]);
       }
     } finally {
-      await db.$client.unsafe(
+      await handle.sql.unsafe(
         `update tools set enabled = true where slug = '${SEED_SLUGS.confirmed}'`,
       );
     }

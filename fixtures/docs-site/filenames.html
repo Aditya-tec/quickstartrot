@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Filename title bars</title>
+  </head>
+  <body>
+    <main>
+      <h1>Filename title bars</h1>
+
+      <h2>data-title attribute</h2>
+      <pre data-title="src/app.ts"><code class="language-ts">export const a = 1;</code></pre>
+
+      <h2>figcaption</h2>
+      <figure>
+        <figcaption>package.json</figcaption>
+        <pre><code class="language-json">{ "name": "demo" }</code></pre>
+      </figure>
+
+      <h2>Sibling title element</h2>
+      <div class="code-block">
+        <div class="code-title">main.py</div>
+        <pre><code class="language-python">print("hi")</code></pre>
+      </div>
+
+      <h2>Prefixed label</h2>
+      <div class="code-block">
+        <span class="filename">File: config.yaml</span>
+        <pre><code class="language-yaml">debug: true</code></pre>
+      </div>
+
+      <h2>Title that is not a filename</h2>
+      <figure>
+        <figcaption>Example output</figcaption>
+        <pre><code class="language-text">ok</code></pre>
+      </figure>
+
+      <h2>No title</h2>
+      <pre><code class="language-ts">export const b = 2;</code></pre>
+    </main>
+  </body>
+</html>

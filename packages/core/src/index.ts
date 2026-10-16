@@ -3,3 +3,4 @@ export * from './target.js';
 export * from './extraction.js';
 export * from './step-ir.js';
 export * from './run-result.js';
+export * from './logger.js';

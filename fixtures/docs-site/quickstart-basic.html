@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Acme SDK Quickstart</title>
+  </head>
+  <body>
+    <nav><a href="/">Docs home</a></nav>
+    <main>
+      <article>
+        <h1>Acme SDK Quickstart</h1>
+        <p>Get started in five minutes.</p>
+
+        <h2>Install</h2>
+        <p>Install the package from npm.</p>
+        <pre><code class="language-bash">$ npm install acme-sdk
+$ npm install --save-dev typescript</code></pre>
+
+        <h2>Send your first request</h2>
+        <p>Create a file named <code>index.ts</code> and add the following:</p>
+        <figure>
+          <figcaption>index.ts</figcaption>
+          <pre><code class="language-ts"><span style="display: none">Copy code</span>import { Acme } from 'acme-sdk';
+
+
+
+const client = new Acme('YOUR_API_KEY');
+await client.send({ to: 'dev@example.com' });</code></pre>
+        </figure>
+        <ul>
+          <li>Run the file with tsx:</li>
+        </ul>
+        <pre><code class="language-bash">$ npx tsx index.ts</code></pre>
+        <pre><code class="language-text">// Output: queued</code></pre>
+
+        <h2>Next steps</h2>
+        <p>Need help? Join our community chat.</p>
+      </article>
+    </main>
+  </body>
+</html>

@@ -1,6 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src", "types": ["node"] },
-  "include": ["src"],
-  "exclude": ["src/**/*.test.ts"]
+  "compilerOptions": { "noEmit": true, "types": ["node"], "lib": ["ES2023", "DOM"] },
+  "include": ["src"]
 }

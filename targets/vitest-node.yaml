@@ -1,0 +1,11 @@
+slug: vitest-node
+name: Vitest
+docsUrl: https://vitest.dev/guide/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '.vp-doc'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 6 code blocks incl. sum.js, sum.test.js and package.json with filename hints; the final block is expected terminal output.'

@@ -1,0 +1,11 @@
+slug: drizzle-node
+name: Drizzle ORM (PostgreSQL)
+docsUrl: https://orm.drizzle.team/docs/get-started/postgresql-new
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 12 code blocks incl. file-tree, drizzle.config.ts and src/db/schema.ts with filename hints. push/migrate need a live Postgres via DATABASE_URL, so test only to L2.'

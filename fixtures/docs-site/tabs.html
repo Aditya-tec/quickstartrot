@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Tabbed quickstart</title>
+  </head>
+  <body>
+    <main>
+      <h1>Tabbed quickstart</h1>
+
+      <h2>Install</h2>
+      <div class="tabs">
+        <div role="tablist">
+          <button role="tab" aria-selected="true" data-for="install-node">Node.js</button>
+          <button role="tab" aria-selected="false" data-for="install-python">Python</button>
+        </div>
+        <div id="install-node" role="tabpanel">
+          <pre><code class="language-bash">npm install tabbed-sdk</code></pre>
+        </div>
+        <div id="install-python" role="tabpanel" hidden>
+          <pre><code class="language-bash">pip install tabbed-sdk</code></pre>
+        </div>
+      </div>
+
+      <h2>Run</h2>
+      <p>Then use the client:</p>
+      <div class="tabs">
+        <div role="tablist">
+          <button role="tab" aria-selected="true" data-for="run-node">Node.js</button>
+          <button role="tab" aria-selected="false" data-for="run-python">Python</button>
+        </div>
+        <div id="run-node" role="tabpanel">
+          <pre><code class="language-js">import { Client } from 'tabbed-sdk';
+new Client().ping();</code></pre>
+        </div>
+        <div id="run-python" role="tabpanel" hidden>
+          <pre><code class="language-python">from tabbed_sdk import Client
+Client().ping()</code></pre>
+        </div>
+      </div>
+    </main>
+    <script>
+      document.querySelectorAll('[role=tab]').forEach((tab) => {
+        tab.addEventListener('click', () => {
+          const group = tab.closest('.tabs');
+          group.querySelectorAll('[role=tab]').forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+          group.querySelectorAll('[role=tabpanel]').forEach((p) => {
+            p.hidden = p.id !== tab.dataset.for;
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

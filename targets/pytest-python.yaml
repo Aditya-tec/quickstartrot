@@ -1,0 +1,12 @@
+slug: pytest-python
+name: pytest
+docsUrl: https://docs.pytest.org/en/stable/getting-started.html
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: 'div.highlight pre'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 14 code blocks via Sphinx div.highlight pre: pip install, test_sample.py, and terminal sessions whose output lines are kept after the prompt is stripped.'

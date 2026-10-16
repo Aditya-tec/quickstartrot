@@ -1,0 +1,11 @@
+slug: zod-node
+name: Zod (TypeScript)
+docsUrl: https://zod.dev/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'article'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 3 code blocks: the User.parse example, npm install zod, and the tsconfig strict note. Short page, so a good L2 canary for real docs.'

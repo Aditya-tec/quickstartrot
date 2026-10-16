@@ -1,0 +1,11 @@
+slug: express-node
+name: Express (Node.js)
+docsUrl: https://expressjs.com/en/starter/hello-world/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 2 code blocks (app code, node app.js). The page has no install command (that lives on the Installing page), and docsUrl was updated to the post-redirect URL.'

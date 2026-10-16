@@ -1,0 +1,731 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`determinism and snapshots > collapsed: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Collapsed sections",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 1,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm install collapsed-sdk",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 2,
+      "kind": "prose",
+      "lang": null,
+      "text": "Run the advanced setup script:",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 3,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm run advanced-setup",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 4,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm cache clean --force",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Collapsed sections",
+      ],
+      "index": 5,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm run already-open",
+    },
+  ],
+  "contentHash": "e75a88c4d9594c09cbf693f1027c69e43f65ff77664c1f301ce56da860e3862c",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/collapsed.html",
+  "title": "Collapsed sections",
+  "url": "http://fixture.test/collapsed.html",
+}
+`;
+
+exports[`determinism and snapshots > filenames: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Filename title bars",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "data-title attribute",
+      ],
+      "index": 1,
+      "kind": "heading",
+      "lang": null,
+      "text": "data-title attribute",
+    },
+    {
+      "filenameHint": "src/app.ts",
+      "headingPath": [
+        "Filename title bars",
+        "data-title attribute",
+      ],
+      "index": 2,
+      "kind": "code",
+      "lang": "ts",
+      "text": "export const a = 1;",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "figcaption",
+      ],
+      "index": 3,
+      "kind": "heading",
+      "lang": null,
+      "text": "figcaption",
+    },
+    {
+      "filenameHint": "package.json",
+      "headingPath": [
+        "Filename title bars",
+        "figcaption",
+      ],
+      "index": 4,
+      "kind": "code",
+      "lang": "json",
+      "text": "{ "name": "demo" }",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "Sibling title element",
+      ],
+      "index": 5,
+      "kind": "heading",
+      "lang": null,
+      "text": "Sibling title element",
+    },
+    {
+      "filenameHint": "main.py",
+      "headingPath": [
+        "Filename title bars",
+        "Sibling title element",
+      ],
+      "index": 6,
+      "kind": "code",
+      "lang": "python",
+      "text": "print("hi")",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "Prefixed label",
+      ],
+      "index": 7,
+      "kind": "heading",
+      "lang": null,
+      "text": "Prefixed label",
+    },
+    {
+      "filenameHint": "config.yaml",
+      "headingPath": [
+        "Filename title bars",
+        "Prefixed label",
+      ],
+      "index": 8,
+      "kind": "code",
+      "lang": "yaml",
+      "text": "debug: true",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "Title that is not a filename",
+      ],
+      "index": 9,
+      "kind": "heading",
+      "lang": null,
+      "text": "Title that is not a filename",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "Title that is not a filename",
+      ],
+      "index": 10,
+      "kind": "code",
+      "lang": "text",
+      "text": "ok",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "No title",
+      ],
+      "index": 11,
+      "kind": "heading",
+      "lang": null,
+      "text": "No title",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Filename title bars",
+        "No title",
+      ],
+      "index": 12,
+      "kind": "code",
+      "lang": "ts",
+      "text": "export const b = 2;",
+    },
+  ],
+  "contentHash": "9d74e421e1c66a8630ce4e8142b892b1663a760183d2fb59ac84fb8c5be7e73d",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/filenames.html",
+  "title": "Filename title bars",
+  "url": "http://fixture.test/filenames.html",
+}
+`;
+
+exports[`determinism and snapshots > languages: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Multiple languages",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "TypeScript",
+      ],
+      "index": 1,
+      "kind": "heading",
+      "lang": null,
+      "text": "TypeScript",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "TypeScript",
+      ],
+      "index": 2,
+      "kind": "code",
+      "lang": "ts",
+      "text": "const x: number = 1;",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Python",
+      ],
+      "index": 3,
+      "kind": "heading",
+      "lang": null,
+      "text": "Python",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Python",
+      ],
+      "index": 4,
+      "kind": "code",
+      "lang": "py",
+      "text": "x = 1
+print(x)",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Shell",
+      ],
+      "index": 5,
+      "kind": "heading",
+      "lang": null,
+      "text": "Shell",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Shell",
+      ],
+      "index": 6,
+      "kind": "code",
+      "lang": "bash",
+      "text": "echo done",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Uppercase class",
+      ],
+      "index": 7,
+      "kind": "heading",
+      "lang": null,
+      "text": "Uppercase class",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Uppercase class",
+      ],
+      "index": 8,
+      "kind": "code",
+      "lang": "javascript",
+      "text": "console.log(1);",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "No language",
+      ],
+      "index": 9,
+      "kind": "heading",
+      "lang": null,
+      "text": "No language",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "No language",
+      ],
+      "index": 10,
+      "kind": "code",
+      "lang": null,
+      "text": "{ "plain": true }",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Untagged shell prompts",
+      ],
+      "index": 11,
+      "kind": "heading",
+      "lang": null,
+      "text": "Untagged shell prompts",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Multiple languages",
+        "Untagged shell prompts",
+      ],
+      "index": 12,
+      "kind": "code",
+      "lang": null,
+      "text": "cd project
+ls",
+    },
+  ],
+  "contentHash": "cc5a9a6e455fddf346c04c482eb83233a3aed20be3afd8bad1227616677012c4",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/languages.html",
+  "title": "Multiple languages",
+  "url": "http://fixture.test/languages.html",
+}
+`;
+
+exports[`determinism and snapshots > line-spans: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Per-line spans",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Per-line spans",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Per-line spans",
+      ],
+      "index": 1,
+      "kind": "prose",
+      "lang": null,
+      "text": "Highlighters render each line as a span and leave blank lines empty:",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Per-line spans",
+      ],
+      "index": 2,
+      "kind": "code",
+      "lang": "python",
+      "text": "from datetime import datetime
+
+class User:
+    id: int
+
+print(User)",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Per-line spans",
+      ],
+      "index": 3,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm install x
+npm run y",
+    },
+  ],
+  "contentHash": "ef474331c02286165914b0ebeb31a4437eb00bcad4108abe1cdb1330d05cd54e",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/line-spans.html",
+  "title": "Per-line spans",
+  "url": "http://fixture.test/line-spans.html",
+}
+`;
+
+exports[`determinism and snapshots > mkdocs-linenums: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "mkdocs-material line numbers",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+      ],
+      "index": 1,
+      "kind": "prose",
+      "lang": null,
+      "text": "The language class sits on a wrapper many levels above the code element:",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+      ],
+      "index": 2,
+      "kind": "code",
+      "lang": "python",
+      "text": "from fastapi import FastAPI
+app = FastAPI()",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+        "A container class must not leak into unrelated blocks",
+      ],
+      "index": 3,
+      "kind": "heading",
+      "lang": null,
+      "text": "A container class must not leak into unrelated blocks",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+        "A container class must not leak into unrelated blocks",
+      ],
+      "index": 4,
+      "kind": "code",
+      "lang": null,
+      "text": "let a = 1;",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "mkdocs-material line numbers",
+        "A container class must not leak into unrelated blocks",
+      ],
+      "index": 5,
+      "kind": "code",
+      "lang": null,
+      "text": "let b = 2;",
+    },
+  ],
+  "contentHash": "b39b84bd2f1a64c10889f427d6a009f28206a8c4626a2823940c64732e86890f",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/mkdocs-linenums.html",
+  "title": "mkdocs-material line numbers",
+  "url": "http://fixture.test/mkdocs-linenums.html",
+}
+`;
+
+exports[`determinism and snapshots > quickstart-basic: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Acme SDK Quickstart",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Install",
+      ],
+      "index": 1,
+      "kind": "heading",
+      "lang": null,
+      "text": "Install",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Install",
+      ],
+      "index": 2,
+      "kind": "prose",
+      "lang": null,
+      "text": "Install the package from npm.",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Install",
+      ],
+      "index": 3,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npm install acme-sdk
+npm install --save-dev typescript",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 4,
+      "kind": "heading",
+      "lang": null,
+      "text": "Send your first request",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 5,
+      "kind": "prose",
+      "lang": null,
+      "text": "Create a file named index.ts and add the following:",
+    },
+    {
+      "filenameHint": "index.ts",
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 6,
+      "kind": "code",
+      "lang": "ts",
+      "text": "import { Acme } from 'acme-sdk';
+
+const client = new Acme('YOUR_API_KEY');
+await client.send({ to: 'dev@example.com' });",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 7,
+      "kind": "prose",
+      "lang": null,
+      "text": "Run the file with tsx:",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 8,
+      "kind": "code",
+      "lang": "bash",
+      "text": "npx tsx index.ts",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Send your first request",
+      ],
+      "index": 9,
+      "kind": "code",
+      "lang": "text",
+      "text": "// Output: queued",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Acme SDK Quickstart",
+        "Next steps",
+      ],
+      "index": 10,
+      "kind": "heading",
+      "lang": null,
+      "text": "Next steps",
+    },
+  ],
+  "contentHash": "24fa2289588c34ab39c626416122033d73d1e41a8621a61baa3632afd579533e",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/quickstart-basic.html",
+  "title": "Acme SDK Quickstart",
+  "url": "http://fixture.test/quickstart-basic.html",
+}
+`;
+
+exports[`determinism and snapshots > tabs: hash is stable across two runs and the extraction matches its snapshot 1`] = `
+{
+  "blocks": [
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+      ],
+      "index": 0,
+      "kind": "heading",
+      "lang": null,
+      "text": "Tabbed quickstart",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+        "Install",
+      ],
+      "index": 1,
+      "kind": "heading",
+      "lang": null,
+      "text": "Install",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+        "Install",
+      ],
+      "index": 2,
+      "kind": "code",
+      "lang": "bash",
+      "text": "pip install tabbed-sdk",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+        "Run",
+      ],
+      "index": 3,
+      "kind": "heading",
+      "lang": null,
+      "text": "Run",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+        "Run",
+      ],
+      "index": 4,
+      "kind": "prose",
+      "lang": null,
+      "text": "Then use the client:",
+    },
+    {
+      "filenameHint": null,
+      "headingPath": [
+        "Tabbed quickstart",
+        "Run",
+      ],
+      "index": 5,
+      "kind": "code",
+      "lang": "python",
+      "text": "from tabbed_sdk import Client
+Client().ping()",
+    },
+  ],
+  "contentHash": "b47fc9fc768b5ebedd973ee3feaa83e02d1dacda4813ad799ebdcfe8a24cbcbc",
+  "fetchedAt": "2026-10-16T00:00:00.000Z",
+  "finalUrl": "http://fixture.test/tabs.html",
+  "title": "Tabbed quickstart",
+  "url": "http://fixture.test/tabs.html",
+}
+`;

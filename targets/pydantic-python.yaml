@@ -1,0 +1,11 @@
+slug: pydantic-python
+name: Pydantic
+docsUrl: https://pydantic.dev/docs/validation/latest/get-started/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: 'main'
+notes: 'Crawl checked by eye 2026-10-16 (P2). 2 code blocks (example and failing-validation example) with blank lines preserved. docsUrl updated: the old docs.pydantic.dev URL now redirects here. No install command on this page.'
