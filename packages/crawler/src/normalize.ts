@@ -31,6 +31,54 @@ export function isShellLang(lang: string | null): boolean {
 const PROMPT_RE = /^[ \t]*[$>][ \t]+/;
 const DOLLAR_PROMPT_RE = /^[ \t]*\$[ \t]+/;
 
+// Blocks tagged with one of these are program text or data, where a leading "$ " can be real
+// syntax (jQuery's "$ (document)", PHP, Perl, R), so the terminal-session heuristic never applies.
+const PROGRAM_LANGS = new Set([
+  'js',
+  'javascript',
+  'jsx',
+  'mjs',
+  'cjs',
+  'ts',
+  'typescript',
+  'tsx',
+  'php',
+  'perl',
+  'pl',
+  'python',
+  'py',
+  'ruby',
+  'rb',
+  'go',
+  'rust',
+  'rs',
+  'java',
+  'kotlin',
+  'swift',
+  'c',
+  'cpp',
+  'cs',
+  'csharp',
+  'r',
+  'julia',
+  'lua',
+  'sql',
+  'json',
+  'jsonc',
+  'yaml',
+  'yml',
+  'toml',
+  'ini',
+  'xml',
+  'html',
+  'css',
+  'scss',
+  'makefile',
+  'dockerfile',
+]);
+const isProgramLang = (lang: string | null): boolean =>
+  lang !== null && PROGRAM_LANGS.has(lang.toLowerCase());
+
 /**
  * Spec section 7, step 9: trim trailing whitespace per line, CRLF to LF, strip shell prompts
  * (`$ ` or `> ` at line start in shell blocks), collapse 3+ blank lines.
@@ -47,7 +95,10 @@ export function normalizeCode(text: string, lang: string | null): string {
 
   if (isShellLang(lang)) {
     lines = lines.map((l) => l.replace(PROMPT_RE, ''));
-  } else if (/^[ \t]*\$[ \t]+\S/.test(lines.find((l) => l.trim() !== '') ?? '')) {
+  } else if (
+    !isProgramLang(lang) &&
+    /^[ \t]*\$[ \t]+\S/.test(lines.find((l) => l.trim() !== '') ?? '')
+  ) {
     lines = lines.map((l) => l.replace(DOLLAR_PROMPT_RE, ''));
   }
 

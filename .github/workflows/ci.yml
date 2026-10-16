@@ -22,6 +22,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+      # With a cache hit the browser download is skipped; --with-deps still installs the system libraries.
       - run: pnpm --filter @qsr/crawler exec playwright install --with-deps chromium
       - run: pnpm format:check
       - run: pnpm lint

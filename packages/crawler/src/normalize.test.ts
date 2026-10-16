@@ -37,6 +37,25 @@ describe('normalizeCode', () => {
     expect(normalizeCode('$ pytest -q\n.F', 'pytest')).toBe('pytest -q\n.F');
   });
 
+  it('never treats a block tagged as a programming language as a terminal session', () => {
+    expect(normalizeCode('$ (document).ready(init);', 'js')).toBe('$ (document).ready(init);');
+    expect(normalizeCode('$ x = 1', 'PHP')).toBe('$ x = 1');
+    expect(normalizeCode('$ echo hi', 'bash')).toBe('echo hi'); // an explicit shell tag still strips
+    expect(normalizeCode('$ echo hi', 'text')).toBe('echo hi'); // untyped output blocks still strip
+  });
+
+  it('leaves variables, expansions and template literals that start with $ untouched', () => {
+    expect(normalizeCode('$HOME/.local/bin/acme --init', 'bash')).toBe(
+      '$HOME/.local/bin/acme --init',
+    );
+    expect(normalizeCode('${PORT:-3000}', null)).toBe('${PORT:-3000}');
+    expect(normalizeCode('`${greeting}, ${name}!`;', 'js')).toBe('`${greeting}, ${name}!`;');
+    expect(normalizeCode('$env:ACME_KEY = "x"', 'powershell')).toBe('$env:ACME_KEY = "x"');
+    expect(normalizeCode('$user = new User();\n$user->save();', 'php')).toBe(
+      '$user = new User();\n$user->save();',
+    );
+  });
+
   it('leaves non-session code alone, including "$" without a space and a later "$ " line', () => {
     expect(normalizeCode('{ "a": 1 }', null)).toBe('{ "a": 1 }');
     expect(normalizeCode('$HOME/bin', 'text')).toBe('$HOME/bin');
@@ -51,7 +70,10 @@ describe('normalizeCode', () => {
 
 describe('normalizeInline', () => {
   it('collapses whitespace, removes zero-width characters and permalink glyphs', () => {
-    expect(normalizeInline('  Send​  your\n first email  #')).toBe('Send your first email');
+    const zeroWidthSpace = String.fromCodePoint(0x200b);
+    expect(normalizeInline(`  Send${zeroWidthSpace}  your\n first email  #`)).toBe(
+      'Send your first email',
+    );
     expect(normalizeInline('Install ¶')).toBe('Install');
   });
 });

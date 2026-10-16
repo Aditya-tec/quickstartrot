@@ -188,6 +188,42 @@ describe('fixture: documentation generators', () => {
   });
 });
 
+describe('fixture: code that legitimately starts with a dollar sign', () => {
+  it('keeps shell variables, expansions, template literals, jQuery, PowerShell and PHP intact', async () => {
+    const e = await run(target('/dollar-prefix.html'));
+    expect(code(e).map((b) => [b.lang, b.text])).toEqual([
+      ['bash', '$HOME/.local/bin/acme --init'],
+      [null, '${PORT:-3000}'],
+      ['js', '`${greeting}, ${name}!`;'],
+      ['js', '$ (document).ready(init);'],
+      ['powershell', '$env:ACME_KEY = "x"'],
+      ['php', ['$user = new User();', '$user->save();'].join('\n')],
+      ['text', ['acme --version', 'acme 1.2.3'].join('\n')],
+    ]);
+  });
+});
+
+describe('fixture: GitHub README markup', () => {
+  it('strips the source-/text- prefix from highlight classes and ignores the copy button', async () => {
+    const e = await run(
+      target('/github-readme.html', {
+        root: 'article.markdown-body',
+        codeBlocks: 'div.highlight pre',
+      }),
+    );
+    expect(code(e).map((b) => [b.lang, b.text])).toEqual([
+      ['shell', 'npm install chalk-like'],
+      [
+        'js',
+        ["import chalk from 'chalk-like';", '', "console.log(chalk.blue('Hello world!'));"].join(
+          '\n',
+        ),
+      ],
+      ['shell-session', ['node example.mjs', 'Hello world!'].join('\n')],
+    ]);
+  });
+});
+
 describe('fixture: per-line spans', () => {
   it('rebuilds code from line spans so blank lines survive, and still drops hidden labels', async () => {
     const e = await run(target('/line-spans.html'));

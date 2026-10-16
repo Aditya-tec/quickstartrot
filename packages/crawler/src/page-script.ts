@@ -46,7 +46,8 @@ export function collectBlocks(cfg: PageScriptConfig): RawBlock[] {
       if (attr) return attr.toLowerCase();
       for (const cls of Array.from(cur.classList)) {
         const m = /^(?:language|lang|highlight)-(.+)$/.exec(cls);
-        const found = m?.[1]?.toLowerCase();
+        // GitHub renders "highlight-source-js" / "highlight-text-shell-session": drop that prefix.
+        const found = m?.[1]?.toLowerCase().replace(/^(?:source|text)-/, '');
         if (found && found !== 'default' && found !== 'none') return found;
       }
       cur = cur.parentElement;

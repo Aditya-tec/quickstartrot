@@ -29,10 +29,11 @@ Code is read with `innerText`, so hidden copy-button labels are dropped and inac
 
 ### Behaviour beyond the spec (found on real docs sites)
 
-- Language also comes from Sphinx `highlight-<lang>` classes, and is searched on wrappers up to 12 levels above the code, but only wrappers that contain a single code block (mkdocs-material line-number tables).
+- Language also comes from Sphinx `highlight-<lang>` classes (GitHub's `highlight-source-js` / `highlight-text-shell-session` lose their `source-` / `text-` prefix), and is searched on wrappers up to 12 levels above the code, but only wrappers that contain a single code block (mkdocs-material line-number tables).
 - Code made of per-line `<span class="line">` elements is rebuilt line by line, because highlighters leave blank lines as empty spans that `innerText` drops.
 - A block whose first line starts with `$ ` is treated as a terminal session whatever its language tag (`text`, `pytest`, none): only `$ ` prompts are stripped, output lines stay.
-- Set `extract.codeBlocks` to `div.highlight pre` for Sphinx sites, whose `<pre>` has no inner `<code>`.
+- Set `extract.codeBlocks` to `div.highlight pre` for Sphinx sites and GitHub READMEs, whose `<pre>` has no inner `<code>`.
+- The terminal-session rule never applies to blocks tagged as a programming language (`js`, `php`, `python`, ...), so jQuery's `$ (document)` or PHP variables are not mangled.
 
 ### Known limits
 
