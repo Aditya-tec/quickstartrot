@@ -1,0 +1,33 @@
+{
+  "name": "@qsr/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@qsr/core": "workspace:*",
+    "@qsr/crawler": "workspace:*",
+    "@qsr/compiler": "workspace:*",
+    "@qsr/executor": "workspace:*",
+    "@qsr/classifier": "workspace:*",
+    "@qsr/status": "workspace:*",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

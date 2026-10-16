@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+.turbo
+coverage
+.env
+.env.*
+!.env.example
+plans/
+results/
+*.tsbuildinfo
+
+# Private planning docs: kept local until the owner decides to publish
+docs/SPEC.md
+*.pdf

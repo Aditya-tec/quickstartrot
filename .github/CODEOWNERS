@@ -1,0 +1,3 @@
+# Spec section 14: CODEOWNERS review on targets/ and .github/
+/targets/ @Aditya-tec
+/.github/ @Aditya-tec
