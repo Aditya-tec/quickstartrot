@@ -14,8 +14,8 @@ import { extraction, target } from './scripted-llm.test-utils.js';
 // If this test fails you changed SYSTEM_PROMPT. Plans are cached by COMPILER_VERSION (spec section 8),
 // so: (1) bump COMPILER_VERSION in prompt.ts, (2) put the new hash below.
 const PINNED = {
-  version: '2026-10-16.4',
-  sha256: '541a9c3c86100f794a4ba7cfcc88c6fd9e8daf0b030870fcde350e24bd5c7c28',
+  version: '2026-10-16.5',
+  sha256: '88ae1cf099529a6b2e4d9cb9bc8af469f90bbb75f0b57b973cd23be714504049',
 };
 
 describe('prompt versioning', () => {
@@ -39,6 +39,8 @@ describe('prompt versioning', () => {
       'untrusted data',
       'npm (node) or pip (python)',
       'placeholder map',
+      'omittedBlockIndexes',
+      'never invent',
     ]) {
       expect(SYSTEM_PROMPT).toContain(phrase);
     }
@@ -56,9 +58,9 @@ describe('buildDocsData', () => {
         file?: string;
         lang?: string;
       }[];
-      omittedBlocks: number;
+      truncation: { omittedBlocks: number };
     };
-    expect(data.omittedBlocks).toBe(0);
+    expect(data.truncation.omittedBlocks).toBe(0);
     expect(data.blocks).toHaveLength(BLOCKS.length);
     const install = data.blocks.find((b) => b.blockIndex === 3);
     expect(install?.lines).toEqual([
@@ -74,19 +76,38 @@ describe('buildDocsData', () => {
     expect(data.blocks.find((b) => b.blockIndex === 2)).not.toHaveProperty('lines');
   });
 
-  it('omits blocks past the budget and says how many, but always keeps the first block', () => {
-    const tiny = JSON.parse(buildDocsData(extraction(), 1)) as {
-      blocks: unknown[];
-      omittedBlocks: number;
-    };
-    expect(tiny.blocks).toHaveLength(1);
-    expect(tiny.omittedBlocks).toBe(BLOCKS.length - 1);
+  it('carries the truncation record inside the data, and none of the old bare count', () => {
+    const full = JSON.parse(buildDocsData(extraction(), 100_000)) as Record<string, unknown>;
+    expect(full['omittedBlocks']).toBeUndefined();
+    expect(full['truncation']).toMatchObject({
+      truncated: false,
+      totalBlocks: BLOCKS.length,
+      includedBlocks: BLOCKS.length,
+      omittedBlocks: 0,
+      omittedBlockIndexes: [],
+    });
     const some = JSON.parse(buildDocsData(extraction(), 1200)) as {
-      blocks: unknown[];
-      omittedBlocks: number;
+      blocks: { blockIndex: number }[];
+      truncation: {
+        truncated: boolean;
+        includedBlocks: number;
+        omittedBlocks: number;
+        omittedBlockIndexes: number[];
+      };
     };
-    expect(some.blocks.length).toBeGreaterThan(1);
-    expect(some.blocks.length + some.omittedBlocks).toBe(BLOCKS.length);
+    expect(some.truncation.truncated).toBe(true);
+    expect(some.truncation.includedBlocks).toBe(some.blocks.length);
+    expect(some.truncation.includedBlocks + some.truncation.omittedBlocks).toBe(BLOCKS.length);
+    const shown = new Set(some.blocks.map((x) => x.blockIndex));
+    for (const i of some.truncation.omittedBlockIndexes) expect(shown.has(i)).toBe(false);
+  });
+
+  it('keeps blocks in document order whichever ones the budget allows', () => {
+    const some = JSON.parse(buildDocsData(extraction(), 1200)) as {
+      blocks: { blockIndex: number }[];
+    };
+    const ids = some.blocks.map((x) => x.blockIndex);
+    expect(ids).toEqual([...ids].sort((p, q) => p - q));
   });
 });
 

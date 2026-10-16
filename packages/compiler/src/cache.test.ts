@@ -14,6 +14,14 @@ const plan = (over: Partial<CompiledPlan> = {}): CompiledPlan => ({
   ir: null,
   groundingReport: { ok: false, violations: [{ stepId: '*', rule: 'schema', detail: 'nope' }] },
   accepted: false,
+  truncation: {
+    truncated: false,
+    totalBlocks: 0,
+    includedBlocks: 0,
+    omittedBlocks: 0,
+    omittedBlockIndexes: [],
+    clippedBlockIndexes: [],
+  },
   createdAt: '2026-10-16T00:00:00.000Z',
   ...over,
 });

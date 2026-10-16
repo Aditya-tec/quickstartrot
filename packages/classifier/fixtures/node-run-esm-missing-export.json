@@ -1,0 +1,132 @@
+{
+  "id": "node-run-esm-missing-export",
+  "origin": "captured",
+  "note": "the message says SyntaxError, but it is an export that is gone: drift outranks the generic syntax rule",
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "API_DRIFT",
+    "rule": "drift.no_export"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 2,
+    "failedStepId": "s4",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 821,
+        "stdoutTail": "\nadded 1 package in 562ms\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s2",
+        "ordinal": 1,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 217,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s3",
+        "ordinal": 2,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 221,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-syntax",
+        "ordinal": 3,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 323,
+        "stdoutTail": "ok syntax lib.mjs index.mjs\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/03-qsr-check-syntax.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-imports",
+        "ordinal": 4,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 246,
+        "stdoutTail": "ok imports lib.mjs index.mjs\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/04-qsr-check-imports.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s4",
+        "ordinal": 5,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 225,
+        "stdoutTail": "",
+        "stderrTail": "file:///work/index.mjs:1\nimport { nope } from './lib.mjs';\n         ^^^^\nSyntaxError: The requested module './lib.mjs' does not provide an export named 'nope'\n    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)\n    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)\n\nNode.js v22.23.3\n",
+        "logFile": "fixture-node-1/05-s4.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-node:local",
+      "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "node": "v22.23.3",
+      "npm": "10.9.9",
+      "registry": "https://registry.npmjs.org/",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{\"ms\":\"2.1.3\"}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "\nadded 1 package in 562ms\n",
+    "qsr-check-syntax": "ok syntax lib.mjs index.mjs\n",
+    "qsr-check-imports": "ok imports lib.mjs index.mjs\n",
+    "s4": "file:///work/index.mjs:1\nimport { nope } from './lib.mjs';\n         ^^^^\nSyntaxError: The requested module './lib.mjs' does not provide an export named 'nope'\n    at ModuleJob._instantiate (node:internal/modules/esm/module_job:226:21)\n    at async ModuleJob.run (node:internal/modules/esm/module_job:335:5)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)\n\nNode.js v22.23.3\n"
+  },
+  "commands": {
+    "s1": "npm install ms",
+    "s4": "node index.mjs"
+  }
+}

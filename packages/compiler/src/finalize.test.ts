@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Step } from '@qsr/core';
 import { finalizePlan } from './finalize.js';
 import { plan, run, sh, write } from './grounding/fixtures.test-utils.js';
+import type { Truncation } from '@qsr/core';
 import { target } from './scripted-llm.test-utils.js';
 
 const loose = { exitCode: 3, authErrorIsPass: true, stdoutIncludes: ['x'], timeoutSec: 600 };
@@ -126,5 +127,85 @@ describe('finalizePlan: level and project setup', () => {
       finalizePlan(plan([write('s1', 'package.json', '{}', 17, 1, 1)], { language: 'python' }), py)
         .projectInit,
     ).toBe('python_venv');
+  });
+});
+
+describe('finalizePlan: a truncated page cannot claim more than L2', () => {
+  const truncated: Truncation = {
+    truncated: true,
+    totalBlocks: 65,
+    includedBlocks: 32,
+    omittedBlocks: 33,
+    omittedBlockIndexes: [32, 33],
+    clippedBlockIndexes: [],
+  };
+  const complete: Truncation = {
+    truncated: false,
+    totalBlocks: 3,
+    includedBlocks: 3,
+    omittedBlocks: 0,
+    omittedBlockIndexes: [],
+    clippedBlockIndexes: [],
+  };
+  const t3 = target({ level: 3 });
+  const full = [
+    sh('s1', 'npm install acme', 3, 1),
+    write('s2', 'index.js', 'x', 6, 1, 1),
+    run('s3', 'node index.js'),
+  ];
+
+  it('caps at 2 when the included blocks give no install, no file write and no run', () => {
+    const noRun = plan([sh('s1', 'npm install acme', 3, 1), write('s2', 'index.js', 'x', 6, 1, 1)]);
+    expect(finalizePlan({ ...noRun, maxLevelReachable: 3 }, t3, truncated).maxLevelReachable).toBe(
+      2,
+    );
+    const noInstall = plan([write('s2', 'index.js', 'x', 6, 1, 1), run('s3', 'node index.js')]);
+    expect(finalizePlan(noInstall, t3, truncated).maxLevelReachable).toBe(2);
+    const noWrite = plan([sh('s1', 'npm install acme', 3, 1), run('s3', 'node index.js')]);
+    expect(finalizePlan(noWrite, t3, truncated).maxLevelReachable).toBe(2);
+    const onlyEcho = plan([
+      sh('s1', 'echo hi', 3, 1),
+      write('s2', 'a.js', 'x', 6, 1, 1),
+      run('s3', 'node a.js'),
+    ]);
+    expect(finalizePlan(onlyEcho, t3, truncated).maxLevelReachable).toBe(2);
+  });
+
+  it('keeps L3 when the included blocks do give an install, a file write and a run step', () => {
+    expect(finalizePlan(plan(full), t3, truncated).maxLevelReachable).toBe(3);
+    const withAppend = plan([
+      sh('s1', 'pip install acme', 3, 1),
+      {
+        kind: 'append_file',
+        id: 's2',
+        path: 'm.py',
+        content: 'x',
+        source: { blockIndex: 6, lineStart: 1, lineEnd: 1 },
+      },
+      run('s3', 'python m.py'),
+    ]);
+    expect(finalizePlan(withAppend, t3, truncated).maxLevelReachable).toBe(3);
+  });
+
+  it('never raises a level the model or the target already set lower', () => {
+    expect(
+      finalizePlan(plan(full, { maxLevelReachable: 1 }), t3, truncated).maxLevelReachable,
+    ).toBe(1);
+    expect(
+      finalizePlan(plan([], { maxLevelReachable: 4 }), target({ level: 2 }), truncated)
+        .maxLevelReachable,
+    ).toBe(2);
+  });
+
+  it('does nothing for a complete page, or when no truncation is given', () => {
+    const noRun = plan([sh('s1', 'npm install acme', 3, 1)], { maxLevelReachable: 3 });
+    expect(finalizePlan(noRun, t3, complete).maxLevelReachable).toBe(3);
+    expect(finalizePlan(noRun, t3).maxLevelReachable).toBe(3);
+  });
+
+  it('a clipped block counts as truncation even when no block was omitted', () => {
+    const clipped: Truncation = { ...complete, truncated: true, clippedBlockIndexes: [0] };
+    const noRun = plan([sh('s1', 'npm install acme', 3, 1)], { maxLevelReachable: 3 });
+    expect(finalizePlan(noRun, t3, clipped).maxLevelReachable).toBe(2);
   });
 });

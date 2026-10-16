@@ -38,6 +38,7 @@ const step = (
   stderrTail: null,
   logFile: null,
   matchedAuthPattern: null,
+  skipReason: null,
   ...over,
 });
 const base = (over: Partial<RunResult> = {}): RunResult => ({
@@ -147,10 +148,16 @@ describe('formatRunResult', () => {
     };
     const text = formatRunResult({
       result: base({
-        outcome: 'FAIL',
+        outcome: 'SKIPPED',
         reachedLevel: 0,
         failedStepId: 's1',
-        steps: [step('s1', 0, 'manual', { outcome: 'SKIPPED', exitCode: null })],
+        steps: [
+          step('s1', 0, 'manual', {
+            outcome: 'SKIPPED',
+            exitCode: null,
+            skipReason: 'manual_step',
+          }),
+        ],
       }),
       ir: planWith,
       targetLevel: 2,
@@ -160,6 +167,50 @@ describe('formatRunResult', () => {
       'step s1 needs a person: Needs a person: "npm create hono@latest my-app" is an interactive scaffolder',
     );
     expect(text).not.toContain('(no output)');
+    expect(text).toMatch(/outcome:\s+SKIPPED\s+reached level L0/);
+    expect(text).toContain('skipped: manual_step');
+  });
+
+  it('shows the harness checks as their own rows, described in words', () => {
+    const text = fmt(
+      base({
+        steps: [
+          step('s1', 0, 'shell'),
+          step('s2', 1, 'write_file'),
+          step('qsr-check-syntax', 2, 'harness_check'),
+          step('qsr-check-imports', 3, 'harness_check'),
+          step('s3', 4, 'run'),
+        ],
+      }),
+    );
+    expect(text).toMatch(
+      /#2 qsr-check-syntax\s+harness_check\s+harness: syntax of written files\s+PASS/,
+    );
+    expect(text).toMatch(
+      /#3 qsr-check-imports\s+harness_check\s+harness: static imports resolve\s+PASS/,
+    );
+  });
+
+  it('a failed harness check is the evidence, with its own output', () => {
+    const text = fmt(
+      base({
+        outcome: 'FAIL',
+        reachedLevel: 1,
+        failedStepId: 'qsr-check-imports',
+        steps: [
+          step('s1', 0, 'shell'),
+          step('s2', 1, 'write_file'),
+          step('qsr-check-syntax', 2, 'harness_check'),
+          step('qsr-check-imports', 3, 'harness_check', {
+            outcome: 'FAIL',
+            exitCode: 1,
+            stderrTail: "index.js:1: Cannot find package 'ghost' imported from index.js\n",
+          }),
+        ],
+      }),
+    );
+    expect(text).toContain('evidence from step qsr-check-imports (harness_check), redacted:');
+    expect(text).toContain("err| index.js:1: Cannot find package 'ghost'");
   });
 
   it('marks an auth-error pass on the step', () => {

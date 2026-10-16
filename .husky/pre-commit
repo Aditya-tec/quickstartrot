@@ -1,0 +1,2 @@
+# Blocks the commit when gitleaks finds a secret in the staged changes (or cannot run).
+pnpm secrets:check

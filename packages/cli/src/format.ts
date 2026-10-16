@@ -26,6 +26,21 @@ function sourceOf(step: Step): string {
   return `#${blockIndex}:${lineStart}${lineEnd === lineStart ? '' : `-${lineEnd}`}`;
 }
 
+/** Says whether the model saw the whole page; a truncated page must never look complete. */
+function pageLines(t: CompileResult['plan']['truncation']): string[] {
+  if (!t.truncated) return [`page:      complete, all ${t.totalBlocks} blocks shown to the model`];
+  const lines = [
+    `page:      TRUNCATED, ${t.omittedBlocks} of ${t.totalBlocks} blocks not shown to the model (${t.includedBlocks} shown)`,
+  ];
+  if (t.omittedBlockIndexes.length > 0)
+    lines.push(`           omitted blocks: ${t.omittedBlockIndexes.join(', ')}`);
+  if (t.clippedBlockIndexes.length > 0)
+    lines.push(
+      `           clipped blocks (only their beginning was shown): ${t.clippedBlockIndexes.join(', ')}`,
+    );
+  return lines;
+}
+
 /** Human-readable result of `qsr compile`: the verdict, the plan, and the grounding report. */
 export function formatCompileResult(
   slug: string,
@@ -45,6 +60,7 @@ export function formatCompileResult(
     `source:    ${how}`,
     `model:     ${plan.model}   compiler version: ${plan.compilerVersion}`,
     `content:   ${plan.contentHash}`,
+    ...pageLines(plan.truncation),
   ];
 
   if (plan.ir) {

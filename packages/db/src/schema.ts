@@ -51,6 +51,10 @@ export const tools = pgTable(
     statusSince: tstz('status_since'),
     consecutiveFailures: integer('consecutive_failures').notNull().default(0),
     consecutivePasses: integer('consecutive_passes').notNull().default(0),
+    // Status engine state (packages/status, spec section 10): see ToolState in @qsr/core.
+    transientStreak: integer('transient_streak').notNull().default(0),
+    lastFailureSignature: text('last_failure_signature'),
+    lastFailureClass: failureClass('last_failure_class'),
     lastRunAt: tstz('last_run_at'),
     createdAt: tstz('created_at').notNull().defaultNow(),
   },

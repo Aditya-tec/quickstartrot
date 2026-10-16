@@ -14,14 +14,18 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "qsr": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node packages/cli/dist/main.js"
+    "qsr": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node packages/cli/dist/main.js",
+    "prepare": "husky",
+    "secrets:check": "node scripts/secrets-check.mjs",
+    "test:scripts": "node --test \"scripts/*.test.mjs\""
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "eslint": "^10.12.0",
-    "typescript-eslint": "^8.71.2",
+    "husky": "^9.1.7",
     "prettier": "^3.9.10",
     "turbo": "^2.11.8",
     "typescript": "catalog:",
-    "@types/node": "catalog:"
+    "typescript-eslint": "^8.71.2"
   }
 }

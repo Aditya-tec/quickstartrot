@@ -1,4 +1,12 @@
 export {
+  CHECK_IDS,
+  HARNESS_CHECK_KIND,
+  checkableFiles,
+  planChecks,
+  type CheckPlan,
+  type HarnessCheck,
+} from './checks.js';
+export {
   executePlan,
   isInstallCommand,
   persistRunResult,

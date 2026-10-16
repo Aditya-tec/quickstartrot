@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { describe, expect, it } from 'vitest';
+import { classify, inputFromRunResult } from '@qsr/classifier';
 import type { Logger, RunResult } from '@qsr/core';
 import type { CliIo } from './commands.js';
 import { runCommand } from './run.js';
@@ -32,6 +33,12 @@ it.runIf(required && !available)('Docker must be available when QSR_REQUIRE_DOCK
   expect(available).toBe(true);
 });
 
+/** The classifier's verdict on a canary's RunResult (the stored tails; the target asserts no auth-as-pass). */
+const classOf = (result: RunResult, language: 'node' | 'python') => {
+  const input = inputFromRunResult(result, { language, targetLevel: 3, authErrorIsPass: false });
+  return input === null ? null : classify(input);
+};
+
 const quiet: Logger = { info: () => undefined, warn: () => undefined, error: () => undefined };
 
 async function qsrRun(
@@ -55,6 +62,7 @@ describe.skipIf(!available)('canaries (real Docker, real registries)', () => {
     const r = await qsrRun('canary-pass-node');
     expect(r.code).toBe(0);
     expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 3, failedStepId: null });
+    expect(classOf(r.result, 'node')).toBeNull(); // a PASS has nothing to classify
     expect(JSON.parse(r.result.runnerEnv['resolved'] ?? '{}')).toEqual({ 'is-number': '7.0.0' });
     expect(r.result.imageDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
   }, 600_000);
@@ -63,21 +71,39 @@ describe.skipIf(!available)('canaries (real Docker, real registries)', () => {
     const r = await qsrRun('canary-pass-python');
     expect(r.code).toBe(0);
     expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    expect(classOf(r.result, 'python')).toBeNull();
     expect(JSON.parse(r.result.runnerEnv['resolved'] ?? '{}')).toEqual({ six: '1.16.0' });
     expect(r.result.runnerEnv['python']).toMatch(/^Python 3\.12\./);
   }, 600_000);
 
-  it('canary-fail-drift FAILS at the run step with output the classifier maps to API_DRIFT', async () => {
+  it('canary-fail-drift FAILS at the run step: L2 is real (the checks passed) and the classifier says API_DRIFT', async () => {
     const r = await qsrRun('canary-fail-drift');
     expect(r.code).toBe(0); // 0 = the canary gave its expected answer
     expect(r.result).toMatchObject({ outcome: 'FAIL', failedStepId: 's3', reachedLevel: 2 });
-    expect(r.result.steps[2]?.stderrTail).toMatch(/nonexistentFunction is not a function/);
+    expect(r.result.steps.map((s) => `${s.stepId}:${s.outcome}`)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:FAIL',
+    ]);
+    expect(r.result.steps.find((s) => s.stepId === 's3')?.stderrTail).toMatch(
+      /nonexistentFunction is not a function/,
+    );
+    expect(classOf(r.result, 'node')).toMatchObject({
+      failureClass: 'API_DRIFT',
+      ruleId: 'drift.not_a_function',
+    });
   }, 600_000);
 
-  it('canary-fail-dep FAILS at the install step with an npm 404 (DEPENDENCY_RESOLUTION)', async () => {
+  it('canary-fail-dep FAILS at the install step with an npm 404: L0, and the classifier says DEPENDENCY_RESOLUTION', async () => {
     const r = await qsrRun('canary-fail-dep');
     expect(r.code).toBe(0);
     expect(r.result).toMatchObject({ outcome: 'FAIL', failedStepId: 's1', reachedLevel: 0 });
     expect(r.result.steps[0]?.stderrTail).toMatch(/404 Not Found/);
+    expect(classOf(r.result, 'node')).toMatchObject({
+      failureClass: 'DEPENDENCY_RESOLUTION',
+      ruleId: 'dependency.npm_e404',
+    });
   }, 600_000);
 });

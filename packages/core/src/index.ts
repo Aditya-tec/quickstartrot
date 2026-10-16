@@ -6,3 +6,6 @@ export * from './run-result.js';
 export * from './logger.js';
 export * from './redact.js';
 export * from './work-path.js';
+export * from './install.js';
+export * from './output-patterns.js';
+export * from './status.js';

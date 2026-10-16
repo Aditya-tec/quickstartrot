@@ -1,0 +1,63 @@
+{
+  "id": "node-npm-enotfound-registry",
+  "origin": "captured",
+  "note": "a registry host that does not resolve",
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "NETWORK_TRANSIENT",
+    "rule": "network.npm_code"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 3768,
+        "stdoutTail": "",
+        "stderrTail": "npm error code ENOTFOUND\nnpm error syscall getaddrinfo\nnpm error errno ENOTFOUND\nnpm error network request to http://registry.invalid.example/ms failed, reason: getaddrinfo ENOTFOUND registry.invalid.example\nnpm error network This is a problem related to network connectivity.\nnpm error network In most cases you are behind a proxy or have bad network settings.\nnpm error network\nnpm error network If you are behind a proxy, please make sure that the\nnpm error network 'proxy' config is set properly.  See: 'npm help config'\nnpm error A complete log of this run can be found in: ~/.npm/_logs/2026-10-16T10_23_11_878Z-debug-0.log\n",
+        "logFile": "fixture-node-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-node:local",
+      "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "node": "v22.23.3",
+      "npm": "10.9.9",
+      "registry": "https://registry.npmjs.org/",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "npm error code ENOTFOUND\nnpm error syscall getaddrinfo\nnpm error errno ENOTFOUND\nnpm error network request to http://registry.invalid.example/ms failed, reason: getaddrinfo ENOTFOUND registry.invalid.example\nnpm error network This is a problem related to network connectivity.\nnpm error network In most cases you are behind a proxy or have bad network settings.\nnpm error network\nnpm error network If you are behind a proxy, please make sure that the\nnpm error network 'proxy' config is set properly.  See: 'npm help config'\nnpm error A complete log of this run can be found in: ~/.npm/_logs/2026-10-16T10_23_11_878Z-debug-0.log\n"
+  },
+  "commands": {
+    "s1": "npm install ms --registry=http://registry.invalid.example --fetch-retries=0 --fetch-timeout=5000"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "python-timeout",
+  "origin": "captured",
+  "note": null,
+  "target": {
+    "slug": "fixture-python",
+    "language": "python",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "TIMEOUT",
+    "rule": "timeout.exit_124"
+  },
+  "runResult": {
+    "toolSlug": "fixture-python",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 124,
+        "durationMs": 2190,
+        "stdoutTail": "",
+        "stderrTail": "[qsr] step timed out after 2s and was killed\n",
+        "logFile": "fixture-python-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-python:local",
+      "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "python": "Python 3.12.15",
+      "pip": "25.0.1",
+      "registry": "https://pypi.org/simple",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "[qsr] step timed out after 2s and was killed\n"
+  },
+  "commands": {
+    "s1": "sleep 30"
+  }
+}

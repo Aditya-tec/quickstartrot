@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-node-killed-after-timeout",
+  "origin": "synthetic",
+  "note": "timeout -k had to SIGKILL the process, so the exit code is 137, not 124",
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "TIMEOUT",
+    "rule": "timeout.killed_note"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "62c916b3-671d-47aa-babf-e6b5434e0c22",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 137,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "[qsr] step timed out after 180s and was killed\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "[qsr] step timed out after 180s and was killed\n"
+  },
+  "commands": {
+    "s1": "node server.js"
+  }
+}

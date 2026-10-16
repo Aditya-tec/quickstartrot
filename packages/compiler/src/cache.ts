@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
-import { GroundingReport, type Logger, noopLogger, StepIR } from '@qsr/core';
+import { GroundingReport, type Logger, noopLogger, StepIR, Truncation } from '@qsr/core';
 
 /** Spec section 5, `compiled_plans`: the cached outcome of compiling one page. */
 export const CompiledPlan = z.object({
@@ -12,6 +12,7 @@ export const CompiledPlan = z.object({
   ir: StepIR.nullable(), // null when rejected
   groundingReport: GroundingReport,
   accepted: z.boolean(),
+  truncation: Truncation, // what the model did not see of the page
   createdAt: z.iso.datetime(),
 });
 export type CompiledPlan = z.infer<typeof CompiledPlan>;

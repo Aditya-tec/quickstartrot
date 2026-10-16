@@ -5,6 +5,7 @@ import {
   noopLogger,
   StepIR,
   type Target,
+  type Truncation,
 } from '@qsr/core';
 import { type CompiledPlan, type PlanCache, type PlanKey } from './cache.js';
 import { DEFAULT_COMPILER_CONFIG, type CompilerConfig } from './config.js';
@@ -24,6 +25,7 @@ import {
   schemaRetryMessage,
   SYSTEM_PROMPT,
 } from './prompt.js';
+import { selectBlocks } from './select.js';
 
 export interface CompileDeps {
   llm: LlmClient;
@@ -70,7 +72,12 @@ function withExpectDefaults(json: unknown): unknown {
   return { ...json, steps };
 }
 
-function interpret(response: LlmResponse, target: Target, ctx: GroundingContext): Interpreted {
+function interpret(
+  response: LlmResponse,
+  target: Target,
+  ctx: GroundingContext,
+  truncation: Truncation,
+): Interpreted {
   if (response.finishReason === 'length') {
     return {
       kind: 'invalid',
@@ -95,7 +102,7 @@ function interpret(response: LlmResponse, target: Target, ctx: GroundingContext)
   // harness-owned fields are fixed, and then the deterministic grounding validator decides.
   const { ir: safe } = quarantineDestructive(parsed.data, ctx);
   const { ir: stopped } = quarantineInteractive(safe, ctx);
-  const ir = finalizePlan(fillFileContent(stopped, ctx), target);
+  const ir = finalizePlan(fillFileContent(stopped, ctx), target, truncation);
   return { kind: 'checked', ir, report: validateGrounding(ir, ctx) };
 }
 
@@ -134,6 +141,16 @@ export async function compile(
   }
   log.info(logFields, 'plan cache miss');
 
+  const { truncation } = selectBlocks(extraction, config.maxDocsChars);
+  if (truncation.truncated)
+    log.warn(
+      {
+        ...logFields,
+        omittedBlocks: truncation.omittedBlocks,
+        totalBlocks: truncation.totalBlocks,
+      },
+      'the page is longer than the prompt budget: some blocks are not shown to the model',
+    );
   const ctx: GroundingContext = {
     blocks: extraction.blocks,
     placeholders: target.placeholders,
@@ -186,7 +203,7 @@ export async function compile(
   for (;;) {
     const response = await callModel();
     model = response.model;
-    const outcome = interpret(response, target, ctx);
+    const outcome = interpret(response, target, ctx, truncation);
 
     if (outcome.kind === 'invalid') {
       if (schemaRetries === 0) {
@@ -226,6 +243,7 @@ export async function compile(
     ir,
     groundingReport: report,
     accepted: report.ok,
+    truncation,
     createdAt: clock().toISOString(),
   };
   await deps.cache.put(plan);

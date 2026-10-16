@@ -37,6 +37,11 @@ jobs:
       - run: pnpm test
         env:
           QSR_REQUIRE_DOCKER: '1'
+      # The pre-commit secret gate must actually block: these tests stage a fake secret in a scratch
+      # repository and fail if the gate lets it through (or silently skips because nothing can scan).
+      - run: pnpm test:scripts
+        env:
+          QSR_REQUIRE_DOCKER: '1'
       - run: pnpm build
       - run: pnpm audit --prod
 

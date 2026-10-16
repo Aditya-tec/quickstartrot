@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-harness-error",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "HARNESS_ERROR",
+    "rule": "harness.run_outcome"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "cfe1514c-4d43-4362-a969-4919910a52d2",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "HARNESS_ERROR",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": null,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "harness error: docker exec failed: Error response from daemon: No such container: qsr-abc\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "harness error: docker exec failed: Error response from daemon: No such container: qsr-abc\n"
+  },
+  "commands": {
+    "s1": "node index.js"
+  }
+}

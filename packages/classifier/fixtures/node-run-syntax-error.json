@@ -1,0 +1,119 @@
+{
+  "id": "node-run-syntax-error",
+  "origin": "captured",
+  "note": "a syntax error the static check cannot see (inside a string)",
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "DOCS_SNIPPET_ERROR",
+    "rule": "docs.syntax_error"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 2,
+    "failedStepId": "s3",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 704,
+        "stdoutTail": "\nadded 1 package in 491ms\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s2",
+        "ordinal": 1,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 207,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-syntax",
+        "ordinal": 2,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 258,
+        "stdoutTail": "ok syntax index.js\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/02-qsr-check-syntax.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-imports",
+        "ordinal": 3,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 220,
+        "stdoutTail": "ok imports index.js\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/03-qsr-check-imports.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s3",
+        "ordinal": 4,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 189,
+        "stdoutTail": "",
+        "stderrTail": "<anonymous_script>:1\nconst = 1\n      ^\n\nSyntaxError: Unexpected token '='\n    at Object.<anonymous> (/work/index.js:1:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.3\n",
+        "logFile": "fixture-node-1/04-s3.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-node:local",
+      "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "node": "v22.23.3",
+      "npm": "10.9.9",
+      "registry": "https://registry.npmjs.org/",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{\"ms\":\"2.1.3\"}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "\nadded 1 package in 491ms\n",
+    "qsr-check-syntax": "ok syntax index.js\n",
+    "qsr-check-imports": "ok imports index.js\n",
+    "s3": "<anonymous_script>:1\nconst = 1\n      ^\n\nSyntaxError: Unexpected token '='\n    at Object.<anonymous> (/work/index.js:1:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10)\n    at Module.load (node:internal/modules/cjs/loader:1505:32)\n    at Function._load (node:internal/modules/cjs/loader:1309:12)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)\n    at node:internal/main/run_main_module:36:49\n\nNode.js v22.23.3\n"
+  },
+  "commands": {
+    "s1": "npm install ms",
+    "s3": "node index.js"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-node-econnreset",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "NETWORK_TRANSIENT",
+    "rule": "network.connection"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "617b8629-d2b4-4f26-b83f-41697f75e63d",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\nError: read ECONNRESET\n    at TLSWrap.onStreamRead (node:internal/stream_base_commons:218:20) {\n  errno: -104,\n  code: 'ECONNRESET',\n  syscall: 'read'\n}\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "node:internal/process/promises:394\n    triggerUncaughtException(err, true /* fromPromise */);\n    ^\n\nError: read ECONNRESET\n    at TLSWrap.onStreamRead (node:internal/stream_base_commons:218:20) {\n  errno: -104,\n  code: 'ECONNRESET',\n  syscall: 'read'\n}\n"
+  },
+  "commands": {
+    "s1": "node index.js"
+  }
+}

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import pino from 'pino';
+import { classifyCommand } from './classify.js';
 import { compileCommand, crawlCommand, loadDotEnv, USAGE } from './commands.js';
 import { runCommand } from './run.js';
 import { TargetFileError } from './targets.js';
@@ -17,6 +18,8 @@ async function main(argv: string[]): Promise<number> {
       return compileCommand(rest, log);
     case 'run':
       return runCommand(rest, log);
+    case 'classify':
+      return classifyCommand(rest, log);
     case 'plan':
     case 'execute':
     case 'report':

@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-python-read-timeout",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-python",
+    "language": "python",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "NETWORK_TRANSIENT",
+    "rule": "network.connection"
+  },
+  "runResult": {
+    "toolSlug": "fixture-python",
+    "cycleId": "404822a5-70e5-4449-bbfe-275c28dc3e88",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ReadTimeoutError(\"HTTPSConnectionPool(host='pypi.org', port=443): Read timed out. (read timeout=15)\")': /simple/acme-sdk/\nERROR: Could not find a version that satisfies the requirement acme-sdk (from versions: none)\nERROR: No matching distribution found for acme-sdk\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ReadTimeoutError(\"HTTPSConnectionPool(host='pypi.org', port=443): Read timed out. (read timeout=15)\")': /simple/acme-sdk/\nERROR: Could not find a version that satisfies the requirement acme-sdk (from versions: none)\nERROR: No matching distribution found for acme-sdk\n"
+  },
+  "commands": {
+    "s1": "pip install acme-sdk"
+  }
+}

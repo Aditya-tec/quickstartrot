@@ -2,8 +2,14 @@ import { mkdtemp, readFile, readdir, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseResolved, RunResult, type Logger, type Step, type StepIR } from '@qsr/core';
+import { parseResolved, RunResult, StepIR, type Logger, type Step } from '@qsr/core';
 import { DEFAULT_LIMITS } from './docker.js';
+import {
+  NODE_CHECK_COMMAND,
+  NODE_CHECK_SCRIPT,
+  PYTHON_CHECK_COMMAND,
+  PYTHON_CHECK_SCRIPT,
+} from './checks.js';
 import {
   executePlan,
   isInstallCommand,
@@ -116,9 +122,21 @@ describe('executePlan: the happy path', () => {
     expect(result.outcome).toBe('PASS');
     expect(result.reachedLevel).toBe(3);
     expect(result.failedStepId).toBeNull();
-    expect(names(result)).toEqual(['s1:PASS', 's2:PASS', 's3:PASS']);
-    expect(result.steps.map((s) => s.ordinal)).toEqual([0, 1, 2]);
-    expect(result.steps.map((s) => s.kind)).toEqual(['shell', 'write_file', 'run']);
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:PASS',
+    ]);
+    expect(result.steps.map((s) => s.ordinal)).toEqual([0, 1, 2, 3, 4]);
+    expect(result.steps.map((s) => s.kind)).toEqual([
+      'shell',
+      'write_file',
+      'harness_check',
+      'harness_check',
+      'run',
+    ]);
     const first = docker.calls.find((c) => c.kind === 'step');
     expect(first?.argv).toEqual([
       'bash',
@@ -200,10 +218,16 @@ describe('executePlan: stops at the first failing step', () => {
     );
     expect(result.outcome).toBe('FAIL');
     expect(result.failedStepId).toBe('s3');
-    expect(names(result)).toEqual(['s1:PASS', 's2:PASS', 's3:FAIL']);
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:FAIL',
+    ]);
     expect(result.reachedLevel).toBe(2);
     expect(docker.stepCommands).not.toContain('echo never');
-    expect(result.steps[2]).toMatchObject({ exitCode: 1, stderrTail: 'boom\n' });
+    expect(result.steps[4]).toMatchObject({ exitCode: 1, stderrTail: 'boom\n' });
     expect(docker.removed).toEqual(['qsr-run-1']);
   });
 
@@ -371,7 +395,7 @@ describe('executePlan: set_env', () => {
 });
 
 describe('executePlan: manual steps stop the plan', () => {
-  it('stops, marks the step SKIPPED, and reports FAIL when the target level was not reached', async () => {
+  it('stops, marks the step SKIPPED, and reports a SKIPPED run (not FAIL) when the target level was not reached', async () => {
     const docker = new FakeDocker();
     const { result } = await go(
       docker,
@@ -379,15 +403,46 @@ describe('executePlan: manual steps stop the plan', () => {
       { target: target({ level: 3 }) },
     );
     expect(names(result)).toEqual(['s1:PASS', 's2:SKIPPED']);
-    expect(result).toMatchObject({ outcome: 'FAIL', failedStepId: 's2', reachedLevel: 1 });
-    expect(result.steps[1]).toMatchObject({ kind: 'manual', exitCode: null, logFile: null });
+    expect(result).toMatchObject({ outcome: 'SKIPPED', failedStepId: 's2', reachedLevel: 1 });
+    expect(result.steps[1]).toMatchObject({
+      kind: 'manual',
+      exitCode: null,
+      logFile: null,
+      skipReason: 'manual_step',
+    });
     expect(docker.stepCommands).toEqual(['npm i x']);
     expect(docker.removed).toEqual(['qsr-run-1']);
   });
 
-  it('a manual step at the very start is level 0', async () => {
+  it('only the manual step carries a skipReason', async () => {
+    const { result } = await go(new FakeDocker(), plan([shell('s1', 'npm i x'), manual('s2')]));
+    expect(result.steps.map((s) => s.skipReason)).toEqual([null, 'manual_step']);
+  });
+
+  it('a manual step at the very start is level 0 and SKIPPED', async () => {
     const { result } = await go(new FakeDocker(), plan([manual('s1')]));
-    expect(result).toMatchObject({ outcome: 'FAIL', failedStepId: 's1', reachedLevel: 0 });
+    expect(result).toMatchObject({ outcome: 'SKIPPED', failedStepId: 's1', reachedLevel: 0 });
+  });
+
+  it('keeps the level reached before the stop: the checks run right after the last write, so a later manual step still leaves L2', async () => {
+    const { result } = await go(
+      new FakeDocker(),
+      plan([
+        shell('s1', 'npm i x'),
+        write('s2', 'a.js', 'x'),
+        manual('s3'),
+        run('s4', 'node a.js'),
+      ]),
+      { target: target({ level: 3 }) },
+    );
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:SKIPPED',
+    ]);
+    expect(result).toMatchObject({ outcome: 'SKIPPED', failedStepId: 's3', reachedLevel: 2 });
   });
 
   it('is a PASS when the target level was already reached before the manual step', async () => {
@@ -398,7 +453,7 @@ describe('executePlan: manual steps stop the plan', () => {
       { target: target({ level: 2 }) },
     );
     expect(result).toMatchObject({ outcome: 'PASS', failedStepId: null, reachedLevel: 2 });
-    expect(result.steps[2]?.outcome).toBe('SKIPPED');
+    expect(result.steps.at(-1)).toMatchObject({ outcome: 'SKIPPED', skipReason: 'manual_step' });
   });
 });
 
@@ -600,6 +655,204 @@ describe('executePlan: log and tail caps', () => {
   });
 });
 
+describe('executePlan: harness checks (what level 2 means)', () => {
+  const checkCalls = (d: FakeDocker) => d.calls.filter((c) => c.kind === 'check');
+
+  it('runs two harness_check steps after the last write, before the run step, with their own ids', async () => {
+    const docker = new FakeDocker();
+    const { result } = await go(
+      docker,
+      plan([
+        shell('s1', 'npm install acme'),
+        write('s2', 'index.js', "const a = require('acme');"),
+        run('s3', 'node index.js'),
+      ]),
+    );
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:PASS',
+    ]);
+    expect(result.steps.map((x) => x.kind)).toEqual([
+      'shell',
+      'write_file',
+      'harness_check',
+      'harness_check',
+      'run',
+    ]);
+    expect(result.steps.map((x) => x.ordinal)).toEqual([0, 1, 2, 3, 4]);
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    expect(checkCalls(docker)).toHaveLength(2);
+  });
+
+  it('feeds the harness script on stdin and passes the files as plain arguments', async () => {
+    const docker = new FakeDocker();
+    await go(docker, plan([write('s1', './index.js', 'x'), write('s2', 'lib/b.mjs', 'x')]));
+    const [syntax, imports] = checkCalls(docker);
+    expect(syntax?.stdin).toBe(NODE_CHECK_SCRIPT);
+    expect(imports?.stdin).toBe(NODE_CHECK_SCRIPT);
+    expect(syntax?.argv.slice(5)).toEqual([
+      ...NODE_CHECK_COMMAND,
+      'syntax',
+      'index.js',
+      'lib/b.mjs',
+    ]);
+    expect(imports?.argv.slice(5)).toEqual([
+      ...NODE_CHECK_COMMAND,
+      'imports',
+      'index.js',
+      'lib/b.mjs',
+    ]);
+  });
+
+  it('the checks come from the harness: a plan step of kind harness_check does not parse', () => {
+    const bad = {
+      irVersion: 1,
+      language: 'node',
+      projectInit: 'none',
+      steps: [{ kind: 'harness_check', id: 'x', command: 'true', source: null }],
+      maxLevelReachable: 3,
+      notes: '',
+    };
+    expect(StepIR.safeParse(bad).success).toBe(false);
+  });
+
+  it('waits for the last install when it comes after the last write', async () => {
+    const docker = new FakeDocker();
+    const { result } = await go(
+      docker,
+      plan([write('s1', 'a.js', 'x'), shell('s2', 'npm install acme'), run('s3', 'node a.js')]),
+    );
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:PASS',
+      's3:PASS',
+    ]);
+  });
+
+  it('python plans use the python script and interpreter', async () => {
+    const docker = new FakeDocker();
+    const { result } = await go(
+      docker,
+      plan([shell('s1', 'pip install acme'), write('s2', 'main.py', 'import acme')], {
+        language: 'python',
+        projectInit: 'python_venv',
+      }),
+      { target: target({ language: 'python', level: 2 }) },
+    );
+    const [syntax, imports] = checkCalls(docker);
+    expect(syntax?.stdin).toBe(PYTHON_CHECK_SCRIPT);
+    expect(syntax?.argv.slice(5)).toEqual([...PYTHON_CHECK_COMMAND, 'syntax', 'main.py']);
+    expect(imports?.argv.slice(5)).toEqual([...PYTHON_CHECK_COMMAND, 'imports', 'main.py']);
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+  });
+
+  it('level 2 is install + checks: a plan that stops after the checks reaches 2', async () => {
+    const { result } = await go(
+      new FakeDocker(),
+      plan([shell('s1', 'npm install acme'), write('s2', 'a.js', 'x')]),
+      { target: target({ level: 2 }) },
+    );
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+  });
+
+  it('writing a file the harness cannot check (json, md) does not reach level 2', async () => {
+    const docker = new FakeDocker();
+    const { result } = await go(
+      docker,
+      plan([shell('s1', 'npm install acme'), write('s2', 'config.json', '{}')]),
+      { target: target({ level: 2 }) },
+    );
+    expect(checkCalls(docker)).toHaveLength(0);
+    expect(result.reachedLevel).toBe(1);
+  });
+
+  it('a syntax error fails the run as a check failure at level 1; the run step never executes', async () => {
+    const docker = new FakeDocker((c) =>
+      c.kind === 'check' && c.argv.includes('syntax')
+        ? {
+            stderr: 'bad.js:1\nconst x = ;\n          ^\nSyntaxError: Unexpected token ;\n',
+            exitCode: 1,
+          }
+        : undefined,
+    );
+    const { result } = await go(
+      docker,
+      plan([shell('s1', 'npm install acme'), write('s2', 'bad.js', 'x'), run('s3', 'node bad.js')]),
+    );
+    expect(names(result)).toEqual(['s1:PASS', 's2:PASS', 'qsr-check-syntax:FAIL']);
+    expect(result).toMatchObject({
+      outcome: 'FAIL',
+      failedStepId: 'qsr-check-syntax',
+      reachedLevel: 1,
+    });
+    expect(result.steps[2]).toMatchObject({ kind: 'harness_check', exitCode: 1 });
+    expect(result.steps[2]?.stderrTail).toContain('SyntaxError: Unexpected token');
+    expect(result.steps[2]?.logFile).toMatch(/02-qsr-check-syntax\.log$/);
+    expect(docker.stepCommands).toEqual(['npm install acme']);
+    expect(docker.removed).toEqual(['qsr-run-1']);
+  });
+
+  it('an unresolved import fails the run at the imports check, level 1', async () => {
+    const docker = new FakeDocker((c) =>
+      c.kind === 'check' && c.argv.includes('imports')
+        ? { stderr: "a.mjs: Cannot find package 'ghost' imported from /work/a.mjs\n", exitCode: 1 }
+        : undefined,
+    );
+    const { result } = await go(
+      docker,
+      plan([shell('s1', 'npm install acme'), write('s2', 'a.mjs', 'x'), run('s3', 'node a.mjs')]),
+    );
+    expect(names(result)).toEqual([
+      's1:PASS',
+      's2:PASS',
+      'qsr-check-syntax:PASS',
+      'qsr-check-imports:FAIL',
+    ]);
+    expect(result).toMatchObject({
+      outcome: 'FAIL',
+      failedStepId: 'qsr-check-imports',
+      reachedLevel: 1,
+    });
+    expect(result.steps[3]?.stderrTail).toContain("Cannot find package 'ghost'");
+  });
+
+  it('a check that crashes (any exit but 0 or 1) is the harness failing, not the docs', async () => {
+    for (const exitCode of [2, 3, 124, 127, null]) {
+      const docker = new FakeDocker((c) =>
+        c.kind === 'check' ? { stderr: 'node: bad option\n', exitCode } : undefined,
+      );
+      const { result } = await go(docker, plan([write('s1', 'a.js', 'x')]));
+      expect(result.outcome, String(exitCode)).toBe('HARNESS_ERROR');
+      expect(result.failedStepId).toBe('qsr-check-syntax');
+      expect(docker.removed).toEqual(['qsr-run-1']);
+    }
+  });
+
+  it('a check whose exec throws is a HARNESS_ERROR that names the check', async () => {
+    const docker = new FakeDocker((c) =>
+      c.kind === 'check' ? { throws: new Error('daemon went away') } : undefined,
+    );
+    const { result } = await go(docker, plan([write('s1', 'a.js', 'x')]));
+    expect(result).toMatchObject({ outcome: 'HARNESS_ERROR', failedStepId: 'qsr-check-syntax' });
+    expect(result.steps.at(-1)?.stderrTail).toContain('daemon went away');
+  });
+
+  it('check output is redacted like any other step output', async () => {
+    const docker = new FakeDocker((c) =>
+      c.kind === 'check'
+        ? { stderr: 'a.js: failed in /home/runner/x with qsr_dummy_key\n', exitCode: 1 }
+        : undefined,
+    );
+    const { result } = await go(docker, plan([write('s1', 'a.js', 'x')]));
+    expect(result.steps.at(-1)?.stderrTail).not.toContain('qsr_dummy_key');
+  });
+});
+
 describe('executePlan: harness project setup', () => {
   const setupCmds = (d: FakeDocker) =>
     d.calls.filter((c) => c.kind === 'setup').map((c) => c.script);
@@ -795,18 +1048,59 @@ describe('pure helpers', () => {
     stderrTail: null,
     logFile: null,
     matchedAuthPattern: null,
+    skipReason: null,
   });
 
-  it('reachedLevel is derived from the kinds of steps that passed', () => {
-    expect(reachedLevel([])).toBe(0);
-    expect(reachedLevel([step('a', 'shell')])).toBe(1);
-    expect(reachedLevel([step('a', 'shell'), step('b', 'write_file')])).toBe(2);
-    expect(reachedLevel([step('a', 'write_file')])).toBe(2);
-    expect(reachedLevel([step('a', 'shell'), step('b', 'write_file'), step('c', 'run')])).toBe(3);
+  const ids = (...x: string[]) => new Set(x);
+
+  it('reachedLevel: L1 needs every install step to have passed', () => {
+    expect(reachedLevel([], ids())).toBe(0);
+    expect(reachedLevel([step('a', 'shell')], ids('a'))).toBe(1);
+    expect(reachedLevel([step('a', 'shell', 'FAIL')], ids('a'))).toBe(0);
+    // two installs, the second never ran: not L1
+    expect(reachedLevel([step('a', 'shell')], ids('a', 'b'))).toBe(0);
+    // a passed non-install shell step does not rescue a failed install
+    expect(reachedLevel([step('a', 'shell', 'FAIL'), step('b', 'shell')], ids('a'))).toBe(0);
+    // no install steps in the plan: any executed passing step proves the container works
+    expect(reachedLevel([step('a', 'shell')], ids())).toBe(1);
+    expect(reachedLevel([step('a', 'set_env'), step('b', 'manual', 'SKIPPED')], ids())).toBe(0);
+  });
+
+  it('reachedLevel: writing files is NOT level 2; a passed harness check is', () => {
+    const written = [step('i', 'shell'), step('w', 'write_file')];
+    expect(reachedLevel(written, ids('i'))).toBe(1);
+    expect(reachedLevel([...written, step('c1', 'harness_check')], ids('i'))).toBe(2);
     expect(
-      reachedLevel([step('a', 'shell'), step('b', 'write_file'), step('c', 'run', 'FAIL')]),
+      reachedLevel(
+        [...written, step('c1', 'harness_check'), step('c2', 'harness_check')],
+        ids('i'),
+      ),
     ).toBe(2);
-    expect(reachedLevel([step('a', 'set_env'), step('b', 'manual', 'SKIPPED')])).toBe(0);
+  });
+
+  it('reachedLevel: a failed harness check caps the level at 1', () => {
+    const steps = [
+      step('i', 'shell'),
+      step('w', 'write_file'),
+      step('c1', 'harness_check'),
+      step('c2', 'harness_check', 'FAIL'),
+    ];
+    expect(reachedLevel(steps, ids('i'))).toBe(1);
+  });
+
+  it('reachedLevel: L3 is a passed run step and no failed check; it does not need a check to exist', () => {
+    const base = [step('i', 'shell'), step('w', 'write_file')];
+    expect(reachedLevel([...base, step('c', 'harness_check'), step('r', 'run')], ids('i'))).toBe(3);
+    expect(reachedLevel([...base, step('r', 'run')], ids('i'))).toBe(3);
+    expect(reachedLevel([step('i', 'shell'), step('r', 'run')], ids('i'))).toBe(3);
+    expect(
+      reachedLevel([...base, step('c', 'harness_check'), step('r', 'run', 'FAIL')], ids('i')),
+    ).toBe(2);
+    expect(reachedLevel([...base, step('c', 'harness_check', 'FAIL')], ids('i'))).toBe(1);
+  });
+
+  it('reachedLevel: a run with a failed install is not L3 even if a later run step somehow passed', () => {
+    expect(reachedLevel([step('i', 'shell', 'FAIL'), step('r', 'run')], ids('i'))).toBe(0);
   });
 
   it('isInstallCommand recognises the common package managers', () => {

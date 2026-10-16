@@ -7,7 +7,7 @@ Instructions for coding agents. The source of truth is `QuickstartRot — Build 
 - Strict TypeScript, no `any`. Every boundary (HTTP body, YAML file, LLM output, runner result) is parsed with a Zod schema from `packages/core`.
 - Packages `crawler`, `compiler`, `executor`, `classifier`, `status` contain no HTTP server code and no database access. They are pure libraries with injected dependencies, so the `cli` and the workflow can both call them.
 - Only `apps/api` writes to the database. Runners never hold database credentials.
-- `status` is pure functions: `(previousState, newRunResult) -> { nextState, events }`. 100% unit-test coverage on it.
+- `status` is pure functions: `evaluate(state, run, ctx) -> { next, events }` (spec: `evaluate(tool, run, cycleValid)`; the context carries `cycleValid` and the incident facts). 100% unit-test coverage on it, and on `classifier`.
 - All time in UTC, ISO 8601 strings at boundaries, `timestamptz` in Postgres.
 - Every log line is JSON via pino with `runId`, `toolSlug`, `stepId` fields where applicable.
 - No secret ever appears in a log, artifact or LLM prompt. A redaction helper in `core` runs over all captured output.
@@ -33,7 +33,7 @@ P0 Foundations, P1 Core schemas + DB, P2 Crawler + fixtures, P3 Compiler + groun
 
 ## Compiler cache rule
 
-`COMPILER_VERSION` (packages/compiler/src/prompt.ts) is part of the plan cache key. Bump it whenever anything that changes a compiled plan changes: the system prompt (a test pins its hash) or any pass in the compile pipeline (quarantine, content fill, finalize, validator). `packages/compiler/src/grounding` must stay at 100% coverage.
+`COMPILER_VERSION` (packages/compiler/src/prompt.ts) is part of the plan cache key. Bump it whenever anything that changes a compiled plan changes: the system prompt (a test pins its hash), the block selection (`select.ts`: it decides what the model sees) or any pass in the compile pipeline (quarantine, content fill, finalize, validator). `packages/compiler/src/grounding` must stay at 100% coverage.
 
 ## Writing source files with escapes
 
@@ -42,3 +42,11 @@ Backslash escapes (`\n`, `\S`, `​`) in Bash heredocs and some write paths get 
 ## Docker tests and the sandbox
 
 `packages/executor` and the canary test in `packages/cli` run against the real Docker daemon. They skip without Docker unless `QSR_REQUIRE_DOCKER=1` (set in `ci.yml`); `QSR_SKIP_DOCKER_TESTS=1` skips them on purpose. Never pass host environment to the container (`buildRunArgs` has no `-e`, volumes or privileges, and a test pins that). Never write files into the container with `docker cp` (it creates root-owned files). Later-phase notes live in `docs/NOTES.md`.
+
+## Secret gate (pre-commit)
+
+`pnpm secrets:check` scans the STAGED changes with gitleaks (a local binary, else the pinned Docker image) and exits non-zero on any finding, or when it cannot run (it fails closed). Husky runs it from `.husky/pre-commit`; `pnpm test:scripts` proves it blocks (a fake token staged in a scratch repo, and a real `git commit` refused). Never work around it by allowlisting a real value: `.gitleaks.toml` allowlists only documented placeholders. CI also scans the full history.
+
+## Classifier fixtures
+
+A new classifier rule starts with a fixture (`packages/classifier/fixtures/`; `node scripts/capture-classifier-fixtures.mjs` captures real ones in Docker). A test fails if a rule has no fixture.

@@ -18,6 +18,7 @@ export {
 } from './llm.js';
 export { buildDocsData, buildUserMessage, COMPILER_VERSION, SYSTEM_PROMPT } from './prompt.js';
 export { finalizePlan } from './finalize.js';
+export { QUICKSTART_HEADING, selectBlocks, type PromptBlock, type Selection } from './select.js';
 export {
   findDestructive,
   interactiveScaffolder,

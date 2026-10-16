@@ -12,7 +12,7 @@ import {
   type LlmClient,
 } from '@qsr/compiler';
 import { startFixtureServer, type FixtureServer } from '@qsr/crawler';
-import type { Extraction, Logger, RunResult, StepIR, Target } from '@qsr/core';
+import type { Extraction, Logger, RunOutcome, RunResult, StepIR, Target } from '@qsr/core';
 import {
   createDockerCli,
   executePlan,
@@ -22,6 +22,7 @@ import {
 } from '@qsr/executor';
 import {
   checkCanary,
+  type CanaryVerdict,
   GoldenPlanError,
   isCanarySlug,
   loadCanaryExpectation,
@@ -34,6 +35,17 @@ import { loadTarget } from './targets.js';
 const run = promisify(execFile);
 const LOCAL_TAG = { node: 'qsr-node:local', python: 'qsr-python:local' } as const;
 const FIXTURE_URL = /^http:\/\/127\.0\.0\.1:(\d+)\//;
+
+/**
+ * 0 pass, 1 fail, 4 harness error (ours, even for a canary: not a verdict on anything),
+ * 5 skipped (a person has to act). A canary is judged on whether it behaved as expected.
+ */
+export function exitCodeFor(outcome: RunOutcome, canary: CanaryVerdict | null): 0 | 1 | 4 | 5 {
+  if (outcome === 'HARNESS_ERROR') return 4;
+  if (canary) return canary.ok ? 0 : 1;
+  if (outcome === 'SKIPPED') return 5;
+  return outcome === 'PASS' ? 0 : 1;
+}
 
 export interface RunOverrides {
   llm?: LlmClient;
@@ -234,9 +246,7 @@ export async function runCommand(
         : formatRunResult({ result, ir, targetLevel: target.level, resultFile, canary }),
     );
 
-    if (result.outcome === 'HARNESS_ERROR') return 4; // ours, even for a canary: not a verdict on anything
-    if (canary) return canary.verdict.ok ? 0 : 1;
-    return result.outcome === 'PASS' ? 0 : 1;
+    return exitCodeFor(result.outcome, canary?.verdict ?? null);
   } finally {
     process.off('SIGINT', onSigint);
     await fixtures?.close();

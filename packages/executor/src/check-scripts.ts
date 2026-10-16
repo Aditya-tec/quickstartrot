@@ -1,0 +1,357 @@
+// The harness-owned scripts behind the `harness_check` steps (spec section 6: level 2 means the
+// snippet imports or compiles). They are constants in this repository, written to the container's
+// stdin; they never come from the model or from the docs. They only READ files under /work and never
+// execute the snippet or import the packages it imports.
+//
+// Contract with the executor: exit 0 = everything checked is fine, exit 1 = findings in the docs'
+// code (printed to stderr, one per line, `file:line: message`), exit 2 = the script itself broke,
+// exit 3 = the check cannot be performed here (e.g. no TypeScript compiler). Anything but 0 or 1 is a
+// harness error, never a verdict on the docs.
+//
+// Written with String.raw: no backticks and no dollar-brace sequences inside.
+
+/**
+ * Node. Run as `node --input-type=module - <syntax|imports> <files...>` from /work.
+ *
+ * syntax:  `node --check` for .js/.mjs/.cjs. For .ts/.mts/.cts: `tsc --noEmit --noResolve` (the
+ *          project's own typescript if installed, else the image's global one), keeping ONLY the
+ *          syntactic diagnostics (TS1xxx). A full type check is deliberately not used: a snippet is
+ *          not a project, so it has no tsconfig and none of the @types packages a type check needs,
+ *          and correct code would fail. The `tsx` global has no check mode, so it is not used.
+ * imports: every STATIC import / export-from / require('literal') specifier. `node:` and builtins pass;
+ *          relative ones must exist on disk; bare ones must resolve from /work/node_modules (the ESM
+ *          resolver, then the CJS one). Dynamic import(), non-literal require(), and package.json
+ *          "imports" aliases (#x) are NOT checked. Also: require() in an ES module is a failure.
+ */
+export const NODE_CHECK_SCRIPT = String.raw`import { spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { createRequire, isBuiltin } from 'node:module';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const [mode, ...files] = process.argv.slice(2);
+const cwd = process.cwd();
+const req = createRequire(path.join(cwd, 'qsr-noop.js'));
+const problems = [];
+const fail = (where, message) => problems.push(where + ': ' + message);
+const isTs = (f) => /\.[cm]?ts$/.test(f);
+const abs = (f) => path.resolve(cwd, f);
+
+function findTsc() {
+  const candidates = [
+    path.join(cwd, 'node_modules', 'typescript', 'bin', 'tsc'),
+    path.join(path.dirname(process.execPath), '..', 'lib', 'node_modules', 'typescript', 'bin', 'tsc'),
+  ];
+  return candidates.find((c) => existsSync(c)) ?? null;
+}
+
+function checkTypescript(tsFiles) {
+  const tsc = findTsc();
+  if (tsc === null) {
+    console.error('qsr: the TypeScript compiler (tsc) is not available, so ' + tsFiles.join(', ') + ' cannot be syntax-checked');
+    process.exit(3);
+  }
+  // No tsconfig and no @types exist for a docs snippet, so a full type check would fail correct code.
+  // Run tsc without module resolution and keep only the syntactic diagnostics (TS1xxx).
+  const r = spawnSync(
+    process.execPath,
+    [tsc, '--noEmit', '--noResolve', '--pretty', 'false', '--target', 'es2022', '--module', 'esnext', '--moduleResolution', 'bundler', '--skipLibCheck', ...tsFiles],
+    { cwd, encoding: 'utf8' },
+  );
+  const output = String(r.stdout) + String(r.stderr);
+  if (r.error || /error TS5\d{3}/.test(output) || (r.status !== 0 && !/error TS\d+/.test(output)))
+    throw new Error('tsc could not check the files: ' + (r.error ? r.error.message : output.slice(0, 400)));
+  for (const line of output.split(/\r?\n/)) {
+    const m = /^(.+?)\((\d+),\d+\): error TS(1\d{3}): (.*)$/.exec(line);
+    if (m) fail(m[1] + ':' + m[2], 'SyntaxError: ' + m[4] + ' (TS' + m[3] + ')');
+  }
+}
+
+function checkSyntax() {
+  const tsFiles = [];
+  for (const f of files) {
+    if (!existsSync(abs(f))) {
+      fail(f, 'file not found');
+    } else if (isTs(f)) {
+      tsFiles.push(f);
+    } else {
+      const r = spawnSync(process.execPath, ['--check', f], { cwd, encoding: 'utf8' });
+      if (r.status !== 0) {
+        const detail = r.stderr
+          .split('\n')
+          .filter((l) => !/^\s+at /.test(l) && !/^Node\.js v/.test(l))
+          .join('\n')
+          .trim();
+        fail(f, '\n' + detail);
+      }
+    }
+  }
+  if (tsFiles.length > 0) checkTypescript(tsFiles);
+}
+
+// Blank out comments but keep their newlines, so reported line numbers stay right.
+const stripComments = (s) =>
+  s
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ''))
+    .replace(/(^|[^:'"\\])\/\/[^\n]*/gm, '$1');
+const lineOf = (src, index) => src.slice(0, index).split('\n').length;
+
+const IMPORT_RE = /^[ \t]*import\s+(?!type\b)(?:[\w$*{}\s,]+?\s+from\s+)?(['"])([^'"\n]+)\1/gm;
+const EXPORT_RE = /^[ \t]*export\s+(?!type\b)(?:\*(?:\s+as\s+[\w$]+)?|\{[^}]*\})\s+from\s+(['"])([^'"\n]+)\1/gm;
+const REQUIRE_RE = /\brequire\s*\(\s*(['"])([^'"\n]+)\1\s*\)/g;
+const ANY_REQUIRE_RE = /(?<![.\w$])require\s*\(/;
+const OWN_REQUIRE_RE = /\b(?:createRequire|(?:const|let|var|function)\s+require\b)/;
+const ESM_SYNTAX_RE = /^[ \t]*(?:import\s+[\w$*{'"]|export\s+(?:default|const|let|var|function|class|async|\{|\*))|\bimport\.meta\b/m;
+const EXTENSIONS = ['.js', '.mjs', '.cjs', '.json', '.node', '.ts', '.mts', '.cts'];
+const isFile = (p) => existsSync(p) && statSync(p).isFile();
+const isDir = (p) => existsSync(p) && statSync(p).isDirectory();
+
+function packageType(file) {
+  let dir = path.dirname(abs(file));
+  for (;;) {
+    const pj = path.join(dir, 'package.json');
+    if (isFile(pj)) {
+      try {
+        return JSON.parse(readFileSync(pj, 'utf8')).type ?? null;
+      } catch {
+        return null;
+      }
+    }
+    const up = path.dirname(dir);
+    if (up === dir || !dir.startsWith(cwd)) return null;
+    dir = up;
+  }
+}
+
+function isEsm(file, src) {
+  if (/\.m[jt]s$/.test(file)) return true;
+  if (/\.c[jt]s$/.test(file)) return false;
+  const type = packageType(file);
+  if (type === 'module') return true;
+  if (type === 'commonjs') return false;
+  return ESM_SYNTAX_RE.test(src);
+}
+
+function resolveRelative(spec, file, strictExtension) {
+  const base = path.resolve(path.dirname(abs(file)), spec);
+  if (isFile(base)) return true;
+  if (strictExtension) return false;
+  const tries = [
+    ...EXTENSIONS.map((e) => base + e),
+    ...EXTENSIONS.map((e) => path.join(base, 'index' + e)),
+    base.replace(/\.js$/, '.ts'),
+    base.replace(/\.mjs$/, '.mts'),
+    base.replace(/\.cjs$/, '.cts'),
+  ];
+  return tries.some(isFile) || (isDir(base) && isFile(path.join(base, 'package.json')));
+}
+
+const packageName = (spec) => spec.split('/').slice(0, spec.startsWith('@') ? 2 : 1).join('/');
+
+// import.meta.resolve returns a URL for a deep import into a package WITHOUT an exports map without
+// checking the file exists, so the file is checked here. An ES module importer gets the ESM resolver
+// only (Node resolves nothing else for it); a CommonJS or TypeScript importer may also use require's.
+function resolveBare(spec, strictEsm) {
+  let esmError;
+  try {
+    const url = import.meta.resolve(spec);
+    const file = url.startsWith('file:') ? fileURLToPath(url) : null;
+    if (file === null || isFile(file)) return null;
+    esmError = Object.assign(new Error("Cannot find module '" + file + "'"), { code: 'ERR_MODULE_NOT_FOUND' });
+  } catch (error) {
+    esmError = error;
+  }
+  if (strictEsm) return esmError;
+  try {
+    req.resolve(spec);
+    return null;
+  } catch {
+    return esmError;
+  }
+}
+
+function checkImports() {
+  for (const f of files) {
+    if (!existsSync(abs(f))) {
+      fail(f, 'file not found');
+      continue;
+    }
+    const src = stripComments(readFileSync(abs(f), 'utf8'));
+    const esm = isEsm(f, src);
+    const ts = isTs(f);
+    if (esm && !ts && ANY_REQUIRE_RE.test(src) && !OWN_REQUIRE_RE.test(src)) {
+      const m = ANY_REQUIRE_RE.exec(src);
+      fail(f + ':' + lineOf(src, m.index), 'ReferenceError: require is not defined in ES module scope, you can use import instead');
+    }
+    const found = [];
+    for (const re of [IMPORT_RE, EXPORT_RE]) for (const m of src.matchAll(re)) found.push([m[2], m.index]);
+    if (!(esm && !ts)) for (const m of src.matchAll(REQUIRE_RE)) found.push([m[2], m.index]);
+    for (const [spec, index] of found) {
+      const where = f + ':' + lineOf(src, index);
+      if (isBuiltin(spec) || spec.startsWith('#')) continue;
+      if (spec.startsWith('.') || spec.startsWith('/')) {
+        if (!resolveRelative(spec, f, esm && !ts))
+          fail(where, "Cannot find module '" + spec + "' imported from " + f + (esm && !ts ? ' (ES modules need the full file name, extension included)' : ''));
+        continue;
+      }
+      const error = resolveBare(spec, esm && !ts);
+      if (error === null) continue;
+      fail(
+        where,
+        error.code === 'ERR_MODULE_NOT_FOUND' && !/imported from .*node_modules/.test(String(error.message)) && !/Cannot find module/.test(String(error.message))
+          ? "Cannot find package '" + packageName(spec) + "' imported from " + f
+          : String(error.message).replace(/ imported from .*$/, '') + ' (imported from ' + f + ')',
+      );
+    }
+  }
+}
+
+try {
+  if (mode === 'syntax') checkSyntax();
+  else if (mode === 'imports') checkImports();
+  else throw new Error('unknown mode ' + mode);
+} catch (err) {
+  console.error('qsr: harness check crashed: ' + (err && err.stack ? err.stack : err));
+  process.exit(2);
+}
+if (problems.length > 0) {
+  console.error(problems.join('\n'));
+  process.exit(1);
+}
+console.log('ok ' + mode + ' ' + files.join(' '));
+`;
+
+/**
+ * Python. Run as `python - <syntax|imports> <files...>` from /work.
+ *
+ * syntax:  `python -m py_compile` on every file (bytecode goes to a throwaway PYTHONPYCACHEPREFIX).
+ * imports: every static import found with `ast`; the TOP-LEVEL module of each must be found by
+ *          `importlib.util.find_spec` (installed packages, the stdlib, or a module written next to the
+ *          importing file or under /work). Relative imports must point at a written file or package.
+ *          An import inside a try whose handlers catch ImportError/Exception is optional and skipped.
+ *          find_spec of a top-level name imports nothing; neither the snippet nor the vendor package
+ *          is executed. importlib.import_module() and __import__() are NOT checked.
+ */
+export const PYTHON_CHECK_SCRIPT = String.raw`import ast
+import importlib.util
+import os
+import subprocess
+import sys
+import tempfile
+import traceback
+
+mode, files = sys.argv[1], sys.argv[2:]
+cwd = os.getcwd()
+problems = []
+
+
+def fail(where, message):
+    problems.append(where + ': ' + message)
+
+
+def check_syntax():
+    with tempfile.TemporaryDirectory() as cache:
+        env = dict(os.environ, PYTHONPYCACHEPREFIX=cache)
+        for f in files:
+            if not os.path.isfile(f):
+                fail(f, 'file not found')
+                continue
+            r = subprocess.run([sys.executable, '-m', 'py_compile', f], capture_output=True, text=True, env=env)
+            if r.returncode != 0:
+                fail(f, '\n' + (r.stderr or r.stdout).strip())
+
+
+TRY_NODES = tuple(getattr(ast, n) for n in ('Try', 'TryStar') if hasattr(ast, n))
+OPTIONAL_ERRORS = ('ImportError', 'ModuleNotFoundError', 'Exception', 'BaseException')
+
+
+def handlers_catch_import_errors(handlers):
+    for h in handlers:
+        if h.type is None:
+            return True
+        for n in h.type.elts if isinstance(h.type, ast.Tuple) else [h.type]:
+            name = n.id if isinstance(n, ast.Name) else n.attr if isinstance(n, ast.Attribute) else None
+            if name in OPTIONAL_ERRORS:
+                return True
+    return False
+
+
+def collect(node, optional, out):
+    if isinstance(node, ast.Import):
+        out.extend((node.lineno, 0, a.name, optional) for a in node.names)
+    elif isinstance(node, ast.ImportFrom):
+        out.append((node.lineno, node.level, node.module, optional))
+    elif isinstance(node, TRY_NODES):
+        covered = optional or handlers_catch_import_errors(node.handlers)
+        for s in node.body:
+            collect(s, covered, out)
+        for h in node.handlers:
+            collect(h, optional, out)
+        for s in node.orelse + node.finalbody:
+            collect(s, optional, out)
+    else:
+        for child in ast.iter_child_nodes(node):
+            collect(child, optional, out)
+
+
+def module_exists(top, file):
+    saved = list(sys.path)
+    sys.path[:0] = [os.path.dirname(os.path.abspath(file)), cwd]
+    try:
+        importlib.invalidate_caches()
+        return importlib.util.find_spec(top) is not None
+    except (ImportError, ValueError):
+        return False
+    finally:
+        sys.path[:] = saved
+
+
+def relative_exists(level, module, file):
+    base = os.path.dirname(os.path.abspath(file))
+    for _ in range(level - 1):
+        base = os.path.dirname(base)
+    if not module:
+        return True
+    target = os.path.join(base, *module.split('.'))
+    return os.path.isfile(target + '.py') or os.path.isdir(target)
+
+
+def check_imports():
+    for f in files:
+        if not os.path.isfile(f):
+            fail(f, 'file not found')
+            continue
+        try:
+            with open(f, encoding='utf-8') as fh:
+                tree = ast.parse(fh.read(), filename=f)
+        except SyntaxError as e:
+            fail(f, 'SyntaxError: ' + str(e))
+            continue
+        found = []
+        collect(tree, False, found)
+        for line, level, module, optional in found:
+            if optional:
+                continue
+            where = f + ':' + str(line)
+            if level > 0:
+                if not relative_exists(level, module, f):
+                    fail(where, "ModuleNotFoundError: No module named '" + '.' * level + (module or '') + "' (imported from " + f + ')')
+            elif not module_exists(module.split('.')[0], f):
+                fail(where, "ModuleNotFoundError: No module named '" + module.split('.')[0] + "' (imported from " + f + ')')
+
+
+try:
+    if mode == 'syntax':
+        check_syntax()
+    elif mode == 'imports':
+        check_imports()
+    else:
+        raise ValueError('unknown mode ' + mode)
+except Exception:
+    sys.stderr.write('qsr: harness check crashed: ' + traceback.format_exc())
+    sys.exit(2)
+if problems:
+    sys.stderr.write('\n'.join(problems) + '\n')
+    sys.exit(1)
+print('ok ' + mode + ' ' + ' '.join(files))
+`;

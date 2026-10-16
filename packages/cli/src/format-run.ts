@@ -22,6 +22,12 @@ function describeStep(step: Step | undefined): string {
   }
 }
 
+/** The checks are the harness's, not the plan's, so they have no plan step to describe them. */
+const CHECK_DESCRIPTIONS: Record<string, string> = {
+  'qsr-check-syntax': 'harness: syntax of written files',
+  'qsr-check-imports': 'harness: static imports resolve',
+};
+
 const ERROR_LINE =
   /error|exception|traceback|failed|not found|cannot|denied|unauthori[sz]ed|forbidden/i;
 
@@ -61,11 +67,16 @@ export function formatRunResult({
     'timeline:',
   ];
 
+  const idWidth = Math.max(4, ...result.steps.map((s) => s.stepId.length));
   for (const s of result.steps) {
     const exit = s.exitCode === null ? 'exit -' : `exit ${s.exitCode}`;
     const auth = s.matchedAuthPattern ? `  auth:${s.matchedAuthPattern}` : '';
+    const what =
+      s.kind === 'harness_check'
+        ? (CHECK_DESCRIPTIONS[s.stepId] ?? 'harness check')
+        : describeStep(byId.get(s.stepId));
     lines.push(
-      `  #${s.ordinal} ${pad(s.stepId, 4)} ${pad(s.kind, 12)} ${pad(clip(describeStep(byId.get(s.stepId)), 46), 46)} ${pad(s.outcome, 8)} ${pad(exit, 8)} ${pad(seconds(s.durationMs), 7)}${auth}`,
+      `  #${s.ordinal} ${pad(s.stepId, idWidth)} ${pad(s.kind, 13)} ${pad(clip(what, 46), 46)} ${pad(s.outcome, 8)} ${pad(exit, 8)} ${pad(seconds(s.durationMs), 7)}${auth}`,
     );
   }
 
@@ -75,6 +86,7 @@ export function formatRunResult({
       '',
       `step ${failed.stepId} needs a person: ${describeStep(byId.get(failed.stepId))}`,
     );
+    if (failed.skipReason) lines.push(`skipped: ${failed.skipReason}`);
   } else if (failed) {
     lines.push('', `evidence from step ${failed.stepId} (${failed.kind}), redacted:`);
     const out = [

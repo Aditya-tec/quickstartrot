@@ -21,12 +21,22 @@ import {
   type ImageInfo,
   type ResourceLimits,
 } from './docker.js';
+import { CHECK_TIMEOUT_S, HARNESS_CHECK_KIND, planChecks, type HarnessCheck } from './checks.js';
 import { evaluateExpect } from './expect.js';
+import { isInstallCommand } from './install.js';
 import { StepOutput } from './sink.js';
+
+export { isInstallCommand };
 
 // Spec section 9. One long-lived, resource-capped container per tool; steps run in order; the first
 // failing step stops the run; the container is ALWAYS removed. The executor does not classify
 // failures: it records what happened and the classifier (phase P5) decides what it means.
+//
+// Levels (spec section 6), as this executor proves them:
+//   L1  every install step of the plan exited 0
+//   L2  L1 + the harness-owned checks passed (the snippet's syntax is valid and every static import
+//       resolves; see checks.ts). Writing a file is NOT level 2.
+//   L3  L1 + the run step met its Expect (including auth-error-as-pass); no check failed
 
 export interface ExecuteInput {
   target: Pick<Target, 'slug' | 'language' | 'level' | 'placeholders' | 'expect'>;
@@ -113,24 +123,36 @@ const CAPTURE_RESOLVED_SCRIPT: Record<Target['language'], string> = {
 };
 const ENV_KEYS = new Set(['node', 'npm', 'python', 'pip', 'registry', 'os']);
 
-const INSTALL =
-  /(?:^|[\s;&|])(?:(?:npm|pnpm|yarn|bun)\s+(?:i|install|add|ci)\b|pip3?\s+install\b|python3?\s+-m\s+pip\s+install\b|uv\s+(?:pip\s+install|add)\b|poetry\s+add\b)/;
 const ESM =
   /^\s*(?:import\s+(?:[\w*{][^\n]*?\s+from\s+)?['"]|export\s+(?:default|const|let|var|function|class|async|\{|\*))/m;
 
 /** A reference whose first path segment is a registry host: `ghcr.io/o/i:22`, `localhost:5000/i`. */
 const REGISTRY_REF = /^(?:[^/@]+[.:][^/@]*|localhost)\//;
 
-export const isInstallCommand = (command: string): boolean => INSTALL.test(command);
-
 export const shellQuote = (s: string): string => `'${s.replaceAll("'", `'\\''`)}'`;
 
-/** Level reached = the highest level some passed step proves (spec section 6). */
-export function reachedLevel(steps: readonly StepResult[]): number {
-  const passed = new Set(steps.filter((s) => s.outcome === 'PASS').map((s) => s.kind));
-  if (passed.has('run')) return 3;
-  if (passed.has('write_file') || passed.has('append_file')) return 2;
-  return passed.has('shell') ? 1 : 0;
+const PROOF_KINDS = new Set(['shell', 'run', 'write_file', 'append_file', HARNESS_CHECK_KIND]);
+
+/**
+ * Level reached = the highest level the passed steps prove (spec section 6). `installIds` are the
+ * plan's install steps: L1 needs every one of them to have passed. A plan with no install step is
+ * level 1 as soon as anything ran.
+ */
+export function reachedLevel(
+  steps: readonly StepResult[],
+  installIds: ReadonlySet<string> = new Set(),
+): number {
+  const passed = steps.filter((s) => s.outcome === 'PASS');
+  const passedIds = new Set(passed.map((s) => s.stepId));
+  const l1 =
+    installIds.size > 0
+      ? [...installIds].every((id) => passedIds.has(id))
+      : passed.some((s) => PROOF_KINDS.has(s.kind));
+  if (!l1) return 0;
+  const checks = steps.filter((s) => s.kind === HARNESS_CHECK_KIND);
+  if (checks.some((s) => s.outcome !== 'PASS')) return 1;
+  if (passed.some((s) => s.kind === 'run')) return 3;
+  return checks.length > 0 ? 2 : 1;
 }
 
 /** The digest recorded on the run: pinned in the reference, else the registry digest, else the local image id. */
@@ -274,6 +296,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     stderrTail: null,
     logFile: null,
     matchedAuthPattern: null,
+    skipReason: null,
     ...r,
   });
 
@@ -403,6 +426,44 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     return result(step, ordinal, { outcome: 'PASS', exitCode: 0 });
   };
 
+  /**
+   * Runs one harness-owned check. Exit 0 passes and exit 1 is a finding in the docs' code; anything
+   * else means the check itself could not run, which is the harness failing, not the docs.
+   */
+  const runHarnessCheck = async (check: HarnessCheck): Promise<StepResult> => {
+    const ordinal = steps.length;
+    current = { id: check.id, kind: HARNESS_CHECK_KIND, ordinal };
+    const out = new StepOutput({ secrets, stdoutIncludes: [] });
+    const began = clock();
+    const exec = await docker.exec(name, check.argv, {
+      stdin: check.stdin,
+      timeoutMs: (CHECK_TIMEOUT_S + KILL_GRACE_S + HOST_SLACK_S) * SECOND,
+      signal,
+      onStdout: (c) => out.stdout(c),
+      onStderr: (c) => out.stderr(c),
+    });
+    const durationMs = Math.round(clock() - began);
+    const o = out.finish();
+    if (exec.exitCode !== 0 && exec.exitCode !== 1)
+      throw new HarnessError(
+        `harness check ${check.id} could not run (exit ${exec.exitCode}): ${o.stderrTail.trim() || o.stdoutTail.trim()}`,
+      );
+    const logFile = await writeStepLog(ordinal, check.id, o.log);
+    current = null;
+    return result({ id: check.id, kind: HARNESS_CHECK_KIND }, ordinal, {
+      outcome: exec.exitCode === 0 ? 'PASS' : 'FAIL',
+      exitCode: exec.exitCode,
+      durationMs,
+      stdoutTail: o.stdoutTail,
+      stderrTail: o.stderrTail,
+      logFile,
+    });
+  };
+
+  const installIds = new Set(
+    ir.steps.flatMap((s) => (s.kind === 'shell' && isInstallCommand(s.command) ? [s.id] : [])),
+  );
+  const checkPlan = planChecks(ir);
   const lastInstall = ir.steps.reduce(
     (last, s, i) => (s.kind === 'shell' && isInstallCommand(s.command) ? i : last),
     -1,
@@ -441,7 +502,8 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
         await harnessCommand('npm pkg set type=module');
     }
 
-    for (const [ordinal, step] of ir.steps.entries()) {
+    for (const [index, step] of ir.steps.entries()) {
+      const ordinal = steps.length;
       current = { id: step.id, kind: step.kind, ordinal };
       if (signal?.aborted) throw new HarnessError('aborted');
 
@@ -450,7 +512,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
       else if (step.kind === 'write_file' || step.kind === 'append_file')
         r = await runWrite(step, ordinal);
       else if (step.kind === 'set_env') r = await runSetEnv(step, ordinal);
-      else r = result(step, ordinal, { outcome: 'SKIPPED' }); // manual: a person must act
+      else r = result(step, ordinal, { outcome: 'SKIPPED', skipReason: 'manual_step' }); // a person must act
       current = null;
       steps.push(r);
       log.info(
@@ -464,10 +526,10 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
         'step done',
       );
 
-      if (ordinal === lastInstall) await captureResolved();
+      if (index === lastInstall) await captureResolved();
       if (step.kind === 'manual') {
-        if (reachedLevel(steps) < target.level) {
-          outcome = 'FAIL';
+        if (reachedLevel(steps, installIds) < target.level) {
+          outcome = 'SKIPPED';
           failedStepId = step.id;
         }
         break;
@@ -476,6 +538,28 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
         outcome = 'FAIL';
         failedStepId = step.id;
         break;
+      }
+      if (checkPlan !== null && index === checkPlan.afterIndex) {
+        for (const check of checkPlan.checks) {
+          const c = await runHarnessCheck(check);
+          steps.push(c);
+          log.info(
+            {
+              ...logFields,
+              stepId: check.id,
+              kind: c.kind,
+              outcome: c.outcome,
+              exitCode: c.exitCode,
+            },
+            'step done',
+          );
+          if (c.outcome === 'FAIL') {
+            outcome = 'FAIL';
+            failedStepId = check.id;
+            break;
+          }
+        }
+        if (outcome === 'FAIL') break;
       }
     }
     if (!resolvedCaptured) await captureResolved();
@@ -513,7 +597,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     planId: input.planId,
     snapshotHash: input.snapshotHash,
     outcome,
-    reachedLevel: reachedLevel(steps),
+    reachedLevel: reachedLevel(steps, installIds),
     failedStepId,
     steps,
     imageDigest,

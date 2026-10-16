@@ -15,6 +15,13 @@
       "when": 1792126849834,
       "tag": "0001_rls_and_public_views",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792147261522,
+      "tag": "0002_tool_state_columns",
+      "breakpoints": true
     }
   ]
 }

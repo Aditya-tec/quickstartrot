@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Extraction, Logger } from '@qsr/core';
 import { Target } from '@qsr/core';
 import {
+  DEFAULT_COMPILER_CONFIG,
   LlmError,
   createMemoryCache,
   type ChatMessage,
@@ -213,6 +214,24 @@ describe('formatCompileResult', () => {
     const text = formatCompileResult('fixture-node', hit, 2);
     expect(text).toContain('from the plan cache (0 model calls)');
     expect(text).toContain("plan reaches L2 of the target's L2");
+    expect(text).toMatch(/page:\s+complete, all \d+ blocks shown to the model/);
+  });
+
+  it('says plainly when the page was truncated, how much, and which blocks', async () => {
+    const llm = new Scripted([plan('npm install acme-sdk')]);
+    const { compile } = await import('@qsr/compiler');
+    const result = await compile(target, extraction, {
+      llm,
+      cache: createMemoryCache(),
+      config: { ...DEFAULT_COMPILER_CONFIG, maxDocsChars: 60 },
+    });
+    const text = formatCompileResult('fixture-node', result, 2);
+    const t = result.plan.truncation;
+    expect(t.truncated).toBe(true);
+    expect(text).toContain(
+      `page:      TRUNCATED, ${t.omittedBlocks} of ${t.totalBlocks} blocks not shown to the model`,
+    );
+    expect(text).toContain(`omitted blocks: ${t.omittedBlockIndexes.join(', ')}`);
   });
 });
 

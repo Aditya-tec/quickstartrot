@@ -15,7 +15,7 @@ import { extract, launchBrowser, startFixtureServer, type FixtureServer } from '
 import type { DockerClient, ExecOptions } from '@qsr/executor';
 import { checkCanary, GoldenPlanError, loadCanaryExpectation, loadGoldenPlan } from './canary.js';
 import type { CliIo } from './commands.js';
-import { runCommand } from './run.js';
+import { exitCodeFor, runCommand } from './run.js';
 import { loadTarget } from './targets.js';
 
 const REPO = fileURLToPath(new URL('../../../', import.meta.url));
@@ -55,7 +55,7 @@ class ScriptedDocker implements DockerClient {
   async start() {}
   async exec(_name: string, argv: readonly string[], o: ExecOptions) {
     const script = argv[2] ?? '';
-    const isStep = script.includes('exec timeout');
+    const isStep = script.includes('exec timeout') && !script.includes('qsr-harness-check');
     const command = isStep ? (argv[5] ?? '') : '';
     if (isStep) this.commands.push(command);
     const r = isStep ? this.respond(command) : {};
@@ -203,6 +203,18 @@ describe('checkCanary', () => {
       '',
     );
     expect(v.ok).toBe(true);
+  });
+});
+
+describe('exitCodeFor', () => {
+  it('0 pass, 1 fail, 5 skipped (a person must act), 4 harness error; a canary is judged on its verdict', () => {
+    expect(exitCodeFor('PASS', null)).toBe(0);
+    expect(exitCodeFor('FAIL', null)).toBe(1);
+    expect(exitCodeFor('SKIPPED', null)).toBe(5);
+    expect(exitCodeFor('HARNESS_ERROR', null)).toBe(4);
+    expect(exitCodeFor('FAIL', { ok: true, problems: [] })).toBe(0);
+    expect(exitCodeFor('PASS', { ok: false, problems: ['x'] })).toBe(1);
+    expect(exitCodeFor('HARNESS_ERROR', { ok: true, problems: [] })).toBe(4);
   });
 });
 

@@ -40,6 +40,17 @@ CLI: `pnpm qsr compile <slug>` (flags `--json`, `--refresh`, `--cache-dir`). Nee
 
 Model or network failures throw `LlmError` and are **not** cached.
 
+## Long pages (`select.ts`)
+
+A page longer than the budget is **never silently treated as complete**.
+
+1. **Selection** (`selectBlocks`, deterministic): blocks are ranked in _units_, a code block together with the up to 2 prose blocks right before it. Units whose section heading looks like a quickstart (`/quick ?start|getting started|install|setup|usage|hello world/i`, matched after removing the heading path every block shares, so a page titled "Getting Started" does not make everything a quickstart) come first; within a group the document order decides, so the top of a page beats its tail. Then prose that introduces no code, then headings (their text is already in every block's `heading` field). Blocks are taken in that order while they fit and sent **in document order**, never reordered. A block that does not fit is omitted whole. Only when the single most important block does not fit even alone is it clipped from the top and marked `"clipped": true`.
+2. **Recorded**: `plan.truncation = { truncated, totalBlocks, includedBlocks, omittedBlocks, omittedBlockIndexes, clippedBlockIndexes }`, built from the selection, never from the model, and cached with the plan. `qsr compile` prints it (`page: TRUNCATED, N of M blocks not shown to the model`).
+3. **Told to the model**: the data carries the same `truncation` object and the system prompt (INCOMPLETE DATA) says omitted blocks exist, that it must not invent or assume steps for them, and to say so in `notes`.
+4. **Level cap**: `finalizePlan` caps `maxLevelReachable` at 2 for a truncated page unless the plan itself contains an install, a file write and a run step.
+
+Changing how blocks are selected changes what the model sees: bump `COMPILER_VERSION` for it, as for a prompt change.
+
 ## The grounding validator (`grounding/`)
 
 100% statement, branch, function and line coverage is enforced (`pnpm --filter @qsr/compiler test`). Rule ids:
@@ -64,7 +75,7 @@ Comparison is exact code point by code point: there is no Unicode normalization,
 - **Model**: the spec's `llama-3.3-70b-versatile` is no longer served on the project's Groq account. The default is `openai/gpt-oss-120b` with `reasoning_effort: low` (reasoning tokens count inside the output cap). The model name is configuration (`config.ts`, `QSR_COMPILER_MODEL`).
 - **File content is copied, not generated.** Measured on the Pydantic page: asked to reproduce a 33-line file, the model dropped a single trailing comma in 2 of 5 runs, and the retry repeated it. The validator was right to reject it, but the failure class is avoidable: the model now cites lines and the harness copies them. Output tokens fell from up to 1,054 to 233-459 per plan, and the validator still checks the result against the citation.
 - **Stricter than the spec on file content**: indentation is compared exactly (only trailing whitespace and blank-line runs are normalized), because indentation is program text in Python and YAML.
-- **Groq free tier**: a request is rejected above 8,000 prompt tokens (`HTTP 413`), and 429s carry a `Retry-After`. The `max_tokens` reservation does not count. The docs budget is `maxDocsChars` (10,000 characters, about 2.9 characters per token); later blocks are omitted and flagged as `omittedBlocks`. The client retries 429/5xx four times, honouring `Retry-After` up to 60 s, and keeps the provider's explanation in the error.
+- **Groq free tier**: a request is rejected above 8,000 prompt tokens (`HTTP 413`), and 429s carry a `Retry-After`. The `max_tokens` reservation does not count. The docs budget is `maxDocsChars` (10,000 characters, about 2.9 characters per token); blocks over it are left out by priority and recorded (see "Long pages" below). The client retries 429/5xx four times, honouring `Retry-After` up to 60 s, and keeps the provider's explanation in the error.
 - **Non-determinism**: the same page compiled differently across runs at temperature 0. Rather than trusting the model, everything that can be decided deterministically is.
 
 ## Versioning rule

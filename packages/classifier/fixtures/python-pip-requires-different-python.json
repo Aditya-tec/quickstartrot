@@ -1,0 +1,76 @@
+{
+  "id": "python-pip-requires-different-python",
+  "origin": "captured",
+  "note": null,
+  "target": {
+    "slug": "fixture-python",
+    "language": "python",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "RUNTIME_VERSION",
+    "rule": "runtime.python_requires"
+  },
+  "runResult": {
+    "toolSlug": "fixture-python",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s2",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 170,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s2",
+        "ordinal": 1,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 5971,
+        "stdoutTail": "Processing ./proj\n  Installing build dependencies: started\n  Installing build dependencies: finished with status 'done'\n  Getting requirements to build wheel: started\n  Getting requirements to build wheel: finished with status 'done'\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nINFO: pip is looking at multiple versions of needs-new-python to determine which version is compatible with other requirements. This could take a while.\n",
+        "stderrTail": "ERROR: Package 'needs-new-python' requires a different Python: 3.12.15 not in '>=3.99'\n",
+        "logFile": "fixture-python-1/01-s2.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-python:local",
+      "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "python": "Python 3.12.15",
+      "pip": "25.0.1",
+      "registry": "https://pypi.org/simple",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s2": "Processing ./proj\n  Installing build dependencies: started\n  Installing build dependencies: finished with status 'done'\n  Getting requirements to build wheel: started\n  Getting requirements to build wheel: finished with status 'done'\n  Preparing metadata (pyproject.toml): started\n  Preparing metadata (pyproject.toml): finished with status 'done'\nINFO: pip is looking at multiple versions of needs-new-python to determine which version is compatible with other requirements. This could take a while.\nERROR: Package 'needs-new-python' requires a different Python: 3.12.15 not in '>=3.99'\n"
+  },
+  "commands": {
+    "s2": "pip install ./proj"
+  }
+}

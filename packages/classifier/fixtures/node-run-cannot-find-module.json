@@ -1,0 +1,119 @@
+{
+  "id": "node-run-cannot-find-module",
+  "origin": "captured",
+  "note": "a dynamic require: invisible to the static import check",
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "DOCS_SNIPPET_ERROR",
+    "rule": "import.missing_package"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 2,
+    "failedStepId": "s3",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 706,
+        "stdoutTail": "\nadded 1 package in 459ms\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s2",
+        "ordinal": 1,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 193,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-syntax",
+        "ordinal": 2,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 248,
+        "stdoutTail": "ok syntax index.js\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/02-qsr-check-syntax.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-imports",
+        "ordinal": 3,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 237,
+        "stdoutTail": "ok imports index.js\n",
+        "stderrTail": "",
+        "logFile": "fixture-node-1/03-qsr-check-imports.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s3",
+        "ordinal": 4,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 227,
+        "stdoutTail": "",
+        "stderrTail": "node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module 'ghost'\nRequire stack:\n- /work/index.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._load (node:internal/modules/cjs/loader:1216:25)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Module.require (node:internal/modules/cjs/loader:1527:12)\n    at require (node:internal/modules/helpers:147:16)\n    at Object.<anonymous> (/work/index.js:2:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [ '/work/index.js' ]\n}\n\nNode.js v22.23.3\n",
+        "logFile": "fixture-node-1/04-s3.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-node:local",
+      "imageDigest": "sha256:7ba1d8ae4433a71435c5abed119c884caf520a7139f1afcad9fd9998ca62f83e",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "node": "v22.23.3",
+      "npm": "10.9.9",
+      "registry": "https://registry.npmjs.org/",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{\"ms\":\"2.1.3\"}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "\nadded 1 package in 459ms\n",
+    "qsr-check-syntax": "ok syntax index.js\n",
+    "qsr-check-imports": "ok imports index.js\n",
+    "s3": "node:internal/modules/cjs/loader:1433\n  throw err;\n  ^\n\nError: Cannot find module 'ghost'\nRequire stack:\n- /work/index.js\n    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)\n    at Function._load (node:internal/modules/cjs/loader:1216:25)\n    at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)\n    at Module.require (node:internal/modules/cjs/loader:1527:12)\n    at require (node:internal/modules/helpers:147:16)\n    at Object.<anonymous> (/work/index.js:2:1)\n    at Module._compile (node:internal/modules/cjs/loader:1781:14)\n    at Object..js (node:internal/modules/cjs/loader:1913:10) {\n  code: 'MODULE_NOT_FOUND',\n  requireStack: [ '/work/index.js' ]\n}\n\nNode.js v22.23.3\n"
+  },
+  "commands": {
+    "s1": "npm install ms",
+    "s3": "node index.js"
+  }
+}

@@ -533,3 +533,78 @@ describe('compile: prompt injection', () => {
     expect(result.plan.groundingReport.violations.map((v) => v.rule)).toContain('command.mismatch');
   });
 });
+
+describe('compile: a truncated page is recorded, flagged and level-capped', () => {
+  const small = { ...DEFAULT_COMPILER_CONFIG, maxDocsChars: 1500 };
+
+  it('stores the truncation record on the plan, built from the selection, not from the model', async () => {
+    const { deps } = setup([goodPlan()], { config: small });
+    const { plan } = await compile(target(), extraction(), deps);
+    expect(plan.truncation.truncated).toBe(true);
+    expect(plan.truncation.totalBlocks).toBe(BLOCKS.length);
+    expect(plan.truncation.includedBlocks + plan.truncation.omittedBlocks).toBe(BLOCKS.length);
+    expect(plan.truncation.omittedBlockIndexes).toHaveLength(plan.truncation.omittedBlocks);
+  });
+
+  it('a complete page is stored as not truncated', async () => {
+    const { deps } = setup([goodPlan()]);
+    const { plan } = await compile(target(), extraction(), deps);
+    expect(plan.truncation).toEqual({
+      truncated: false,
+      totalBlocks: BLOCKS.length,
+      includedBlocks: BLOCKS.length,
+      omittedBlocks: 0,
+      omittedBlockIndexes: [],
+      clippedBlockIndexes: [],
+    });
+  });
+
+  it('the cached plan keeps the truncation record', async () => {
+    const { deps } = setup([goodPlan()], { config: small });
+    const first = await compile(target(), extraction(), deps);
+    const second = await compile(target(), extraction(), { ...deps, llm: new ScriptedLlm([]) });
+    expect(second.fromCache).toBe(true);
+    expect(second.plan.truncation).toEqual(first.plan.truncation);
+  });
+
+  it('a rejected plan records it too', async () => {
+    const { deps } = setup(['not json', 'still not json'], { config: small });
+    const { plan } = await compile(target(), extraction(), deps);
+    expect(plan.accepted).toBe(false);
+    expect(plan.truncation.truncated).toBe(true);
+  });
+
+  it('caps maxLevelReachable at 2 for a truncated page unless the plan has install, file write and run', async () => {
+    const noRun = goodPlanObject();
+    noRun.steps = noRun.steps.filter((s) => s['kind'] !== 'run');
+    noRun.maxLevelReachable = 3;
+    const capped = await compile(
+      target(),
+      extraction(),
+      setup([JSON.stringify(noRun)], { config: small }).deps,
+    );
+    expect(capped.plan.accepted).toBe(true);
+    expect(capped.plan.ir?.maxLevelReachable).toBe(2);
+
+    const uncapped = await compile(
+      target(),
+      extraction(),
+      setup([goodPlan()], { config: small }).deps,
+    );
+    expect(uncapped.plan.ir?.maxLevelReachable).toBe(3);
+
+    const complete = await compile(target(), extraction(), setup([JSON.stringify(noRun)]).deps);
+    expect(complete.plan.ir?.maxLevelReachable).toBe(3);
+  });
+
+  it('tells the model the page was cut and which blocks are missing', async () => {
+    const { llm, deps } = setup([goodPlan()], { config: small });
+    await compile(target(), extraction(), deps);
+    const request = llm.requests[0] ?? [];
+    expect(request[0]?.content).toContain('omittedBlockIndexes');
+    const data = JSON.parse((request[1]?.content ?? '').split('\n')[4] ?? '{}') as {
+      truncation: { truncated: boolean };
+    };
+    expect(data.truncation.truncated).toBe(true);
+  });
+});

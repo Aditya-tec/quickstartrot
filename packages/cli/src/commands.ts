@@ -21,11 +21,13 @@ Usage:
   qsr crawl   <slug> [--json] [--targets <dir>] [--trace-dir <dir>]
   qsr compile <slug> [--json] [--refresh] [--targets <dir>] [--cache-dir <dir>]
   qsr run     <slug> [--json] [--refresh] [--local-images | --image <ref>] [--out <dir>] [--targets <dir>]
+  qsr classify <run-result.json> [--json] [--llm] [--targets <dir>]
 
 Commands (phase that implements them):
   crawl     Crawl one target's docs page and print the extraction            (P2)
   compile   Crawl, then compile into a grounded Step IR plan (cached)        (P3)
   run       Crawl + compile + execute in Docker locally, no database         (P4)
+  classify  Classify a stored RunResult: class, rule id, signature, evidence  (P5)
   plan | execute | report    Probe pipeline stages                           (P7)
 
 Environment (a .env file in the working directory is loaded):
@@ -34,7 +36,8 @@ Environment (a .env file in the working directory is loaded):
 
 Exit codes: 0 ok, 1 crawl failed or the plan was rejected, 2 usage or invalid target,
             3 the model was unreachable or refused the request,
-            4 harness error or Docker not reachable (qsr run).
+            4 harness error or Docker not reachable (qsr run),
+            5 the run was skipped: a person has to act (a manual step before the target level).
 `;
 
 /** Loads ./.env into process.env without overriding variables that are already set. */

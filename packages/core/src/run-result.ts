@@ -23,6 +23,11 @@ export function parseResolved(runnerEnv: Readonly<Record<string, string>>): Reco
   }
 }
 
+/** Why a step (and so the run) was skipped instead of passing or failing. */
+export const SKIP_REASONS = ['manual_step'] as const;
+export const SkipReason = z.enum(SKIP_REASONS);
+export type SkipReason = z.infer<typeof SkipReason>;
+
 export const StepResult = z.object({
   stepId: z.string(),
   ordinal: z.number().int().min(0),
@@ -34,6 +39,8 @@ export const StepResult = z.object({
   stderrTail: z.string().max(TAIL_MAX_BYTES).nullable(),
   logFile: z.string().nullable(), // relative path of the redacted log in the results dir
   matchedAuthPattern: z.string().nullable().default(null), // L3 auth-error-as-pass evidence
+  // Kept on the step, not the run, so RunResult stays exactly the spec section 9 shape.
+  skipReason: SkipReason.nullable().default(null),
 });
 export type StepResult = z.infer<typeof StepResult>;
 
@@ -55,3 +62,8 @@ export const RunResult = z.object({
   finishedAt: z.iso.datetime(),
 });
 export type RunResult = z.infer<typeof RunResult>;
+
+/** The reason a run was skipped (its first skipped step's reason), or null when it was not. */
+export function runSkipReason(run: Pick<RunResult, 'steps'>): SkipReason | null {
+  return run.steps.find((s) => s.skipReason !== null)?.skipReason ?? null;
+}

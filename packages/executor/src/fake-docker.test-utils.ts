@@ -17,7 +17,7 @@ export interface ExecCall {
   /** The shell script (argv[2]) for `bash -c/-lc`, and the user command for step execs. */
   script: string;
   command: string | undefined;
-  kind: 'step' | 'write' | 'env' | 'capture-env' | 'capture-resolved' | 'setup' | 'other';
+  kind: 'step' | 'check' | 'write' | 'env' | 'capture-env' | 'capture-resolved' | 'setup' | 'other';
 }
 
 type Handler = (call: ExecCall) => FakeExec | undefined;
@@ -60,7 +60,10 @@ export class FakeDocker implements DockerClient {
       stdin: options.stdin,
       options,
       script,
-      command: script.includes('exec timeout') ? argv[5] : undefined,
+      command:
+        script.includes('exec timeout') && !script.includes('qsr-harness-check')
+          ? argv[5]
+          : undefined,
       kind: classify(argv),
     };
     this.calls.push(call);
@@ -88,6 +91,7 @@ export class FakeDocker implements DockerClient {
 
 function classify(argv: readonly string[]): ExecCall['kind'] {
   const script = argv[2] ?? '';
+  if (script.includes('qsr-harness-check')) return 'check';
   if (script.includes('exec timeout')) return 'step';
   if (script.includes('realpath -m')) return 'write';
   if (script.includes('.qsr_env')) return 'env';

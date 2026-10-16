@@ -1,0 +1,117 @@
+{
+  "id": "python-check-relative-missing",
+  "origin": "captured",
+  "note": null,
+  "target": {
+    "slug": "fixture-python",
+    "language": "python",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "DOCS_SNIPPET_ERROR",
+    "rule": "check.relative_missing"
+  },
+  "runResult": {
+    "toolSlug": "fixture-python",
+    "cycleId": "00000000-0000-4000-8000-000000000000",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 1,
+    "failedStepId": "qsr-check-imports",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 2244,
+        "stdoutTail": "Collecting six\n  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)\nDownloading six-1.17.0-py2.py3-none-any.whl (11 kB)\nInstalling collected packages: six\nSuccessfully installed six-1.17.0\n",
+        "stderrTail": "",
+        "logFile": "fixture-python-1/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s2",
+        "ordinal": 1,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 174,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "s3",
+        "ordinal": 2,
+        "kind": "write_file",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 177,
+        "stdoutTail": null,
+        "stderrTail": null,
+        "logFile": null,
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-syntax",
+        "ordinal": 3,
+        "kind": "harness_check",
+        "outcome": "PASS",
+        "exitCode": 0,
+        "durationMs": 656,
+        "stdoutTail": "ok syntax pkg/__init__.py pkg/main.py\n",
+        "stderrTail": "",
+        "logFile": "fixture-python-1/03-qsr-check-syntax.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      },
+      {
+        "stepId": "qsr-check-imports",
+        "ordinal": 4,
+        "kind": "harness_check",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 480,
+        "stdoutTail": "",
+        "stderrTail": "pkg/main.py:1: ModuleNotFoundError: No module named '.gone' (imported from pkg/main.py)\n",
+        "logFile": "fixture-python-1/04-qsr-check-imports.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+    "runnerEnv": {
+      "hostPlatform": "win32",
+      "imageRef": "qsr-python:local",
+      "imageDigest": "sha256:0e27ef6923d383d4cfb011fd299bdf87e7de2280613d1c335793c35224488f0d",
+      "imageSource": "local",
+      "dockerServer": "29.8.0",
+      "memoryLimit": "2g",
+      "cpus": "2",
+      "python": "Python 3.12.15",
+      "pip": "25.0.1",
+      "registry": "https://pypi.org/simple",
+      "os": "Debian GNU/Linux 12 (bookworm)",
+      "resolved": "{\"six\":\"1.17.0\"}"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "Collecting six\n  Downloading six-1.17.0-py2.py3-none-any.whl.metadata (1.7 kB)\nDownloading six-1.17.0-py2.py3-none-any.whl (11 kB)\nInstalling collected packages: six\nSuccessfully installed six-1.17.0\n",
+    "qsr-check-syntax": "ok syntax pkg/__init__.py pkg/main.py\n",
+    "qsr-check-imports": "pkg/main.py:1: ModuleNotFoundError: No module named '.gone' (imported from pkg/main.py)\n"
+  },
+  "commands": {
+    "s1": "pip install six"
+  }
+}

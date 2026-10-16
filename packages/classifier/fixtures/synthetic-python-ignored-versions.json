@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-python-ignored-versions",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-python",
+    "language": "python",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "RUNTIME_VERSION",
+    "rule": "runtime.python_ignored_versions"
+  },
+  "runResult": {
+    "toolSlug": "fixture-python",
+    "cycleId": "4c4a56c7-440d-4c10-98de-441a484b983c",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "Collecting acme-sdk\nINFO: pip is looking at multiple versions of acme-sdk to determine which version is compatible with other requirements.\nERROR: Ignored the following versions that require a different Python version: 4.0.0 Requires-Python >=3.13; 3.9.0 Requires-Python >=3.13\nERROR: Could not find a version that satisfies the requirement acme-sdk (from versions: none)\nERROR: No matching distribution found for acme-sdk\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "Collecting acme-sdk\nINFO: pip is looking at multiple versions of acme-sdk to determine which version is compatible with other requirements.\nERROR: Ignored the following versions that require a different Python version: 4.0.0 Requires-Python >=3.13; 3.9.0 Requires-Python >=3.13\nERROR: Could not find a version that satisfies the requirement acme-sdk (from versions: none)\nERROR: No matching distribution found for acme-sdk\n"
+  },
+  "commands": {
+    "s1": "pip install acme-sdk"
+  }
+}

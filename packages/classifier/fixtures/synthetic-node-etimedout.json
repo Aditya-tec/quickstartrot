@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-node-etimedout",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "NETWORK_TRANSIENT",
+    "rule": "network.npm_code"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "cda0f7f9-22ed-4c98-b539-c57d4c2bcdc4",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "shell",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "npm error code ETIMEDOUT\nnpm error syscall connect\nnpm error errno ETIMEDOUT\nnpm error network request to https://registry.npmjs.org/acme-sdk failed, reason: connect ETIMEDOUT 104.16.0.35:443\nnpm error network This is a problem related to network connectivity.\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "npm error code ETIMEDOUT\nnpm error syscall connect\nnpm error errno ETIMEDOUT\nnpm error network request to https://registry.npmjs.org/acme-sdk failed, reason: connect ETIMEDOUT 104.16.0.35:443\nnpm error network This is a problem related to network connectivity.\n"
+  },
+  "commands": {
+    "s1": "npm install acme-sdk"
+  }
+}

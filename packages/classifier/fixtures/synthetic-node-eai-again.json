@@ -1,0 +1,52 @@
+{
+  "id": "synthetic-node-eai-again",
+  "origin": "synthetic",
+  "note": null,
+  "target": {
+    "slug": "fixture-node",
+    "language": "node",
+    "level": 2,
+    "authErrorIsPass": false
+  },
+  "expect": {
+    "class": "NETWORK_TRANSIENT",
+    "rule": "network.dns"
+  },
+  "runResult": {
+    "toolSlug": "fixture-node",
+    "cycleId": "7da4f191-3c36-4341-a13e-7438904f1a91",
+    "attempt": 1,
+    "planId": null,
+    "snapshotHash": null,
+    "outcome": "FAIL",
+    "reachedLevel": 0,
+    "failedStepId": "s1",
+    "steps": [
+      {
+        "stepId": "s1",
+        "ordinal": 0,
+        "kind": "run",
+        "outcome": "FAIL",
+        "exitCode": 1,
+        "durationMs": 1000,
+        "stdoutTail": null,
+        "stderrTail": "Error: getaddrinfo EAI_AGAIN api.acme.example\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26) {\n  errno: -3001,\n  code: 'EAI_AGAIN',\n  syscall: 'getaddrinfo',\n  hostname: 'api.acme.example'\n}\n",
+        "logFile": "fixture/00-s1.log",
+        "matchedAuthPattern": null,
+        "skipReason": null
+      }
+    ],
+    "imageDigest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "runnerEnv": {
+      "synthetic": "true"
+    },
+    "startedAt": "2026-10-16T00:00:00.000Z",
+    "finishedAt": "2026-10-16T00:00:01.000Z"
+  },
+  "logs": {
+    "s1": "Error: getaddrinfo EAI_AGAIN api.acme.example\n    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:120:26) {\n  errno: -3001,\n  code: 'EAI_AGAIN',\n  syscall: 'getaddrinfo',\n  hostname: 'api.acme.example'\n}\n"
+  },
+  "commands": {
+    "s1": "node index.js"
+  }
+}

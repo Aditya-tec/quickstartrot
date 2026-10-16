@@ -2,11 +2,19 @@ import { describe, expect, it } from 'vitest';
 import {
   Extraction,
   FAILURE_CLASSES,
+  INITIAL_TOOL_STATE,
   parseResolved,
+  PASSES_TO_RECOVER,
+  RECURRENCE_WINDOW_DAYS,
   RUNNER_ENV_KEYS,
   RunResult,
+  runSkipReason,
+  SKIP_REASONS,
+  StatusEvent,
   StepIR,
   Target,
+  ToolState,
+  TRANSIENT_INCIDENT_STREAK,
   type TargetInput,
   TAIL_MAX_BYTES,
 } from './index.js';
@@ -181,9 +189,26 @@ describe('RunResult', () => {
     finishedAt: '2026-10-16T00:01:00Z',
   };
 
-  it('parses and defaults matchedAuthPattern', () => {
+  it('parses and defaults matchedAuthPattern and skipReason', () => {
     const r = RunResult.parse(run);
     expect(r.steps[0]?.matchedAuthPattern).toBeNull();
+    expect(r.steps[0]?.skipReason).toBeNull();
+  });
+
+  it('carries why a step was skipped on the STEP, so the spec section 9 run shape is unchanged', () => {
+    expect(SKIP_REASONS).toEqual(['manual_step']);
+    const step = { ...run.steps[0], stepId: 's2', kind: 'manual', outcome: 'SKIPPED' };
+    const skipped = RunResult.parse({
+      ...run,
+      outcome: 'SKIPPED',
+      steps: [run.steps[0], { ...step, skipReason: 'manual_step' }],
+    });
+    expect(skipped.steps[1]?.skipReason).toBe('manual_step');
+    expect(runSkipReason(skipped)).toBe('manual_step');
+    expect(runSkipReason(RunResult.parse(run))).toBeNull();
+    expect(
+      RunResult.safeParse({ ...run, steps: [{ ...run.steps[0], skipReason: 'tired' }] }).success,
+    ).toBe(false);
   });
 
   it('is exactly the spec section 9 shape: no extra top-level keys, runnerEnv is a flat string record', () => {
@@ -234,5 +259,58 @@ describe('RunResult', () => {
 describe('taxonomy', () => {
   it('has the 11 failure classes from the spec', () => {
     expect(FAILURE_CLASSES).toHaveLength(11);
+  });
+});
+
+describe('status engine types', () => {
+  it('INITIAL_TOOL_STATE is a valid ToolState and a fresh tool is UNKNOWN', () => {
+    expect(ToolState.parse(INITIAL_TOOL_STATE)).toEqual(INITIAL_TOOL_STATE);
+    expect(INITIAL_TOOL_STATE.status).toBe('UNKNOWN');
+  });
+
+  it('ToolState rejects negative streaks and unknown statuses', () => {
+    expect(ToolState.safeParse({ ...INITIAL_TOOL_STATE, consecutiveFailures: -1 }).success).toBe(
+      false,
+    );
+    expect(ToolState.safeParse({ ...INITIAL_TOOL_STATE, status: 'GREAT' }).success).toBe(false);
+  });
+
+  it('the spec numbers are constants: 7 days, 4 transient in a row, 2 passes', () => {
+    expect([RECURRENCE_WINDOW_DAYS, TRANSIENT_INCIDENT_STREAK, PASSES_TO_RECOVER]).toEqual([
+      7, 4, 2,
+    ]);
+  });
+
+  it('every event type parses and unknown ones do not', () => {
+    const events = [
+      {
+        type: 'incident_opened',
+        failureClass: 'API_DRIFT',
+        signature: 's',
+        trigger: 'repeat_failure',
+      },
+      { type: 'incident_resolved', incidentId: 'i' },
+      {
+        type: 'incident_signature_changed',
+        incidentId: 'i',
+        from: 'a',
+        to: 'b',
+        failureClass: 'API_DRIFT',
+      },
+      { type: 'incident_recurred', incidentId: 'i', signature: 's', failureClass: 'API_DRIFT' },
+      { type: 'admin_queue', reason: 'skipped', failureClass: null, signature: null, detail: 'd' },
+      { type: 'cycle_ignored', note: 'n' },
+    ];
+    for (const e of events) expect(StatusEvent.safeParse(e).success, e.type).toBe(true);
+    expect(StatusEvent.safeParse({ type: 'incident_deleted' }).success).toBe(false);
+    expect(
+      StatusEvent.safeParse({
+        type: 'admin_queue',
+        reason: 'because',
+        failureClass: null,
+        signature: null,
+        detail: '',
+      }).success,
+    ).toBe(false);
   });
 });

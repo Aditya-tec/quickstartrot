@@ -8,10 +8,12 @@ allowBuilds:
 catalog:
   typescript: 6.0.3
   vitest: ^5.0.5
+  '@vitest/coverage-v8': ^5.0.5
   zod: ^4.6.7
   '@types/node': ^22.20.5
 
 minimumReleaseAgeExclude:
+  - '@vitest/coverage-v8@5.0.5'
   - '@vitest/mocker@5.0.5'
   - '@vitest/spy@5.0.5'
   - vitest@5.0.5
