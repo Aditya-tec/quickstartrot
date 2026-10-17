@@ -9,6 +9,99 @@ Nothing is carried forward from P8 that P9a left open. The P9 request to choose 
 below): `chalk-node`, `loguru-python` and `dotenv-python` are calibration targets only, and the L3 share is small on purpose
 (most vendor quickstarts need an account).
 
+## Go-live (after P9a)
+
+State on 2026-10-17: CI is green on `39e3834` (workflow `ci`, run 39048670528). Production push is **not done**: `API_BASE_URL` is empty in the local `.env`
+and the URL in DEPLOY.md (`quickstartrot-api.onrender.com`) did not answer, so there is no verified route to the Render API yet. `ADMIN_TOKEN` (48
+characters) and `INGEST_HMAC_SECRET` (64) are set locally, and have not been compared with Render's values. Nothing was sent to production.
+
+### Ably hash drift: diagnosis
+
+- **What changes:** one token in one code block per page, the Ably demo API key `xVLyHw.<id>:*****`. The first part (`xVLyHw`, the app) and the masked
+  secret never change; the key id after the dot does: `-gbZ_g` (12:37 UTC), `ExKkfw` (13:20), `E9IfQw` (about 15:55), `ztp85A` (16:30 and again at
+  16:43). It sits in `ably-python` block 12 (python, `AblyRealtime("xVLyHw.<id>:*****", ...)`) and `ably-node` block 6 (shell). It is a key the page
+  generates for visitors, not a nonce in our crawl.
+- **How often:** five crawls of each page 2 minutes apart (16:30 to 16:39) gave the identical hash every time, so the id is not per request. It
+  changed at least four times between 12:37 and 16:30, so it rotates on a timescale of tens of minutes to hours. I could not measure the period more
+  tightly without more days of crawls.
+- **What does not change:** no block differs across the five crawls (no prose, version, date or tab-order change). Older extractions were not kept, so
+  the comparison with the 12:37, 13:20 and 15:55 hashes is limited to the blocks the compiled plans cited; in those the key id is the only
+  difference. Block count is stable (44 and 42).
+- **Rest of the list:** all 51 enabled pages were crawled again at 16:40 to 16:44. 49 of 51 still match a plan that `qsr run` cached hours earlier, and
+  no block on any other page matches the key shape `<id>.<id>:***`. So Ably is the only page that drifts.
+- **Cost if left alone:** up to one compile per Ably page per cycle (about 3.4k tokens each, so at most 8 compiles, about 27k tokens a day, 18% of
+  the 150k budget), and a `compile_deferred` queue item whenever the model is out.
+- **Proposals (nothing changed; waiting for an answer):**
+  1. Recommended: in `contentHash` only, replace a key of the exact shape `<5-8 chars>.<5-8 chars>:` followed by three or more `*` with
+     `<5-8 chars>.<KEYID>:***` before hashing. Stars never appear in a real key, so the shape cannot hide a real change. The stored extraction and the
+     plan keep the verbatim text; a cache hit then runs the key id from compile time, which is a demo key and not contacted at L2. Effect on the
+     other 49 cache keys: none (no block of theirs matches; checked on today's crawl of all 51). Effect on Ably: both hashes change once, and the
+     local plans for them are keyed by old hashes, so they need their two compiles anyway. Nothing is in production yet, so no production cache key
+     is invalidated. The change touches `packages/core/src/content-hash.ts` (the crawler and the API's re-check both use it) and needs a test with a
+     fixture for the shape and one proving a non-matching block hashes as before.
+  2. Hash only code blocks and filename hints: not recommended. It changes every target's hash (51 recompiles, about 174k tokens, 2 days) and
+     does not help, because the volatile token is inside a code block.
+  3. No code change: accept up to 8 compiles a day for Ably, or set both Ably targets to `enabled: false` until 1 is decided (49 targets).
+
+### Review kit for the first full cycle
+
+**What a healthy run looks like at 51 targets (55 tools with the canaries)**
+
+- Plan job summary: `10 shards, 4 canaries.` and a table with 51 rows. `ready` for 49 or 51; the Ably rows say `ready` if their compile worked or
+  `skipped` / `deferred: <reason>` if the model was out. No `pre_failed` rows. The plan job takes about 3 to 6 minutes (51 pages, 4 at a time).
+- Execute: 10 shard jobs, about 5 tools each (shard 0 also has the other three canaries). Each shard about 3 to 8 minutes; the first run is slower
+  (image pulls, no caches).
+- Report headline: `49 passed, 0 failed, 1 skipped (51 tools, 4 canaries)` is the best case. `47 passed, 0 failed, 3 skipped` is the case where
+  both Ably plans are deferred. The skipped rows are `hono-node` (a manual step, by design) and any `deferred: ...` Ably row; tell them apart by the
+  Plan column. Six rows show `L1 / L2` and PASS (chai, socketio, jinja-intro, flask-install, rxjs, pydantic-install); five show `L3 / L3`
+  (chalk, loguru, dotenv, anthropic-node, resend-node). Canary rows: `canary-fail-dep` FAIL `DEPENDENCY_RESOLUTION`, `canary-fail-drift` FAIL
+  `API_DRIFT`, the two `canary-pass-*` PASS. Those two FAIL rows are correct.
+- Whole workflow about 15 to 25 minutes (estimate 16 to 18 plus first-run overhead). Over 45 minutes is a stop sign.
+- Status engine after one cycle: a PASS moves a tool from UNKNOWN to HEALTHY at once; hono and the deferred ones stay UNKNOWN. A first FAIL
+  makes a tool DEGRADED, which is not public. BROKEN needs two failures in valid cycles and your review.
+
+**First 30 minutes after it finishes**
+
+1. The run is green in Actions, the `report` job finished, and the summary says `valid` (not `INVALID`).
+2. `pnpm qsr calibration-report --days 1` (below). Cycles: 1 valid, 0 invalid. Harness error rate: 0 is expected; the bar is under 2%, and
+   `qsr report` opens a `harness` issue at 5%.
+3. Canaries: four lines, mismatched 0.
+4. Compile deferrals: only `ably-node` and `ably-python`, or none. Any other tool deferred means the budget guard or the model failed: look at
+   Model tokens per day and stop to think before the next cycle.
+5. UNKNOWN classifications: none expected. Anything there is a failure no rule matched, so a real run failed. Read its evidence line.
+6. The admin page (Pipeline status and the queue): the queue should hold only `compile_deferred` items for Ably, at most. Incidents to review: 0.
+7. Storage: the database gauge at a few percent and objects far below 1%.
+8. The site: open two tool pages and one run page; a failing tool, if any, must say "verifying" with no cause.
+
+**Commands (against production; the Render URL in `API_BASE_URL`, `ADMIN_TOKEN` from Render, both in `.env`)**
+
+```
+pnpm qsr calibration-report --days 1
+pnpm qsr export --launch --md        # refuses anything not reviewed and confirmed; "No incident has been confirmed yet" is right
+pnpm qsr plans push --all --dry-run  # should be all `already_there` plus the Ably rows
+```
+
+How to read the report: **Cycles** (valid / invalid and why; an invalid cycle changed no status). **Harness error rate** (errors of ours as a share of
+final attempts; the line under it says whether the bar is met). **Tools** (Pass, Fail, Skipped, Harness, Not run, Deferred, Stale; Flake is
+the share of pass/fail flips, only meaningful after several cycles). **UNKNOWN classifications** (failures no rule matched, with the last line they
+printed; each needs a rule). **Runs classified by the model** (accepted at 0.7 confidence or more with the evidence line in the log). **Compile**
+(deferrals by tool and reason, stale-plan runs, model tokens per day). **Incidents** (open, confirmed, false positive, pending review).
+**Canaries** (expected vs actual, mismatched must be 0). **Slowest tools** (median and max; the cap is 180 s per step). **Storage used**
+(database, and Storage objects when visible).
+
+**Stop the cron if any of these happens**
+
+- Two invalid cycles in a row, or any canary mismatch you cannot explain.
+- Harness error rate at or above 5% in a cycle, or above 2% over a full day (the `harness` issue opens at 5%).
+- A tool shown as failing on the site without a confirmed incident, or any run log or page containing something that looks like a secret.
+- More than a handful of queue items that are not Ably's `compile_deferred`, or an UNKNOWN classification that is not understood.
+- The workflow taking over 45 minutes, a plan job timeout (20 minutes), or the API unreachable.
+- A robots.txt, blocking or rate complaint from a vendor, an opt-out email, or Groq or Supabase usage above 70% of a limit.
+
+One line to stop it: `gh workflow disable probe.yml --repo Aditya-tec/quickstartrot` (or Actions, probe, the three dots, Disable workflow). That also stops
+manual runs; `gh workflow enable probe.yml --repo Aditya-tec/quickstartrot` brings it back. A run in progress is stopped with
+`gh run cancel <run-id> --repo Aditya-tec/quickstartrot`. The cron is `17 */6 * * *`.
+
 ## Findings from P9a (scale to 50 targets, harden for scale, calibration tooling)
 
 P9b (the 7-day review with real data) and P10 are not started. Nothing here is simulated: every number below is either measured
