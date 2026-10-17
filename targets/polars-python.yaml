@@ -1,0 +1,11 @@
+slug: polars-python
+name: Polars
+docsUrl: https://docs.pola.rs/user-guide/getting-started/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main article
+notes: '"Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 96.6 s of steps. Plan: shell pip install polars > write main.py > append main.py, then the harness syntax and import checks (2 passed). Resolved: polars@2.0.0, polars-runtime-32@2.0.0. Crawl: root ''main article'', 64 blocks on the page."'

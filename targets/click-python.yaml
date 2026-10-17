@@ -1,0 +1,12 @@
+slug: click-python
+name: Click
+docsUrl: https://click.palletsprojects.com/en/stable/quickstart/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: div.highlight pre
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 5.6 s of steps. Plan: shell pip install click > write main.py > append main.py, then the harness syntax and import checks (2 passed). Resolved: click@8.5.0. Crawl: root '[role=main]', 34 blocks on the page."

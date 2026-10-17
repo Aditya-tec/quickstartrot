@@ -1,0 +1,14 @@
+slug: upstash-redis-node
+name: Upstash Redis (TypeScript)
+docsUrl: https://upstash.com/docs/redis/sdks/ts/getstarted
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+placeholders:
+  <UPSTASH_REDIS_REST_URL>: '"https://dummy.example.com"'
+  <UPSTASH_REDIS_REST_TOKEN>: '"qsr_dummy_key"'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.4 s of steps. Plan: shell npm install @upstash/redis > write index.js, then the harness syntax and import checks (2 passed). Resolved: @upstash/redis@1.39.0. Crawl: root 'main article', 9 blocks on the page."

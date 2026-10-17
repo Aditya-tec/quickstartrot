@@ -26,6 +26,9 @@ Usage:
   qsr execute  --shard N [--plans plans] [--out results]
   qsr report   --cycle <id> [--results results] [--plans plans]
   qsr gc
+  qsr calibration-report [--days 7]
+  qsr export --launch [--site <url>] [--json | --md]
+  qsr plans push <slug> | --all [--dry-run] [--include-disabled] [--targets <dir>] [--cache-dir <dir>]
   qsr validate [--targets <dir>] [--only a,b] [--crawl]
 
 Commands (phase that implements them):
@@ -38,10 +41,14 @@ Commands (phase that implements them):
   report    Probe pipeline: upload logs, post runs, finish the cycle           (P7)
   gc        Ask the API to delete expired logs, diffs and traces               (P7)
   validate  Check every target file; --crawl does a dry-run crawl              (P7)
+  plans     push: send locally compiled plans to the API plan cache (admin)     (P9a)
+  calibration-report  Markdown report of the last N days from GET /admin/stats   (P9a)
+  export    --launch: the numbers for a launch post, confirmed incidents only    (P9a)
 
 Environment (a .env file in the working directory is loaded):
   GROQ_API_KEY         needed only when a plan is not already cached
   QSR_COMPILER_MODEL   overrides the model name (default in packages/compiler/src/config.ts)
+  API_BASE_URL, ADMIN_TOKEN   needed by the admin commands (plans push, calibration-report, export)
 
 Exit codes: 0 ok, 1 crawl failed or the plan was rejected, 2 usage or invalid target,
             3 the model was unreachable or refused the request,

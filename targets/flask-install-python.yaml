@@ -1,0 +1,12 @@
+slug: flask-install-python
+name: Flask (installation)
+docsUrl: https://flask.palletsprojects.com/en/stable/installation/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: div.highlight pre
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L1 of L2 in 6.7 s of steps. Plan: shell mkdir myproject > shell cd myproject > shell python3 -m venv .venv > shell . .venv/bin/activate > shell pip install Flask. Resolved: blinker@1.9.0, click@8.5.0, Flask@3.1.3, itsdangerous@2.2.0, Jinja2@3.1.6, MarkupSafe@3.0.4, Werkzeug@3.1.9. Crawl: root '[role=main]', 15 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1. Each step runs in its own shell, so the venv steps (cd, activate) do not carry over and pip installed Flask into the image's Python; the install itself is what is tested."

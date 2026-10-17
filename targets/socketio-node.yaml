@@ -1,0 +1,11 @@
+slug: socketio-node
+name: Socket.IO server
+docsUrl: https://socket.io/docs/v4/server-installation/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .markdown
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L1 of L2 in 3.5 s of steps. Plan: shell npm install socket.io. Resolved: socket.io@4.8.4. Crawl: root '.markdown', 35 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1."

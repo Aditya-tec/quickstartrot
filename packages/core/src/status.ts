@@ -137,5 +137,11 @@ export const INITIAL_TOOL_STATE: ToolState = {
 export const RECURRENCE_WINDOW_DAYS = 7;
 /** Spec section 10: "4 in a row" transient failures open an incident. */
 export const TRANSIENT_INCIDENT_STREAK = 4;
+/**
+ * Spec section 10: the same vendor failure signature this many times in a row (the first moves the tool to
+ * DEGRADED, the next opens an incident). The engine encodes it as the DEGRADED to BROKEN row; a status test pins
+ * that every such transition lands on this count.
+ */
+export const FAILURES_TO_OPEN_INCIDENT = 2;
 /** Spec section 10: HEALTHY again once consecutive_passes reaches 2. */
 export const PASSES_TO_RECOVER = 2;

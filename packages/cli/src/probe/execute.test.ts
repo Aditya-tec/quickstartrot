@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DockerClient, ExecuteDeps, ExecuteInput } from '@qsr/executor';
 import {
+  PIPELINE,
   type Manifest,
   RunResult,
   RUNNER_ENV_KEYS,
@@ -12,7 +13,13 @@ import {
   type RunResult as RunResultType,
   type Target,
 } from '@qsr/core';
-import { HarnessCrash, localClassify, runExecute, type ExecuteDeps as Deps } from './execute.js';
+import {
+  DEFAULT_RETRY_DELAY_MS,
+  HarnessCrash,
+  localClassify,
+  runExecute,
+  type ExecuteDeps as Deps,
+} from './execute.js';
 import {
   CYCLE,
   PLAN_ID,
@@ -228,7 +235,8 @@ describe('the transient retry (spec section 10): once, after 60 s, and only the 
       const h = harness({ classify: async () => cls }, { 'a-node': failing('npm error network') });
       await run(h);
       expect(h.calls.map((c) => c.attempt)).toEqual([1, 2]);
-      expect(h.sleeps).toEqual([60_000]);
+      expect(h.sleeps).toEqual([PIPELINE.transientRetryDelaySeconds * 1000]);
+      expect(DEFAULT_RETRY_DELAY_MS).toBe(PIPELINE.transientRetryDelaySeconds * 1000);
       expect((await readResult('a-node-1.json')).outcome).toBe('FAIL');
       expect((await readResult('a-node-2.json')).outcome).toBe('PASS');
     },

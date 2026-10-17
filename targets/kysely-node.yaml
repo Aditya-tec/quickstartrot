@@ -1,0 +1,12 @@
+slug: kysely-node
+name: Kysely
+docsUrl: https://kysely.dev/docs/getting-started
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .markdown
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): HARNESS_ERROR. npm install kysely and pg, then write tsconfig.json and three .ts files all PASS; the harness check qsr-check-syntax crashed with 'tsc could not check the files: error TS5112: tsconfig.json is present but will not be loaded if files are specified on the command line' (TypeScript 6). That is our harness failing on a project with a tsconfig, not the quickstart failing; to fix with --ignoreConfig (guarded for older TypeScript) in P9b."

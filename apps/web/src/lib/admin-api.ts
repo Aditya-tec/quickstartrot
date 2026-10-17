@@ -1,4 +1,9 @@
-import { AdminQueueResponse, type ConfirmBody, type FalsePositiveBody } from '@qsr/core/public';
+import {
+  AdminQueueResponse,
+  StatsResponse,
+  type ConfirmBody,
+  type FalsePositiveBody,
+} from '@qsr/core/public';
 import { z } from 'zod';
 import { isUuid } from './service';
 
@@ -73,6 +78,8 @@ export function createAdminApi(deps: AdminApiDeps) {
 
   return {
     queue: () => call('/admin/queue', AdminQueueResponse),
+    /** The pipeline's own numbers (cycles, harness errors, model tokens, storage), for the status section. */
+    stats: (days = 7) => call(`/admin/stats?days=${days}`, StatsResponse),
     async confirm(id: string, body: z.input<typeof ConfirmBody>): Promise<AdminResult<unknown>> {
       const path = incidentPath(id, 'confirm');
       return path === null

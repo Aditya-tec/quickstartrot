@@ -20,7 +20,10 @@ provider, deployed to Render's free tier (see [DEPLOY.md](../../DEPLOY.md)). The
 | `POST /admin/incidents/:id/confirm`        | Bearer     | publish an incident (a human reviewed it)                                                                                           |
 | `POST /admin/incidents/:id/false-positive` | Bearer     | resolve it and reset the streaks                                                                                                    |
 | `POST /admin/tools/:slug/disable`          | Bearer     | disable a tool for good (a re-sync cannot re-enable it)                                                                             |
-| `POST /admin/gc`                           | HMAC       | delete expired logs, false-positive diffs and traces                                                                                |
+| `POST /admin/gc`                           | HMAC       | delete expired logs, false-positive diffs and traces; reports `freedBytes` (null when storage sizes are not visible)                |
+| `GET /admin/stats?days=N`                  | Bearer     | cycles, harness errors, per-tool counts, UNKNOWNs, incidents, canaries, model tokens, storage used (calibration review, admin page) |
+| `GET /admin/export/launch`                 | Bearer     | the numbers for the launch post; only incidents reviewed and CONFIRMED can appear                                                   |
+| `POST /admin/plans/import`                 | Bearer     | a locally compiled plan with its extraction; the grounding validator runs again; stored under the plan cache key (8 MB limit)       |
 
 HMAC: headers `X-QSR-Timestamp` (unix seconds) and `X-QSR-Signature: sha256=<hex>` over `timestamp + "." + rawBody`,
 300 s window (`signRequest` / `verifyRequest` in `@qsr/core`, 100% covered). Errors are `application/problem+json`

@@ -1,0 +1,1525 @@
+[
+  {
+    "slug": "express-node",
+    "name": "Express",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://expressjs.com/en/starter/hello-world.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "axios-node",
+    "name": "Axios",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://axios-http.com/docs/example",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "jest-node",
+    "name": "Jest",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://jestjs.io/docs/getting-started",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "mocha-node",
+    "name": "Mocha",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://mochajs.org/#getting-started",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "ajv-node",
+    "name": "Ajv",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://ajv.js.org/guide/getting-started.html",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "valibot-node",
+    "name": "Valibot",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://valibot.dev/guides/quick-start/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "date-fns-node",
+    "name": "date-fns",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://date-fns.org/docs/Getting-Started",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "dayjs-node",
+    "name": "Day.js",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://day.js.org/docs/en/installation/installation",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "knex-node",
+    "name": "Knex.js",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://knexjs.org/guide/",
+    "status": "excluded",
+    "reason": "The page is a configuration catalogue (38 code blocks, one per database): far more than a prompt can hold and nothing to run as a single quickstart."
+  },
+  {
+    "slug": "sequelize-node",
+    "name": "Sequelize",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://sequelize.org/docs/v6/getting-started/",
+    "status": "excluded",
+    "reason": "Run 2026-10-17 (twice): the first run failed installing the sqlite3 native driver (prebuilt download timed out); the second installed it, then the harness syntax check failed because the plan appended two alternative snippets (Identifier 'sequelize' already declared). The page lists alternatives (one of the following databases), which one plan cannot follow."
+  },
+  {
+    "slug": "mongoose-node",
+    "name": "Mongoose",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://mongoosejs.com/docs/index.html",
+    "status": "excluded",
+    "reason": "The first snippet connects to a MongoDB server on localhost; a clean machine has none, so the run would fail for a reason that says nothing about the docs."
+  },
+  {
+    "slug": "bullmq-node",
+    "name": "BullMQ",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://docs.bullmq.io/readme-1",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "trpc-node",
+    "name": "tRPC",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://trpc.io/docs/quickstart",
+    "status": "excluded",
+    "reason": "The quickstart is a multi-file client and server app started with an interactive installer (npx @tanstack/intent install): needs a person."
+  },
+  {
+    "slug": "cheerio-node",
+    "name": "Cheerio",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://cheerio.js.org/docs/intro",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "marked-node",
+    "name": "marked",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://marked.js.org/#usage",
+    "status": "excluded",
+    "reason": "Crawled: the page mixes browser, CLI and Node usage with fragments that are not a single runnable quickstart."
+  },
+  {
+    "slug": "esbuild-node",
+    "name": "esbuild",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://esbuild.github.io/getting-started/",
+    "status": "excluded",
+    "reason": "Crawl failed: no code blocks match 'pre code' on this page (the code is rendered another way); not pursued."
+  },
+  {
+    "slug": "nodemailer-node",
+    "name": "Nodemailer",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://nodemailer.com/",
+    "status": "excluded",
+    "reason": "Every example connects to an SMTP server; without one the run fails on the network, which says nothing about the docs."
+  },
+  {
+    "slug": "pino-node",
+    "name": "Pino",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://getpino.io/#/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "sharp-node",
+    "name": "sharp",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://sharp.pixelplumbing.com/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "tsx-node",
+    "name": "tsx",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://tsx.is/getting-started",
+    "status": "excluded",
+    "reason": "robots.txt disallows QuickstartRotBot for the docs page (checked 2026-10-17)"
+  },
+  {
+    "slug": "requests-python",
+    "name": "Requests",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://requests.readthedocs.io/en/latest/user/quickstart/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "httpx-python",
+    "name": "HTTPX",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://www.python-httpx.org/quickstart/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "pydantic-python",
+    "name": "Pydantic",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.pydantic.dev/latest/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "sqlalchemy-python",
+    "name": "SQLAlchemy",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.sqlalchemy.org/en/20/orm/quickstart.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "click-python",
+    "name": "Click",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://click.palletsprojects.com/en/stable/quickstart/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "typer-python",
+    "name": "Typer",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://typer.tiangolo.com/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "rich-python",
+    "name": "Rich",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://rich.readthedocs.io/en/stable/introduction.html",
+    "status": "excluded",
+    "reason": "Run 2026-10-17: PASS but only L1 (pip install rich). The code blocks are REPL fragments, so nothing beyond the install is testable (criterion 4)."
+  },
+  {
+    "slug": "attrs-python",
+    "name": "attrs",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://www.attrs.org/en/stable/overview.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "structlog-python",
+    "name": "structlog",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://www.structlog.org/en/stable/getting-started.html",
+    "status": "excluded",
+    "reason": "Run 2026-10-17: install passed, then the harness syntax check failed (SyntaxError: leading zeros): The examples are interactive REPL sessions; the plan joins fragments into one file that is not valid code, so there is nothing fair to test."
+  },
+  {
+    "slug": "aiohttp-python",
+    "name": "aiohttp",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.aiohttp.org/en/stable/client_quickstart.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "tenacity-python",
+    "name": "Tenacity",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://tenacity.readthedocs.io/en/latest/",
+    "status": "excluded",
+    "reason": "Crawled: 33 small fragments of one decorator (no complete snippet); nothing fair to run as one file."
+  },
+  {
+    "slug": "jinja2-python",
+    "name": "Jinja",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://jinja.palletsprojects.com/en/stable/api/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "numpy-python",
+    "name": "NumPy",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://numpy.org/doc/stable/user/absolute_beginners.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "upstash-redis-node",
+    "name": "Upstash Redis (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://upstash.com/docs/redis/sdks/ts/getstarted",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "upstash-qstash-node",
+    "name": "Upstash QStash (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://upstash.com/docs/qstash/sdks/ts/gettingstarted",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "upstash-vector-node",
+    "name": "Upstash Vector (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://upstash.com/docs/vector/sdks/ts/getting-started",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "upstash-redis-python",
+    "name": "Upstash Redis (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://upstash.com/docs/redis/sdks/py/gettingstarted",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "neon-serverless-node",
+    "name": "Neon serverless driver",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://neon.com/docs/serverless/serverless-driver",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "supabase-js-node",
+    "name": "Supabase (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://supabase.com/docs/reference/javascript/introduction",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "supabase-python",
+    "name": "Supabase (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://supabase.com/docs/reference/python/introduction",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "turso-libsql-node",
+    "name": "Turso libSQL (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.turso.tech/sdk/ts/quickstart",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "stripe-node",
+    "name": "Stripe (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.stripe.com/get-started/development-environment?lang=node",
+    "status": "excluded",
+    "reason": "robots.txt disallows QuickstartRotBot for the docs page (checked 2026-10-17)"
+  },
+  {
+    "slug": "stripe-python",
+    "name": "Stripe (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.stripe.com/get-started/development-environment?lang=python",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "sendgrid-node",
+    "name": "SendGrid (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.twilio.com/docs/sendgrid/for-developers/sending-email/quickstart-nodejs",
+    "status": "disabled",
+    "level": 3,
+    "reason": "The plan ran the docs' interactive npm init, which prompts and fails; our harness already creates the project. A harness gap, to fix in P9b."
+  },
+  {
+    "slug": "sentry-node",
+    "name": "Sentry (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.sentry.io/platforms/javascript/guides/node/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "sentry-python",
+    "name": "Sentry (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.sentry.io/platforms/python/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "posthog-node",
+    "name": "PostHog (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://posthog.com/docs/libraries/node",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "posthog-python",
+    "name": "PostHog (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://posthog.com/docs/libraries/python",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "axiom-node",
+    "name": "Axiom (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://axiom.co/docs/send-data/javascript",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "openai-node",
+    "name": "OpenAI (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://platform.openai.com/docs/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "anthropic-node",
+    "name": "Anthropic (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.anthropic.com/en/docs/get-started",
+    "status": "enabled",
+    "level": 3
+  },
+  {
+    "slug": "groq-node",
+    "name": "Groq (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://console.groq.com/docs/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "mistral-node",
+    "name": "Mistral AI",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.mistral.ai/getting-started/quickstart/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "cohere-node",
+    "name": "Cohere",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.cohere.com/docs/the-cohere-platform",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "replicate-node",
+    "name": "Replicate (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://replicate.com/docs/get-started/nodejs",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "replicate-python",
+    "name": "Replicate (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://replicate.com/docs/get-started/python",
+    "status": "disabled",
+    "level": 3,
+    "reason": "With a dummy token the vendor's API answers HTTP 500 (not 401), so the L3 run fails in a way that says nothing about the quickstart."
+  },
+  {
+    "slug": "together-node",
+    "name": "Together AI",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.together.ai/docs/quickstart",
+    "status": "disabled",
+    "level": 3,
+    "reason": "The plan was rejected twice by the grounding validator: the docs never name the file the snippet is saved as."
+  },
+  {
+    "slug": "openrouter-node",
+    "name": "OpenRouter",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://openrouter.ai/docs/quickstart",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "pinecone-node",
+    "name": "Pinecone (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.pinecone.io/guides/get-started/quickstart",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "qdrant-python",
+    "name": "Qdrant (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://qdrant.tech/documentation/quickstart/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "weaviate-node",
+    "name": "Weaviate",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://weaviate.io/developers/weaviate/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "chroma-node",
+    "name": "Chroma (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.trychroma.com/getting-started",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "algolia-node",
+    "name": "Algolia (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.algolia.com/doc/guides/getting-started/quick-start/tutorials/quick-start-with-the-api-client/javascript/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "inngest-node",
+    "name": "Inngest",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.inngest.com/docs/getting-started/nextjs-quick-start",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "trigger-dev-node",
+    "name": "Trigger.dev",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://trigger.dev/docs/quick-start",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "ably-node",
+    "name": "Ably (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://ably.com/docs/getting-started/node",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "elasticsearch-node",
+    "name": "Elasticsearch (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.elastic.co/docs/reference/elasticsearch/clients/javascript/getting-started",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "mongodb-node",
+    "name": "MongoDB (Node.js driver)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.mongodb.com/docs/drivers/node/current/get-started/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "clickhouse-node",
+    "name": "ClickHouse (JavaScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://clickhouse.com/docs/integrations/javascript",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "slack-node",
+    "name": "Slack Node SDK",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://tools.slack.dev/node-slack-sdk/web-api/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "svix-node",
+    "name": "Svix",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.svix.com/quickstart",
+    "status": "excluded",
+    "reason": "Run 2026-10-17: install passed, then the harness syntax check failed (Identifier 'svix' has already been declared): the page shows several alternative snippets and the plan appended them into one file."
+  },
+  {
+    "slug": "loops-node",
+    "name": "Loops",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://loops.so/docs/sdks/javascript",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "e2b-node",
+    "name": "E2B",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://e2b.dev/docs/quickstart",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "vercel-ai-node",
+    "name": "Vercel AI SDK",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://ai-sdk.dev/docs/getting-started/nodejs",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Docs install steps use pnpm; the standard image ships npm only, so a run would fail for our environment, not the docs"
+  },
+  {
+    "slug": "langchain-node",
+    "name": "LangChain.js",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://js.langchain.com/docs/tutorials/llm_chain/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "prisma-node",
+    "name": "Prisma ORM",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/sqlite",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Docs install steps use bun; the standard image ships npm only, so a run would fail for our environment, not the docs"
+  },
+  {
+    "slug": "boto3-python",
+    "name": "AWS SDK for Python (boto3)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://boto3.amazonaws.com/v1/documentation/api/latest/guide/quickstart.html",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "litellm-python",
+    "name": "LiteLLM",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.litellm.ai/docs/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "redis-py-python",
+    "name": "redis-py",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://redis.io/docs/latest/develop/clients/redis-py/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "pymongo-python",
+    "name": "PyMongo",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://pymongo.readthedocs.io/en/stable/tutorial.html",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "prettier-node",
+    "name": "Prettier",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://prettier.io/docs/install",
+    "status": "disabled",
+    "level": 2,
+    "reason": "The plan stops at a manual step (a file whose content is described in prose): it needs a person."
+  },
+  {
+    "slug": "typescript-node",
+    "name": "TypeScript",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://www.typescriptlang.org/download/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "kysely-node",
+    "name": "Kysely",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://kysely.dev/docs/getting-started",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Harness bug: the TypeScript syntax check crashes (TS5112) when the plan writes a tsconfig.json. Fix in P9b."
+  },
+  {
+    "slug": "node-postgres-node",
+    "name": "node-postgres (pg)",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://node-postgres.com/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "mysql2-node",
+    "name": "MySQL2",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://sidorares.github.io/node-mysql2/docs",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "commander-node",
+    "name": "Commander.js",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/tj/commander.js",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "uuid-node",
+    "name": "uuid",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/uuidjs/uuid",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "nanoid-node",
+    "name": "Nano ID",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/ai/nanoid",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "execa-node",
+    "name": "execa",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/sindresorhus/execa",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "winston-node",
+    "name": "winston",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/winstonjs/winston",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "rxjs-node",
+    "name": "RxJS",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://rxjs.dev/guide/installation",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "immer-node",
+    "name": "Immer",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://immerjs.github.io/immer/installation",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "jsdom-node",
+    "name": "jsdom",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/jsdom/jsdom",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "node-cron-node",
+    "name": "node-cron",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/node-cron/node-cron",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "koa-node",
+    "name": "Koa",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://koajs.com/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "hapi-node",
+    "name": "hapi",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://hapi.dev/tutorials/gettingstarted/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "jsonwebtoken-node",
+    "name": "jsonwebtoken",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://github.com/auth0/node-jsonwebtoken",
+    "status": "excluded",
+    "reason": "Docs are a GitHub README. GitHub's acceptable-use policy limits excessive automated access and its terms are unclear for a recurring crawl, so by criterion 5 it is skipped (python-dotenv, a README target from P2, is kept at one request per cycle and is reviewed again in P9b)."
+  },
+  {
+    "slug": "fastapi-python",
+    "name": "FastAPI",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://fastapi.tiangolo.com/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "arrow-python",
+    "name": "Arrow",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://arrow.readthedocs.io/en/latest/",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Plan wrote a REPL transcript (with printed output lines) as main.py; harness syntax check failed"
+  },
+  {
+    "slug": "tqdm-python",
+    "name": "tqdm",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://tqdm.github.io/",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "httpx-home-python",
+    "name": "HTTPX (home page)",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://www.python-httpx.org/",
+    "status": "excluded",
+    "reason": "Run 2026-10-17: PASS but only L1 (pip install httpx); the examples are REPL fragments (criterion 4)."
+  },
+  {
+    "slug": "pydantic-install-python",
+    "name": "Pydantic (install)",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.pydantic.dev/latest/install/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "peewee-python",
+    "name": "peewee",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.peewee-orm.com/en/latest/peewee/quickstart.html",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "polars-python",
+    "name": "Polars",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.pola.rs/user-guide/getting-started/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "duckdb-python",
+    "name": "DuckDB (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://duckdb.org/docs/stable/clients/python/overview",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "chroma-python",
+    "name": "Chroma (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.trychroma.com/docs/overview/getting-started",
+    "status": "disabled",
+    "level": 2,
+    "reason": "pip install chromadb exceeds the 180 s step limit on the runner."
+  },
+  {
+    "slug": "resend-python",
+    "name": "Resend (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://resend.com/docs/send-with-python",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "twilio-node",
+    "name": "Twilio (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.twilio.com/docs/messaging/quickstart/node",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Plan wrote several alternative snippets into one file; harness syntax check failed"
+  },
+  {
+    "slug": "twilio-python",
+    "name": "Twilio (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://www.twilio.com/docs/messaging/quickstart/python",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Plan wrote two snippets, one a Flask handler fragment, and the harness syntax check failed"
+  },
+  {
+    "slug": "slack-python",
+    "name": "Slack SDK (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://tools.slack.dev/python-slack-sdk/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "openai-python",
+    "name": "OpenAI (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://platform.openai.com/docs/quickstart?language=python",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "anthropic-python",
+    "name": "Anthropic (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.anthropic.com/en/docs/get-started",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "cohere-python",
+    "name": "Cohere (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.cohere.com/docs/the-cohere-platform",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "mistral-python",
+    "name": "Mistral AI (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.mistral.ai/getting-started/quickstart/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "groq-python",
+    "name": "Groq (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://console.groq.com/docs/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "pinecone-python",
+    "name": "Pinecone (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.pinecone.io/guides/get-started/quickstart",
+    "status": "excluded",
+    "reason": "No install command on the page: a run would fail on the missing package and read as a false BROKEN"
+  },
+  {
+    "slug": "weaviate-python",
+    "name": "Weaviate (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://weaviate.io/developers/weaviate/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "supabase-quickstart-node",
+    "name": "Supabase (Node quickstart)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://supabase.com/docs/guides/getting-started/quickstarts/nextjs",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "firebase-admin-node",
+    "name": "Firebase Admin SDK (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://firebase.google.com/docs/admin/setup",
+    "status": "disabled",
+    "level": 2,
+    "reason": "The plan opens with a manual step (Run npm init to create a package.json as described): it needs a person."
+  },
+  {
+    "slug": "convex-node",
+    "name": "Convex",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.convex.dev/quickstart/nodejs",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "liveblocks-node",
+    "name": "Liveblocks",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://liveblocks.io/docs/get-started/nodejs",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "courier-node",
+    "name": "Courier",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.courier.com/docs/sdk-libraries/nodejs/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select (the page renders its code outside the static HTML or has none)"
+  },
+  {
+    "slug": "mixpanel-node",
+    "name": "Mixpanel (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.mixpanel.com/docs/tracking-methods/sdks/nodejs",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "honeybadger-node",
+    "name": "Honeybadger (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.honeybadger.io/lib/javascript/integration/node/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "rollbar-node",
+    "name": "Rollbar (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.rollbar.com/docs/nodejs",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "launchdarkly-node",
+    "name": "LaunchDarkly (Node.js server SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.launchdarkly.com/sdk/server-side/node-js",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "ngrok-node",
+    "name": "ngrok (Node.js SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://ngrok.com/docs/getting-started/javascript/",
+    "status": "disabled",
+    "level": 2,
+    "reason": "The plan stops at a manual step (create a file with the snippet): it needs a person."
+  },
+  {
+    "slug": "lodash-node",
+    "name": "Lodash",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://lodash.com/",
+    "status": "excluded",
+    "reason": "No install command on the page (probe: 4 blocks, none installs the package); the single-page site has no quickstart section"
+  },
+  {
+    "slug": "ejs-node",
+    "name": "EJS",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://ejs.co/",
+    "status": "excluded",
+    "reason": "No install command on the page; the ESM/CJS tabs carry only usage snippets"
+  },
+  {
+    "slug": "handlebars-node",
+    "name": "Handlebars",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://handlebarsjs.com/guide/",
+    "status": "excluded",
+    "reason": "No install command on the guide page (26 blocks, none installs the package)"
+  },
+  {
+    "slug": "chai-node",
+    "name": "Chai",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://www.chaijs.com/guide/installation/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "socketio-node",
+    "name": "Socket.IO server",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://socket.io/docs/v4/server-installation/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "jinja-intro-python",
+    "name": "Jinja (introduction)",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://jinja.palletsprojects.com/en/stable/intro/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "flask-install-python",
+    "name": "Flask (installation)",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://flask.palletsprojects.com/en/stable/installation/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "opentelemetry-node",
+    "name": "OpenTelemetry JavaScript",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://opentelemetry.io/docs/languages/js/getting-started/nodejs/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "opentelemetry-python",
+    "name": "OpenTelemetry Python",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://opentelemetry.io/docs/languages/python/getting-started/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "logfire-python",
+    "name": "Pydantic Logfire",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://logfire.pydantic.dev/docs/",
+    "status": "excluded",
+    "reason": "robots.txt disallows QuickstartRotBot for the docs (probe 2026-10-17)"
+  },
+  {
+    "slug": "google-genai-python",
+    "name": "Google Gen AI SDK (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://ai.google.dev/gemini-api/docs/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "assemblyai-python",
+    "name": "AssemblyAI (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://www.assemblyai.com/docs/getting-started/transcribe-an-audio-file",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "elevenlabs-python",
+    "name": "ElevenLabs (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://elevenlabs.io/docs/quickstart",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "deepgram-node",
+    "name": "Deepgram (Node.js SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://developers.deepgram.com/docs/js-sdk",
+    "status": "excluded",
+    "reason": "The page has no install command and no code root the crawler can select (probe found none)"
+  },
+  {
+    "slug": "huggingface-hub-python",
+    "name": "Hugging Face Hub (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://huggingface.co/docs/huggingface_hub/quick-start",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Plan wrote a REPL transcript (>>> prompt) as main.py; harness syntax check failed"
+  },
+  {
+    "slug": "voyageai-python",
+    "name": "Voyage AI (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.voyageai.com/docs/quickstart-tutorial",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Page is too long for one prompt (56 blocks, 27 not shown); the 20b model grounded the install on a prose block and the plan degraded to a manual step"
+  },
+  {
+    "slug": "cerebras-python",
+    "name": "Cerebras Inference (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://inference-docs.cerebras.ai/quickstart",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "upstash-ratelimit-node",
+    "name": "Upstash Ratelimit (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://upstash.com/docs/redis/sdks/ratelimit-ts/gettingstarted",
+    "status": "disabled",
+    "level": 2,
+    "reason": "Plan failed at the harness syntax check: the docs snippet is a Next.js middleware fragment with a top-level return"
+  },
+  {
+    "slug": "mailgun-node",
+    "name": "Mailgun (Node.js SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://documentation.mailgun.com/docs/mailgun/sdk/nodejs_sdk/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "brevo-node",
+    "name": "Brevo (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://developers.brevo.com/docs/send-a-transactional-email",
+    "status": "excluded",
+    "reason": "No install command on the page; the quickstart sends a request over HTTP and needs an account key to reach anything"
+  },
+  {
+    "slug": "betterstack-node",
+    "name": "Better Stack Logs (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://betterstack.com/docs/logs/javascript/",
+    "status": "excluded",
+    "reason": "No code root the crawler can select; the page has no install command"
+  },
+  {
+    "slug": "datadog-node",
+    "name": "Datadog APM (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.datadoghq.com/tracing/trace_collection/automatic_instrumentation/dd_libraries/nodejs/",
+    "status": "not-attempted",
+    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+  },
+  {
+    "slug": "surrealdb-node",
+    "name": "SurrealDB (JavaScript SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://surrealdb.com/docs/sdk/javascript",
+    "status": "excluded",
+    "reason": "No code root the crawler can select; needs a running SurrealDB server for any run"
+  },
+  {
+    "slug": "ably-python",
+    "name": "Ably (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://ably.com/docs/getting-started/python",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "pusher-node",
+    "name": "Pusher Channels (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://pusher.com/docs/channels/getting_started/javascript/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "lemonsqueezy-node",
+    "name": "Lemon Squeezy (JavaScript SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.lemonsqueezy.com/guides/developer-guide/getting-started",
+    "status": "excluded",
+    "reason": "No install command on the page (3 blocks)"
+  },
+  {
+    "slug": "paddle-node",
+    "name": "Paddle (Node.js SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://developer.paddle.com/resources/sdks",
+    "status": "excluded",
+    "reason": "No code root the crawler can select; the page is an SDK index with no quickstart"
+  },
+  {
+    "slug": "clickhouse-python",
+    "name": "ClickHouse Connect (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://clickhouse.com/docs/integrations/python",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "novu-node",
+    "name": "Novu (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.novu.co/platform/quickstart/nodejs",
+    "status": "excluded",
+    "reason": "No code root the crawler can select; the quickstart is account-bound (signup)"
+  },
+  {
+    "slug": "knock-node",
+    "name": "Knock (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.knock.app/getting-started/quick-start",
+    "status": "excluded",
+    "reason": "No code root the crawler can select; the quickstart is account-bound (signup)"
+  },
+  {
+    "slug": "chalk-node",
+    "name": "Chalk",
+    "group": "calibration",
+    "language": "node",
+    "docsUrl": "https://github.com/chalk/chalk",
+    "status": "enabled",
+    "level": 3,
+    "reason": "Calibration target only (P3): README with an install command and a snippet that exits; not part of the 50-target sample"
+  },
+  {
+    "slug": "loguru-python",
+    "name": "Loguru",
+    "group": "calibration",
+    "language": "python",
+    "docsUrl": "https://loguru.readthedocs.io/en/stable/overview.html",
+    "status": "enabled",
+    "level": 3,
+    "reason": "Calibration target only (P3): Sphinx page with pip install and a snippet that exits; not part of the 50-target sample"
+  },
+  {
+    "slug": "dotenv-python",
+    "name": "python-dotenv",
+    "group": "calibration",
+    "language": "python",
+    "docsUrl": "https://github.com/theskumar/python-dotenv",
+    "status": "enabled",
+    "level": 3,
+    "reason": "Calibration target only (P3): README with pip install and a snippet that exits; not part of the 50-target sample"
+  },
+  {
+    "slug": "hono-node",
+    "name": "Hono (Node.js)",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://hono.dev/docs/getting-started/basic",
+    "status": "enabled",
+    "level": 2,
+    "reason": "Deliberate \"needs a person\" example: the quickstart starts with an interactive scaffolder, so the tool is SKIPPED by design"
+  },
+  {
+    "slug": "drizzle-node",
+    "name": "Drizzle ORM (PostgreSQL)",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://orm.drizzle.team/docs/get-started/postgresql-new",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "fastify-node",
+    "name": "Fastify (Node.js)",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://fastify.dev/docs/latest/Guides/Getting-Started/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "pytest-python",
+    "name": "pytest",
+    "group": "library",
+    "language": "python",
+    "docsUrl": "https://docs.pytest.org/en/stable/getting-started.html",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "vitest-node",
+    "name": "Vitest",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://vitest.dev/guide/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "zod-node",
+    "name": "Zod (TypeScript)",
+    "group": "library",
+    "language": "node",
+    "docsUrl": "https://zod.dev/",
+    "status": "enabled",
+    "level": 2
+  },
+  {
+    "slug": "resend-node",
+    "name": "Resend (Node.js SDK)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://resend.com/docs/send-with-nodejs",
+    "status": "enabled",
+    "level": 3
+  }
+]

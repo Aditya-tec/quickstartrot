@@ -7,6 +7,6 @@ runtime:
   image: ghcr.io/aditya-tec/qsr-node:22
   nodeVersion: '22'
 extract:
-  root: 'article.markdown-body'
-  codeBlocks: 'div.highlight pre'
-notes: "Replaces express-node (P3 target review, 2026-10-16): the Express hello-world page has no install command, so its plan was a single write_file with nothing runnable and require('express') could never succeed, which would read as a false BROKEN. This README has `npm install chalk` and a snippet that prints and exits, on the same page. ESM import, so the harness sets type=module. GitHub README markup (div.highlight pre, highlight-source-* classes)."
+  root: article.markdown-body
+  codeBlocks: div.highlight pre
+notes: "CALIBRATION TARGET ONLY (P9a, 2026-10-17): chosen in P3 to exercise L3 end to end on a page that reliably has an install command and a runnable snippet; it is not part of the 50-target sample and is not chosen by the selection criteria in docs/TARGET-SELECTION.md. Replaces express-node (P3 target review, 2026-10-16): the Express hello-world page has no install command, so its plan was a single write_file with nothing runnable and require('express') could never succeed, which would read as a false BROKEN. This README has `npm install chalk` and a snippet that prints and exits, on the same page. ESM import, so the harness sets type=module. GitHub README markup (div.highlight pre, highlight-source-* classes)."

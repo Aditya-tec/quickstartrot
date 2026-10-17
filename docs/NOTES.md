@@ -5,13 +5,143 @@ Decisions and findings that are not in the spec and not obvious from the code. N
 
 ## Carry-forward (requested, not implemented yet)
 
-### P9: choose the 50 targets for an L3 path
+Nothing is carried forward from P8 that P9a left open. The P9 request to choose the 50 targets for an L3 path was done in P9a (see
+below): `chalk-node`, `loguru-python` and `dotenv-python` are calibration targets only, and the L3 share is small on purpose
+(most vendor quickstarts need an account).
 
-Bias the target list toward funded devtool SDKs whose quickstart can be tested at L3 with a dummy key
-(auth-error-as-pass). `chalk-node`, `loguru-python` and `python-dotenv` stay as **calibration targets
-only**: they have no API to reach, so they prove the pipeline works, not that a vendor's endpoint is
-wired up. Resend is the model case: its SDK prints the 401 and exits 0, so the log shows the client
-reached the endpoint.
+## Findings from P9a (scale to 50 targets, harden for scale, calibration tooling)
+
+P9b (the 7-day review with real data) and P10 are not started. Nothing here is simulated: every number below is either measured
+on this machine (labelled) or an assumption (labelled), and `node scripts/scale-estimate.mjs` recomputes the estimates.
+
+### The targets
+
+- **Protocol first:** `docs/TARGET-SELECTION.md` was written before any candidate was chosen. It records all 167 candidates with
+  level, status and a one-line reason; the table is rendered by `node scripts/render-target-selection.mjs` from
+  `docs/target-candidates.json` (kept by `scripts/set-target.mjs`) and the saved `qsr run` output. `/methodology` has a "How tools
+  are chosen" section built from `TARGET_GOAL`.
+- **Result:** 51 enabled (20 libraries and frameworks incl. the `hono-node` example, 28 vendor SDKs and API clients, 3 calibration
+  targets), 16 written and run but disabled with a reason, 70 excluded, 30 passed the probe but were not run. Without the calibration
+  targets the sample is 42% libraries and 58% vendors (aim: 40 and 60). **Levels:** only 5 are L3 (the calibration three, Anthropic
+  Node and Resend Node). Most vendor quickstarts need an account to reach their API, and the harness never signs up for one, so 46
+  are L2, and 6 of those pages show only an install command, so the run reaches L1 (the public page says L1). This is the honest
+  picture: the "tested at L3" share in the launch numbers will be small.
+- **How a target was enabled:** write the YAML, `qsr run <slug>` in real Docker, read the log, then enable only when the result is
+  explainable. A PASS is enabled. A FAIL is enabled only when the cause is the docs; every failure seen was the plan input or our
+  harness, so those 16 stay disabled (their notes say what happened). Scripts: `probe-docs-page.mjs` (robots, blocks, install
+  command, root candidates), `draft-target.mjs`, `batch-run.mjs`, `apply-run-result.mjs`, `set-target.mjs`.
+- **Calibration targets and `hono-node`** are marked in their notes: chalk, loguru and dotenv are calibration only; hono is the
+  deliberate "needs a person" example (SKIPPED by design, never PASS or BROKEN).
+- **Harness limits found while verifying (candidates for P9b, none fixed here):**
+  - A plan that writes a REPL transcript (`>>>`, printed output lines) or a framework fragment (a top-level `return`) as a file fails
+    the syntax check: huggingface-hub-python, arrow-python, upstash-ratelimit-node, twilio-node and twilio-python. A real run would
+    report BROKEN for our input, so they are disabled. The cure is a way to pick the right block (`extract.variants`) or a classifier
+    rule that sends this shape of syntax error to the harness side.
+  - `kysely-node`: TS5112 when the plan writes a `tsconfig.json`. Docs that open with an interactive `npm init`
+    (sendgrid-node, firebase-admin-node). The install step limit is 180 s (chromadb). A dummy token gets HTTP 500, not 401, from
+    replicate. Docs that default to pnpm or bun (vercel-ai-node, prisma-node): the image ships npm only, and `extract.tab` did not
+    change what the plan said, because the page content hash was the same.
+  - Pages longer than the prompt budget (voyageai-python: 56 blocks, 27 not shown): the 20b model cited a prose block, and after the
+    one grounding retry the plan became a manual step. A narrower `extract.root` or the larger model is the fix.
+  - **Page hash drift:** the content hash of `ably.com/docs/getting-started/python` (and the node page) changed between crawls
+    hours apart, and three crawls minutes apart agreed. Not understood yet (a per-visit demo key in the page is a guess). While it
+    drifts, each change costs one compile; check it first in P9b.
+- **Model quota:** each model has its own daily quota on Groq. `openai/gpt-oss-120b` ran out at about 180k tokens; the rest of the
+  work used `QSR_COMPILER_MODEL=openai/gpt-oss-20b`,. A compile costs
+  3.4k tokens on average (40 compiles, 136k, max 6.9k). The plan cache key contains the compiler version but not the model.
+
+### Plans push (spares the second compile)
+
+`qsr plans push <slug>|--all [--dry-run] [--include-disabled]` crawls the page, finds the plan compiled locally for that exact
+content hash (`.qsr-cache`), and sends it with its extraction to `POST /admin/plans/import` (Bearer `ADMIN_TOKEN`). The API re-runs
+the deterministic grounding validator against the extraction it was given, refuses a plan that fails or a wrong compiler version,
+and stores an accepted plan under (tool, content hash, config hash, compiler version); a repeat is `already_there`. A forged
+extraction can only create a cache entry for a hash no real page produces. Tested: valid import, tampered plan, wrong compiler
+version, idempotent re-import, no or wrong token. Run for real against the local API and Postgres: 19 of 20 tools imported through
+`pnpm probe:local --seed-plans`, and the plan job then compiled nothing for them.
+
+**Compiles production still has to do** (`qsr plans push --all --dry-run` today): 49 of 51 enabled targets have a local plan for
+the current page; **2 have none** (ably-node, ably-python: the hash drift above). At about 3.4k tokens each that is about 7k tokens,
+**under one day** of the 150k budget (150k allows about 44 compiles a day). Without `plans push` it would be 51 compiles, about
+174k tokens, **2 days**. Steady state is more modest than the first fill: assuming 4 docs changes per tool per month, about 7
+compiles (24k tokens) a day. The push must be run just before the first cycle, since a page that changes in between needs a compile.
+
+### Pipeline hardening
+
+- **Groq circuit breaker (`qsr plan`):** the first answer that says the model is out for the day (a deferral or HTTP 429 with a
+  Retry-After over `MAX_RETRY_WAIT_S`, or our own budget) opens it; every remaining tool is asked with `modelAllowed: false`
+  (cache or last plan only, an informational skip otherwise), one log line says so. Fake-API tests: three kinds of first signal,
+  `sleeps` is `[]`, the model is asked exactly once; a minute-limit does not open it. Before: a 429 without a long Retry-After made every
+  later tool wait the default 30 s (`DEFAULT_RETRY_WAIT_S`) and retry, so 49 tools after the limit was about 25 minutes against a
+  20-minute job timeout.
+  After: 0 s.
+- **`qsr report` concurrency:** 4 tools at a time (`REPORT_CONCURRENCY`; `--concurrency 1..8` exists to measure), cycle finish last,
+  the summary rows read in manifest order. Unit test with 25 ms of latency on uploads and runs, 12 tools: 808 ms sequential,
+  under 420 ms concurrent. **Local 20-tool run** (`pnpm probe:local --seed-plans --shards 5`, 24 results, real API and Postgres,
+  no network latency): the report took **2.7 s at concurrency 1 and 2.1 s at 4**. Locally there is almost no round trip to hide,
+  so this understates the gain; the gain scales with round-trip time (assumption: 5 calls per tool and 150 ms to Render is about
+  18 s sequential and 5 s concurrent). Duplicate rows after the concurrent run: none.
+- **Shards:** `min(10, ceil(tools / 4))` is 10 for 54 (50 tools and 4 canaries), about 5 tools per shard plus the guard canary.
+- **A disabled or removed tool** (`enabled: false` or no file) keeps its rows and stops appearing in new cycles; syncing it back
+  re-enables it, and `skipped` in the sync response says which targets were left out. Tested.
+
+### Estimates for 50 tools (from `node scripts/scale-estimate.mjs`; measured inputs from 63 local runs, the rest assumed)
+
+#### Shards and Actions time for 50 tools (+4 canaries)
+
+- Shards: min(10, ceil(54 / 4)) = **10**, so about 5 tools per shard plus the guard canary.
+- Wall time per cycle (plan, slowest shard, report; jobs run one after the other): **16 min** typical, **18 min** if every tool were as slow as today's p90. Cadence: 360 min, so 4% to 5% of it. The workflow's own limits are 45 min for the execute job and 20 for plan.
+- Billed Actions minutes: **71 min per cycle**, **284 per day**, 8520 per 30 days (10800 at p90 speed). The repository is public, so standard hosted runners are free and unmetered; a private repository would have 2,000 free minutes a month.
+- Concurrency: 10 execute jobs at once; the free plan allows 20.
+
+#### Database and storage growth: 50 tools x 4 cycles x 30 days
+
+Runs in the window: 54 x 4 x 30 x 1.05 (retries) = **6804**; step rows: 34020.
+
+| Database (500 MB)        |         Rows |       Bytes | Basis                                                                               |
+| ------------------------ | -----------: | ----------: | ----------------------------------------------------------------------------------- |
+| runs + step_results      | 6804 + 34020 |     28.6 MB | 4.3 KB per run (p90 run 6.6 KB); the 4 KB stdout/stderr tails dominate              |
+| storage.objects metadata |        20412 |     15.6 MB | 3 log files per run x 800 B; the same database, bounded by the 30-day log retention |
+| doc_snapshots            |          250 |      1.9 MB | 4 docs changes a month per tool; 6.1 KB median page text x 1.3                      |
+| compiled_plans           |          250 |      2.0 MB | 8.0 KB per plan                                                                     |
+| probe_cycles             |          120 |    720.0 KB | 6.0 KB stored finish result                                                         |
+| llm_calls                |          300 |    300.0 KB | 10 a day                                                                            |
+| **Total**                |              | **49.1 MB** | **9.8%** of 500.0 MB                                                                |
+
+| Storage (1 GB; cleanup aims under 800 MB) |     Bytes | Basis                                                                              |
+| ----------------------------------------- | --------: | ---------------------------------------------------------------------------------- |
+| step logs, typical                        |    2.3 MB | 357 B gzipped per run (measured), kept 30 days                                     |
+| step logs, noisy                          |  201.7 MB | 10.0% of runs write 3 logs of 100.0 KB gzipped (the 256 KB cap)                    |
+| step logs, theoretical ceiling            | 8505.0 MB | every step at the 256 KB cap, uncompressed: not reachable, shown only as the bound |
+| docs diffs                                |    < 1 MB | one small text file per confirmed incident, kept                                   |
+| traces                                    |         0 | none are produced in v1 (no L4); retention would be 14 days                        |
+
+#### Beyond the window
+
+Logs and their metadata are collected after 30 days, but the `runs`, `step_results`, `probe_cycles` and `doc_snapshots` rows are the public history and are kept. They add about **33.5 MB a month**. Adding the 15.6 MB of log metadata (steady), the database reaches 70% of the limit after about **10.0 months** and 100% after about **14.4 months**.
+
+Smallest fix (proposed, not built): after 30 days, the nightly GC sets `stdout_tail` and `stderr_tail` to null on step rows of PASSING runs that no incident links. The tails are about 63% of a run's bytes, and a passing step's tail is not evidence of anything. That keeps the row counts (the public history) and moves the monthly growth to about 18.3 MB (assuming 85% of runs pass). Failing runs keep their tails.
+
+**Verdict:** nothing exceeds 70% of a limit inside the 30-day window (database about 10%, logs 0.2% typical, 20% in a noisy case).
+The database does cross 70% in the long run (about 10 months), because the history is kept on purpose. The smallest fix is
+proposed above (null the tails of old passing steps); it is not built. `/admin/gc` now returns `freedBytes` (null when the
+database cannot see storage), and the admin page has a "Pipeline status" section with storage gauges (database and objects, with a
+warning in words above 70%), the last cycles, the harness error rate and model tokens.
+
+### Calibration tooling
+
+- `GET /admin/stats?days=N` and `qsr calibration-report --days 7` (Markdown), `GET /admin/export/launch` and
+  `qsr export --launch [--json|--md]`. The launch export's schema admits only incidents with review CONFIRMED, so neither the
+  API nor the CLI can print an unreviewed failure. Unit and integration tests use seeded data.
+- The report shows the harness bar from the spec (under 2% over the last 3 days) next to the measured rate.
+- `PIPELINE`, `FREE_TIER` and `TARGET_GOAL` in `packages/core/src/pipeline-facts.ts` are the single source of every figure on
+  `/methodology` and `/bot`. `apps/web/src/lib/honesty.test.tsx` renders the pages with the real facts and with mutated facts and
+  fails when a number is hand-typed; the leak spec and the axe checks were re-run (admin page included).
+
+### Left for P9b
+
+Run the pipeline in production; `qsr plans push --all` first; read `qsr calibration-report --days 7` after a week; decide about the
+pages that drift, the plans that wrote REPL text (disabled targets above), the harness bar, and the L3 share.
 
 ## Findings from P8 (the website)
 

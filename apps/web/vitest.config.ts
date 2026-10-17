@@ -3,6 +3,8 @@ import path from 'node:path';
 
 // Unit tests only (pure functions, data parsing, session signing). The browser tests are Playwright's.
 export default defineConfig({
+  // JSX in test files (the honesty test renders pages): the same automatic runtime Next uses
+  oxc: { jsx: { runtime: 'automatic' } },
   resolve: { alias: { '@': path.resolve(import.meta.dirname, 'src') } },
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],

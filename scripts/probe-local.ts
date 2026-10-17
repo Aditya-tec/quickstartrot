@@ -10,6 +10,9 @@
 //   pnpm probe:local --budget 1                       a token budget of 1: every compile cache miss is deferred
 //   pnpm probe:local --report-twice                   run the report job twice (idempotency)
 //   pnpm probe:local --targets <dir>                  use another targets directory
+//   pnpm probe:local --seed-plans                     push the plans cached by `qsr run` (.qsr-cache) to the local API with
+//                                                     `qsr plans push` first, so the plan job compiles nothing (no model tokens)
+//   pnpm probe:local --report-concurrency 1           tools reported at once by `qsr report` (default 4); the time is printed
 //
 // Run with Node >= 22.6 type stripping (the pnpm script passes the flag).
 
@@ -42,6 +45,7 @@ const ONLY = value('only') ?? 'chalk-node,dotenv-python,zod-node,resend-node';
 const TARGETS = path.resolve(value('targets') ?? path.join(ROOT, 'targets'));
 const LOSE_SHARD = value('lose-shard');
 const BUDGET = value('budget');
+const REPORT_CONCURRENCY = value('report-concurrency');
 const CLI = path.join(ROOT, 'packages', 'cli', 'dist', 'main.js');
 
 const say = (text: string): void => console.log(text);
@@ -320,6 +324,18 @@ async function main(): Promise<void> {
       INGEST_HMAC_SECRET: HMAC_SECRET,
     };
 
+    // ---- optional: the plans verified with `qsr run` go into the API's plan cache the way production will do it
+    if (flag('seed-plans')) {
+      banner('plans push (qsr plans push, Bearer ADMIN_TOKEN)');
+      for (const slug of ONLY.split(',')) {
+        const code = await qsr('push', ['plans', 'push', slug, '--targets', TARGETS], {
+          API_BASE_URL: apiEnv.API_BASE_URL,
+          ADMIN_TOKEN: 'probe-local-admin-token-0123456789',
+        });
+        if (code !== 0) say(`  [push] ${slug} exited ${code}`);
+      }
+    }
+
     // ---- plan job (has the API settings)
     banner('plan');
     const planCode = await qsr(
@@ -365,12 +381,25 @@ async function main(): Promise<void> {
     for (let pass = 1; pass <= (flag('report-twice') ? 2 : 1); pass++) {
       banner(`report${flag('report-twice') ? ` (pass ${pass} of 2)` : ''}`);
       await rm(summaryFile, { force: true });
+      const started = Date.now();
       const code = await qsr(
         'report',
-        ['report', '--results', results, '--plans', plans, '--cycle', cycle ?? ''],
+        [
+          'report',
+          '--results',
+          results,
+          '--plans',
+          plans,
+          '--cycle',
+          cycle ?? '',
+          ...(REPORT_CONCURRENCY ? ['--concurrency', REPORT_CONCURRENCY] : []),
+        ],
         { ...apiEnv, ...github },
       );
       if (code !== 0) throw new Error(`report exited ${code}`);
+      say(
+        `report took ${((Date.now() - started) / 1000).toFixed(1)} s (concurrency ${REPORT_CONCURRENCY ?? '4, the default'})`,
+      );
       say(await readFile(summaryFile, 'utf8'));
     }
 

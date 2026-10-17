@@ -1,0 +1,11 @@
+slug: clickhouse-python
+name: ClickHouse Connect (Python)
+docsUrl: https://clickhouse.com/docs/integrations/python
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 15.0 s of steps. Plan: shell pip install clickhouse-connect > write main.py > append main.py, then the harness syntax and import checks (2 passed). Resolved: backports.zstd@1.8.0, certifi@2026.7.22, clickhouse-connect@1.11.0, lz4@4.4.5, urllib3@2.8.0. Crawl: root '#content', 21 blocks on the page."

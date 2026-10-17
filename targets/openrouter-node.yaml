@@ -1,0 +1,12 @@
+slug: openrouter-node
+name: OpenRouter
+docsUrl: https://openrouter.ai/docs/quickstart
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+  tab: TypeScript
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 6.2 s of steps. Plan: shell npm install @openrouter/sdk > write index.js, then the harness syntax and import checks (2 passed). Resolved: @openrouter/sdk@1.4.25. Crawl: root '#content', tab 'TypeScript', 13 blocks on the page."

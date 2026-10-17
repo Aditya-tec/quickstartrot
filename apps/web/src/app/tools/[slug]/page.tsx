@@ -11,6 +11,7 @@ import { StepTimeline } from '@/components/step-timeline';
 import { getToolPage } from '@/lib/cached';
 import { getNow } from '@/lib/data';
 import { siteUrl } from '@/lib/env';
+import { FACTS, words } from '@/lib/facts';
 import {
   EM_DASH,
   formatDateTime,
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const description =
     tool.status === 'failing'
       ? `${tool.name} quickstart failing since ${formatDay(tool.failingSince)}.`
-      : `Does the ${tool.name} quickstart work on a fresh machine? Tested every six hours.`;
+      : `Does the ${tool.name} quickstart work on a fresh machine? Tested every ${words(FACTS.cycleHours)} hours.`;
   const og = `${siteUrl()}/api/og/${tool.slug}`;
   return {
     title,

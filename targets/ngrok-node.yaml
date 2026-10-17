@@ -1,0 +1,12 @@
+slug: ngrok-node
+name: ngrok (Node.js SDK)
+docsUrl: https://ngrok.com/docs/getting-started/javascript/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step: npm install @ngrok/ngrok, npm install dotenv and mkdir passed; then 'Create a file (e.g., service.js) with the following' was planned as manual. Reached L1 of L2. Needs a person; kept disabled."

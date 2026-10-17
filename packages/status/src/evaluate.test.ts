@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  FAILURES_TO_OPEN_INCIDENT,
   FAILURE_CLASSES,
   INITIAL_TOOL_STATE,
   StatusEvent,
@@ -247,6 +248,18 @@ describe('row 3: DEGRADED + FAIL (vendor class), same signature as the previous 
     expect(events).toEqual([
       { type: 'incident_opened', failureClass: cls, signature: SIG_A, trigger: 'repeat_failure' },
     ]);
+  });
+
+  it('lands on exactly FAILURES_TO_OPEN_INCIDENT failures in a row (the constant the methodology quotes)', () => {
+    const s = state({
+      status: 'DEGRADED',
+      consecutiveFailures: FAILURES_TO_OPEN_INCIDENT - 1,
+      lastFailureSignature: SIG_A,
+      lastFailureClass: 'API_DRIFT',
+    });
+    expect(evaluate(s, fail('API_DRIFT', SIG_A), ctx()).next.consecutiveFailures).toBe(
+      FAILURES_TO_OPEN_INCIDENT,
+    );
   });
 
   it('does not open a second incident when one is already open (a race)', () => {

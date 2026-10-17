@@ -1,0 +1,11 @@
+slug: e2b-node
+name: E2B
+docsUrl: https://e2b.dev/docs/quickstart
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 7.6 s of steps. Plan: shell npm i @e2b/code-interpreter dotenv > write .env > write index.ts, then the harness syntax and import checks (2 passed). Resolved: @e2b/code-interpreter@2.9.0, dotenv@18.0.8. Crawl: root '#content', 9 blocks on the page."

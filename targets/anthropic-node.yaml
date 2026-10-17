@@ -1,0 +1,17 @@
+slug: anthropic-node
+name: Anthropic (TypeScript)
+docsUrl: https://docs.anthropic.com/en/docs/get-started
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .prose
+  tab: TypeScript
+placeholders:
+  your-api-key-here: qsr_dummy_key
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L3 of L3 in 8.2 s of steps. Plan: set_env ANTHROPIC_API_KEY=... > shell npm init -y > shell npm pkg set type=module > shell npm install @anthropic-ai/sdk > write quickstart.ts > run npx tsx quickstart.ts, then the harness syntax and import checks (2 passed). Resolved: @anthropic-ai/sdk@0.135.0. Crawl: root '.prose', tab 'TypeScript', 15 blocks on the page. L3: the run step exited 1 with an HTTP 401 or 403 from the vendor (marker auth:http_401_403), which counts as a pass: the SDK installed, the import worked and the request reached the API with the dummy key. The page shows the key in an export line and the code in a TypeScript block run with npx tsx."

@@ -50,6 +50,14 @@ export function relativeTime(value: string | null, now: Date): string {
   return formatDay(value);
 }
 
+/** 1536 -> "1.5 KB". Binary units, as the free-tier limits are quoted. */
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 ** 3) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  return `${(bytes / 1024 ** 3).toFixed(2)} GB`;
+}
+
 export const shortId = (id: string): string => id.slice(0, 8);
 
 export const EM_DASH = DASH;

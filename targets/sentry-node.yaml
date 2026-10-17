@@ -1,0 +1,11 @@
+slug: sentry-node
+name: Sentry (Node.js)
+docsUrl: https://docs.sentry.io/platforms/javascript/guides/node/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 25.7 s of steps. Plan: shell npx @sentry/agent-plugin install > shell npm install @sentry/node > write instrument.js, then the harness syntax and import checks (2 passed). Resolved: @sentry/node@11.8.0. Crawl: root 'main', 36 blocks on the page."

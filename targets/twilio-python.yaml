@@ -1,0 +1,14 @@
+slug: twilio-python
+name: Twilio (Python)
+docsUrl: https://www.twilio.com/docs/messaging/quickstart/python
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main article
+  tab: Python
+  codeBlocks: pre
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L1 of L2. pip install flask twilio passed (23.8 s); the plan wrote send_sms.py and reply_sms.py from page blocks that include a fragment, and the harness syntax check failed on reply_sms.py line 16 (invalid syntax). A plan-input cause, not docs rot; a real run would report BROKEN, so the target stays disabled until a variant can be selected. Crawled with codeBlocks 'pre'."

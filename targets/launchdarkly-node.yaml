@@ -1,0 +1,12 @@
+slug: launchdarkly-node
+name: LaunchDarkly (Node.js server SDK)
+docsUrl: https://docs.launchdarkly.com/sdk/server-side/node-js
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+  tab: JavaScript
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 12.7 s of steps. Plan: shell npm install @launchdarkly/node-server-sdk > shell npm install @launchdarkly/observability-node > write index.js > append index.js > append index.js, then the harness syntax and import checks (2 passed). Resolved: @launchdarkly/node-server-sdk@9.15.0, @launchdarkly/observability-node@1.4.0. Crawl: root '#content', tab 'JavaScript', 13 blocks on the page."

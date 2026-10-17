@@ -1,0 +1,11 @@
+slug: node-postgres-node
+name: node-postgres (pg)
+docsUrl: https://node-postgres.com/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: article
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 1.9 s of steps. Plan: shell npm install pg > write index.js, then the harness syntax and import checks (2 passed). Resolved: pg@8.23.1. Crawl: root 'article', 15 blocks on the page. A third step is a manual note (the docs do not name the file to save), shown as SKIPPED inside a passing run."

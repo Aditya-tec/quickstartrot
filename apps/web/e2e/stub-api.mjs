@@ -103,6 +103,81 @@ createServer(async (req, res) => {
 
   if (path.startsWith('/admin/')) {
     if (!authorised(req)) return problem(res, 401, 'A valid admin token is required.');
+    if (req.method === 'GET' && path === '/admin/stats') {
+      const MB = 1024 * 1024;
+      return send(res, 200, {
+        generatedAt: '2026-10-17T12:00:00.000Z',
+        days: Number(url.searchParams.get('days') ?? 7),
+        since: '2026-10-10T12:00:00.000Z',
+        cycles: {
+          total: 2,
+          valid: 1,
+          invalid: 1,
+          unfinished: 0,
+          recent: [
+            {
+              id: '00000000-0000-4000-8000-0000000000d1',
+              startedAt: '2026-10-17T06:00:00.000Z',
+              trigger: 'schedule',
+              valid: true,
+              canaryOk: true,
+              durationSeconds: 1500,
+              tools: 50,
+              harnessErrors: 0,
+              problems: [],
+            },
+            {
+              id: '00000000-0000-4000-8000-0000000000d2',
+              startedAt: '2026-10-17T00:00:00.000Z',
+              trigger: 'schedule',
+              valid: false,
+              canaryOk: false,
+              durationSeconds: 900,
+              tools: 50,
+              harnessErrors: 3,
+              problems: ['canary_mismatch'],
+            },
+          ],
+        },
+        harness: {
+          overall: { runs: 100, errors: 3, rate: 0.03 },
+          byDay: [{ day: '2026-10-17', runs: 100, errors: 3, rate: 0.03 }],
+        },
+        tools: [],
+        unknowns: [],
+        llmClassified: [],
+        compile: {
+          deferrals: [],
+          staleRuns: 0,
+          llm: { calls: 4, failedCalls: 0, tokensIn: 9000, tokensOut: 2000 },
+        },
+        incidents: {
+          open: 1,
+          resolved: 0,
+          confirmed: 0,
+          falsePositive: 0,
+          pendingReview: 1,
+          list: [],
+        },
+        canaries: [],
+        slowest: [],
+        groq: [{ day: '2026-10-17', calls: 4, failedCalls: 0, tokens: 11000 }],
+        storage: {
+          database: { bytes: 190 * MB, limitBytes: 500 * MB, percent: 38 },
+          tables: [],
+          objects: {
+            publicBytes: 100 * MB,
+            privateBytes: 730 * MB,
+            publicCount: 10,
+            privateCount: 400,
+            totalBytes: 830 * MB,
+            limitBytes: 1024 * MB,
+            targetBytes: 800 * MB,
+            percent: 81,
+          },
+        },
+      });
+    }
     if (req.method === 'GET' && path === '/admin/queue')
       return send(res, 200, {
         pendingIncidents: state.pending,

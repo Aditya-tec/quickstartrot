@@ -6,6 +6,7 @@ import {
   GUARD_CANARY,
   MANIFEST_FILE,
   Manifest,
+  PIPELINE,
   PlanFile,
   RUNNER_ENV_KEYS,
   RunResult,
@@ -62,7 +63,7 @@ export interface ExecuteOutcome {
   harnessErrors: number;
 }
 
-export const DEFAULT_RETRY_DELAY_MS = 60_000;
+export const DEFAULT_RETRY_DELAY_MS = PIPELINE.transientRetryDelaySeconds * 1000;
 export const DEFAULT_WATCHDOG_MARGIN_MS = 3 * 60_000;
 export const DEFAULT_GRACE_MS = 30_000;
 const FIXTURE_REFERENCE = '127.0.0.1:';

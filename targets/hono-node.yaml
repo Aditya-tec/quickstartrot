@@ -7,5 +7,5 @@ runtime:
   image: ghcr.io/aditya-tec/qsr-node:22
   nodeVersion: '22'
 extract:
-  root: '.vp-doc'
-notes: 'Crawl checked by eye 2026-10-16 (P2). 13 code blocks. The quickstart BEGINS with the interactive scaffolder `npm create hono@latest my-app`, which asks which template to use, so the correct compiled plan is a single manual step with a note saying so (enforced deterministically by the compiler, verified in P3). Everything after the scaffolder depends on its output and is dropped. Stays in the target list as the canary for that behaviour.'
+  root: .vp-doc
+notes: 'DELIBERATE "NEEDS A PERSON" EXAMPLE, kept on purpose (P9a target review, 2026-10-17). The quickstart BEGINS with the interactive scaffolder `npm create hono@latest my-app`, which asks which template to use, so the correct compiled plan is a single manual step with a note saying so (enforced deterministically by the compiler, verified in P3) and the tool is SKIPPED, never PASS or BROKEN. Everything after the scaffolder depends on its output and is dropped. It stays enabled so the public page shows what the harness does with a quickstart it cannot honestly run, and it checks that behaviour every cycle. It does not count toward the testable targets: a testable Hono run would need the non-interactive form `npm create hono@latest my-app -- --template nodejs`, which the docs page does not show. Crawl checked by eye 2026-10-16 (P2): 13 code blocks.'

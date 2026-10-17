@@ -1,0 +1,12 @@
+slug: mailgun-node
+name: Mailgun (Node.js SDK)
+docsUrl: https://documentation.mailgun.com/docs/mailgun/sdk/nodejs_sdk/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+  codeBlocks: pre
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.3 s of steps. Plan: shell npm install mailgun.js > write index.js > append index.js, then the harness syntax and import checks (2 passed). Resolved: mailgun.js@14.1.0. Crawl: root 'main article', 12 blocks on the page."

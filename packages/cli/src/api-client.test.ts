@@ -121,6 +121,74 @@ describe('signing and JSON', () => {
   });
 });
 
+describe('the admin client: a bearer token instead of a signature (the /admin routes)', () => {
+  const TOKEN = ['admin', 'token', 'for', 'tests', 'zzzzzzzzzzzz'].join('-');
+
+  it('sends the token as a bearer header on GET and POST, and never signs', async () => {
+    const api = await fake(() => ({ status: 200, body: { ok: true } }));
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      bearerToken: TOKEN,
+      now: c.now,
+      sleep: c.sleep,
+    });
+    expect(await client.get('/admin/stats?days=7')).toEqual({ ok: true });
+    await client.post('/admin/plans/import', { a: 1 });
+    for (const req of api.seen) {
+      expect(req.headers['authorization']).toBe('Bearer ' + TOKEN);
+      expect(req.headers['x-qsr-signature']).toBeUndefined();
+      expect(req.headers['x-qsr-timestamp']).toBeUndefined();
+    }
+    expect(api.seen.map((r) => r.method + ' ' + r.url)).toEqual([
+      'GET /admin/stats?days=7',
+      'POST /admin/plans/import',
+    ]);
+  });
+
+  it('a 401 is an ApiError that is not retried and does not contain the token', async () => {
+    const api = await fake(() => ({ status: 401, body: { title: 'Unauthorized', status: 401 } }));
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      bearerToken: TOKEN,
+      now: c.now,
+      sleep: c.sleep,
+    });
+    const err = await client.get('/admin/stats').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(401);
+    expect(String((err as ApiError).message)).not.toContain(TOKEN);
+    expect(api.seen).toHaveLength(1);
+  });
+
+  it('retries a 503 on GET (the API is waking) and then succeeds', async () => {
+    const api = await fake((n) =>
+      n < 2 ? { status: 503 } : { status: 200, body: { done: true } },
+    );
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      bearerToken: TOKEN,
+      now: c.now,
+      sleep: c.sleep,
+    });
+    expect(await client.get('/admin/stats')).toEqual({ done: true });
+    expect(api.seen).toHaveLength(3);
+  });
+
+  it('needs a secret or a token', () => {
+    expect(() => createApiClient({ baseUrl: 'http://127.0.0.1:1' })).toThrow(/secret|token/i);
+  });
+
+  it('the signed client can GET too (unsigned, like /health)', async () => {
+    const api = await fake(() => ({ status: 200, body: HEALTH }));
+    const client = createApiClient({ baseUrl: api.url, secret: SECRET });
+    expect(await client.get('/health')).toEqual(HEALTH);
+    expect(api.seen[0]?.headers['authorization']).toBeUndefined();
+  });
+});
+
 describe('errors', () => {
   it('a 4xx is an ApiError with the problem+json body, and is NOT retried', async () => {
     const api = await fake(() => ({

@@ -1,0 +1,11 @@
+slug: ably-node
+name: Ably (Node.js)
+docsUrl: https://ably.com/docs/getting-started/node
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 12.4 s of steps. Plan: shell npm init -y && npm pkg set type=module > shell npm install ably > write index.js, then the harness syntax and import checks (2 passed). Resolved: ably@2.29.0. Crawl: root 'main article', 44 blocks on the page."

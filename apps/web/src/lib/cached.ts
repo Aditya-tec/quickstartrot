@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache';
+import { REVALIDATE_SECONDS } from './cache-constants';
 import { getDataSource } from './data';
 import {
   loadBadgeStatus,
@@ -14,7 +15,7 @@ import {
 // invalidates the tag, so a finished cycle shows up at once; otherwise a page is at most 5 minutes old.
 
 export const DATA_TAG = 'qsr-data';
-export const REVALIDATE_SECONDS = 300;
+export { REVALIDATE_SECONDS };
 const options = { revalidate: REVALIDATE_SECONDS, tags: [DATA_TAG] };
 
 export const getHome = unstable_cache(() => loadHome(getDataSource()), ['qsr-home'], options);

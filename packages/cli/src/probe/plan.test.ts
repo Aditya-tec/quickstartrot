@@ -642,6 +642,137 @@ describe('the compile phase: crawl together, compile one at a time, in order', (
   });
 });
 
+describe('the Groq circuit breaker: after the first daily-limit signal nobody asks the model again', () => {
+  const okReply = () => ({
+    status: 'ok',
+    fromCache: false,
+    stale: false,
+    snapshotId: PLAN_ID,
+    plan: planPayload(),
+  });
+  const deferred = (over: Record<string, unknown> = {}) => ({
+    status: 'deferred',
+    reason: 'llm_unavailable',
+    snapshotId: PLAN_ID,
+    stale: false,
+    plan: null,
+    retryAfterSeconds: null,
+    ...over,
+  });
+  const four = [target('a-node'), target('b-node'), target('c-node'), target('d-node')];
+  const compileBodies = (calls: { path: string; body: unknown }[]): CompileBody[] =>
+    calls.filter((c) => c.path === '/internal/compile').map((c) => c.body as CompileBody);
+  const asked = (calls: { path: string; body: unknown }[]) =>
+    compileBodies(calls).filter((b) => b.modelAllowed !== false);
+  const http = (status: number, retryAfterS: number | null = null) =>
+    new ApiError(status, 'x', undefined, 'POST /internal/compile', retryAfterS);
+  /** The model is out for the day; the cache still has a plan for c-node only. */
+  const outForTheDay = (first: unknown) => (b: CompileBody) => {
+    if (b.modelAllowed === false)
+      return b.toolSlug === 'c-node' ? okReply() : deferred({ reason: 'llm_timeout' });
+    if (b.toolSlug === 'a-node') {
+      if (first instanceof Error) throw first;
+      return first;
+    }
+    throw new Error('the model must not be asked again: ' + b.toolSlug);
+  };
+
+  it.each([
+    ['a Retry-After of hours reported as a deferral', deferred({ retryAfterSeconds: 7_200 })],
+    ['our own token budget', deferred({ reason: 'llm_budget' })],
+    ['an HTTP 429 with a Retry-After of hours', http(429, 7_200)],
+  ])(
+    '%s: the model is asked once; every later tool gets the cache or its stale plan only, with no wait',
+    async (_name, first) => {
+      const r = await plan({ real: four, api: { compile: outForTheDay(first) } });
+      expect(asked(r.fake.calls).map((b) => b.toolSlug)).toEqual(['a-node']);
+      for (const slug of ['b-node', 'c-node', 'd-node']) {
+        const mine = compileBodies(r.fake.calls).filter((b) => b.toolSlug === slug);
+        expect(mine, slug).toHaveLength(1);
+        expect(mine[0]?.modelAllowed, slug).toBe(false);
+      }
+      expect(r.sleeps).toEqual([]);
+      // the cache still serves the tool that has a plan; the others are informational skips, never failures
+      expect((await readPlan('c-node')).state).toBe('ready');
+      for (const slug of ['a-node', 'b-node', 'd-node'])
+        expect((await readPlan(slug)).state, slug).toBe('deferred');
+      expect(r.logger.lines.filter((l) => l.msg?.includes('circuit breaker'))).toHaveLength(1);
+    },
+  );
+
+  it('a short rate limit (a minute-limit) does NOT open the breaker: the next tool still asks the model', async () => {
+    const r = await plan({
+      real: four,
+      api: {
+        compile: (b) =>
+          b.toolSlug === 'a-node' && b.modelAllowed !== false
+            ? deferred({ retryAfterSeconds: 30 })
+            : okReply(),
+      },
+    });
+    expect(
+      asked(r.fake.calls)
+        .map((b) => b.toolSlug)
+        .filter((s) => s !== 'a-node'),
+    ).toEqual(['b-node', 'c-node', 'd-node']);
+    expect(r.logger.lines.some((l) => l.msg?.includes('circuit breaker'))).toBe(false);
+  });
+
+  it('an outage with no Retry-After does not open it either (it is not a daily limit)', async () => {
+    const r = await plan({
+      real: four,
+      api: {
+        compile: (b) =>
+          b.toolSlug === 'a-node' && b.modelAllowed !== false ? deferred() : okReply(),
+      },
+    });
+    expect(asked(r.fake.calls).map((b) => b.toolSlug)).toContain('d-node');
+  });
+
+  it('opens in the middle of the run: tools before it keep their model-compiled plans, tools after it are not asked', async () => {
+    const r = await plan({
+      real: four,
+      api: {
+        compile: (b) => {
+          if (b.modelAllowed === false) return deferred({ reason: 'llm_timeout' });
+          return b.toolSlug === 'c-node' ? deferred({ reason: 'llm_budget' }) : okReply();
+        },
+      },
+    });
+    expect(asked(r.fake.calls).map((b) => b.toolSlug)).toEqual(['a-node', 'b-node', 'c-node']);
+    expect((await readPlan('a-node')).state).toBe('ready');
+    expect((await readPlan('b-node')).state).toBe('ready');
+    expect((await readPlan('d-node')).state).toBe('deferred');
+    expect(r.sleeps).toEqual([]);
+  });
+
+  it('keeps the deferral reason of the signal that opened it for the tools it skipped', async () => {
+    await plan({
+      real: four,
+      api: { compile: outForTheDay(deferred({ reason: 'llm_budget' })) },
+    });
+    expect(await readPlan('d-node')).toMatchObject({ state: 'deferred', reason: 'llm_budget' });
+  });
+
+  it('a whole 50-tool run with the model out from the first tool makes one call per tool, no sleeps, and finishes at once', async () => {
+    const many = Array.from({ length: 50 }, (_, i) =>
+      target('tool-' + String(i).padStart(2, '0') + '-node'),
+    );
+    const r = await plan({
+      real: many,
+      api: {
+        compile: (b) =>
+          b.modelAllowed === false
+            ? deferred({ reason: 'llm_timeout' })
+            : deferred({ retryAfterSeconds: 86_400 }),
+      },
+    });
+    expect(compileBodies(r.fake.calls)).toHaveLength(50); // the first tool asked the model; the 49 others did not
+    expect(asked(r.fake.calls)).toHaveLength(1);
+    expect(r.sleeps).toEqual([]);
+  });
+});
+
 describe('shards', () => {
   const many = (n: number) =>
     Array.from({ length: n }, (_, i) => target(`tool-${String(i).padStart(2, '0')}`));

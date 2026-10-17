@@ -20,6 +20,7 @@ import {
 } from '@qsr/core';
 import { ApiError, type ApiClient } from '../api-client.js';
 import type { HarnessProblemResult } from './github.js';
+import { createLimiter } from './crawl-pool.js';
 import { renderSummary, type SummaryRow } from './summary.js';
 import { putToSignedUrl } from './upload.js';
 
@@ -45,6 +46,8 @@ export interface ReportOptions {
   anonKey?: string | null;
   /** Link to this Actions run, for the issue body. */
   runUrl?: string | null;
+  /** Tools reported at once, 1 to MAX_REPORT_CONCURRENCY (default REPORT_CONCURRENCY). A knob for measuring, not tuning. */
+  concurrency?: number;
 }
 
 export interface ReportDeps {
@@ -67,6 +70,9 @@ export interface ReportOutcome {
 
 export const MAX_RESULT_FILE_BYTES = 1_000_000;
 export const HARNESS_ERROR_RATE_LIMIT = 0.05;
+/** Tools reported at once. The ingest is idempotent, so overlapping them is safe; one tool's calls stay in order. */
+export const REPORT_CONCURRENCY = 4;
+export const MAX_REPORT_CONCURRENCY = 8;
 /** A failing guard canary is posted as attempt GUARD_ATTEMPT_BASE + shard, above any real attempt. */
 export const GUARD_ATTEMPT_BASE = 10;
 const MAX_LOG_FILES = 64;
@@ -312,29 +318,34 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
     }
   }
 
-  const rows: SummaryRow[] = [];
-  const finals = new Map<
-    string,
-    { result: RunResult; runId: string | null; synthetic: boolean; failureClass: string | null }
-  >();
+  type Final = {
+    result: RunResult;
+    runId: string | null;
+    synthetic: boolean;
+    failureClass: string | null;
+  };
+  type Done = { slug: string; row: SummaryRow | null; final: Final | null };
 
-  for (const entry of manifest.tools) {
+  /** Everything one tool needs (its uploads and posts), in order. Tools are reported four at a time. */
+  async function reportTool(entry: Manifest['tools'][number]): Promise<Done> {
     const file = files.get(entry.toolSlug) as PlanFile;
-    if (file.state === 'deferred') {
-      rows.push({
+    if (file.state === 'deferred')
+      return {
         slug: file.toolSlug,
-        isCanary: file.isCanary,
-        targetLevel: file.target.level,
-        reachedLevel: null,
-        outcome: 'SKIPPED',
-        failureClass: null,
-        durationMs: null,
-        stale: false,
-        runId: null,
-        note: `deferred: ${file.reason}`,
-      });
-      continue;
-    }
+        final: null,
+        row: {
+          slug: file.toolSlug,
+          isCanary: file.isCanary,
+          targetLevel: file.target.level,
+          reachedLevel: null,
+          outcome: 'SKIPPED',
+          failureClass: null,
+          durationMs: null,
+          stale: false,
+          runId: null,
+          note: `deferred: ${file.reason}`,
+        },
+      };
 
     if (file.state === 'pre_failed') {
       const run = preflightRun(file);
@@ -343,19 +354,22 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
         logPaths: {},
         preflight: file.preflight as PreflightFailure,
       });
-      rows.push({
+      return {
         slug: file.toolSlug,
-        isCanary: file.isCanary,
-        targetLevel: file.target.level,
-        reachedLevel: null,
-        outcome: 'FAIL',
-        failureClass: file.preflight.failureClass,
-        durationMs: null,
-        stale: false,
-        runId: posted?.runId ?? null,
-        note: `${file.preflight.reason}: ${file.preflight.message}`,
-      });
-      continue;
+        final: null,
+        row: {
+          slug: file.toolSlug,
+          isCanary: file.isCanary,
+          targetLevel: file.target.level,
+          reachedLevel: null,
+          outcome: 'FAIL',
+          failureClass: file.preflight.failureClass,
+          durationMs: null,
+          stale: false,
+          runId: posted?.runId ?? null,
+          note: `${file.preflight.reason}: ${file.preflight.message}`,
+        },
+      };
     }
 
     const ready = file as ReadyFile;
@@ -375,30 +389,68 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
         { [RUNNER_ENV_KEYS.shard]: String(ready.shard) },
       );
       const posted = await postRun({ runResult: stand, logPaths: {} });
-      finals.set(ready.toolSlug, {
-        result: stand,
-        runId: posted?.runId ?? null,
-        synthetic: true,
-        failureClass: 'HARNESS_ERROR',
-      });
-      continue;
+      return {
+        slug: ready.toolSlug,
+        row: null,
+        final: {
+          result: stand,
+          runId: posted?.runId ?? null,
+          synthetic: true,
+          failureClass: 'HARNESS_ERROR',
+        },
+      };
     }
     let last: { result: RunResult; runId: string | null; response: RunResponse | null } | null =
       null;
+    // the attempts of ONE tool stay in order: the API treats the last one as the final result
     for (const found of attempts) {
       const logPaths = await uploadLogs(found, found.result.attempt);
       const posted = await postRun({ runResult: found.result, logPaths });
       last = { result: found.result, runId: posted?.runId ?? null, response: posted };
     }
     const final = last as NonNullable<typeof last>;
-    finals.set(ready.toolSlug, {
-      result: final.result,
-      runId: final.runId,
-      synthetic: false,
-      failureClass:
-        final.response?.classification?.failureClass ??
-        (final.result.outcome === 'HARNESS_ERROR' ? 'HARNESS_ERROR' : null),
-    });
+    return {
+      slug: ready.toolSlug,
+      row: null,
+      final: {
+        result: final.result,
+        runId: final.runId,
+        synthetic: false,
+        failureClass:
+          final.response?.classification?.failureClass ??
+          (final.result.outcome === 'HARNESS_ERROR' ? 'HARNESS_ERROR' : null),
+      },
+    };
+  }
+
+  // Four tools at a time (the ingest is idempotent per (cycle, tool, attempt), so overlapping is safe). A failure
+  // stops the tools not yet started; the answers are then read in MANIFEST order, so the summary never depends on
+  // which request finished first.
+  const limit = createLimiter(options.concurrency ?? REPORT_CONCURRENCY);
+  let stopped = false;
+  const settled = await Promise.allSettled(
+    manifest.tools.map((entry) =>
+      limit(entry.toolSlug, async (): Promise<Done | null> => {
+        if (stopped) return null;
+        try {
+          return await reportTool(entry);
+        } catch (err) {
+          stopped = true;
+          throw err;
+        }
+      }),
+    ),
+  );
+  const rejected = settled.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (rejected) throw rejected.reason;
+
+  const rows: SummaryRow[] = [];
+  const finals = new Map<string, Final>();
+  for (const result of settled) {
+    const done = (result as PromiseFulfilledResult<Done | null>).value;
+    if (!done) continue;
+    if (done.row) rows.push(done.row);
+    if (done.final) finals.set(done.slug, done.final);
   }
 
   // ---- the guard canary of every other shard: only a failure is posted, as a later attempt of the canary,

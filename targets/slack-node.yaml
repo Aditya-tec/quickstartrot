@@ -1,0 +1,11 @@
+slug: slack-node
+name: Slack Node SDK
+docsUrl: https://tools.slack.dev/node-slack-sdk/web-api/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .markdown
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 5.2 s of steps. Plan: shell npm install @slack/web-api > write index.js > append index.js, then the harness syntax and import checks (2 passed). Resolved: @slack/web-api@8.2.0. Crawl: root '.markdown', 97 blocks on the page."

@@ -116,6 +116,23 @@ test.describe('after login', () => {
     expect(await page.evaluate(() => document.cookie)).not.toContain('qsr_admin');
   });
 
+  test('shows the pipeline status with the storage gauges', async ({ page }) => {
+    await signIn(page);
+    const status = page.getByTestId('status-section');
+    await expect(status.getByRole('heading', { name: 'Pipeline status' })).toBeVisible();
+    await expect(status.getByRole('meter', { name: 'Database' })).toHaveAttribute(
+      'aria-valuenow',
+      '38',
+    );
+    await expect(status.getByRole('meter', { name: /Storage/ })).toHaveAttribute(
+      'aria-valuenow',
+      '81',
+    );
+    await expect(status).toContainText('Above 70% of the limit.');
+    await expect(status.getByRole('row')).toHaveCount(3); // header + two cycles
+    await expect(status).toContainText('canary_mismatch');
+  });
+
   test('the browser never receives the admin token or the API address', async ({ page }) => {
     const seen: string[] = [];
     const bodies: string[] = [];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Logger } from '@qsr/core';
+import { PIPELINE, type Logger } from '@qsr/core';
 import { createMemoryCache, type PlanKey } from './cache.js';
 import { compile, type CompileDeps } from './compile.js';
 import { DEFAULT_COMPILER_CONFIG } from './config.js';
@@ -120,7 +120,7 @@ describe('compile: happy path and cache', () => {
     const { llm, deps } = setup([bad, bad]);
     const first = await compile(target(), extraction(), deps);
     expect(first.plan.accepted).toBe(false);
-    expect(llm.calls).toBe(2); // initial + the single grounding retry
+    expect(llm.calls).toBe(1 + PIPELINE.groundingRetries); // initial + the grounding retry the methodology quotes
     const second = await compile(target(), extraction(), { ...deps, llm: new ScriptedLlm([]) });
     expect(second.fromCache).toBe(true);
     expect(second.plan.accepted).toBe(false);

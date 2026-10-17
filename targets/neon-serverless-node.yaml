@@ -1,0 +1,11 @@
+slug: neon-serverless-node
+name: Neon serverless driver
+docsUrl: https://neon.com/docs/serverless/serverless-driver
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .prose
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 2.8 s of steps. Plan: shell npm install @neondatabase/serverless > write index.js, then the harness syntax and import checks (2 passed). Resolved: @neondatabase/serverless@1.2.0. Crawl: root '.prose', 64 blocks on the page."

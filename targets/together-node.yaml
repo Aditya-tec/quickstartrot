@@ -1,0 +1,18 @@
+slug: together-node
+name: Together AI
+docsUrl: https://docs.together.ai/docs/quickstart
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+  tab: TypeScript
+placeholders:
+  your_api_key: qsr_dummy_key
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+enabled: false
+notes: "Run 2026-10-17 (qsr run): COMPILER_ERROR, the plan was rejected twice (file.path_ungrounded: main.ts is not named by the docs; s3 command.mismatch). The page shows 'npx tsx main.ts' but the code block has no file name, so any plan has to invent main.ts and the validator refuses it. Our compiler's strictness, not rot. Disabled: in production it would be a pre-failed COMPILER_ERROR entry every cycle."

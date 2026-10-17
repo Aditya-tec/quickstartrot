@@ -189,6 +189,21 @@ describe('qsr plan', () => {
   });
 });
 
+describe('qsr report --concurrency', () => {
+  it.each(['0', '9', 'x', '1.5'])('refuses %s', async (n) => {
+    const c = io();
+    expect(
+      await reportCommand(
+        ['--results', dir, '--cycle', CYCLE, '--concurrency', n],
+        silent,
+        c.handle,
+        baseEnv(),
+      ),
+    ).toBe(2);
+    expect(c.err()).toMatch(/--concurrency/);
+  });
+});
+
 describe('qsr report', () => {
   it('needs --cycle and the API settings', async () => {
     const c = io();

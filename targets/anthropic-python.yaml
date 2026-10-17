@@ -1,0 +1,12 @@
+slug: anthropic-python
+name: Anthropic (Python)
+docsUrl: https://docs.anthropic.com/en/docs/get-started
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: .prose
+  tab: Python
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 22.8 s of steps. Plan: set_env ANTHROPIC_API_KEY=... > shell pip install anthropic > write quickstart.py, then the harness syntax and import checks (2 passed). Resolved: annotated-types@0.8.0, anthropic@1.15.0, anyio@4.15.1, docstring_parser@0.18.0, h11@0.16.0, httpcore2@2.13.1, httpx2@2.13.1, idna@3.20, jiter@0.17.0, opentelemetry-api@1.45.1, pydantic@2.14.1, pydantic_core@2.50.1, sniffio@1.3.1, truststore@0.10.5, typing-inspection@0.4.4, typing_extensions@4.16.0. Crawl: root '.prose', tab 'Python', 15 blocks on the page."

@@ -267,6 +267,14 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     }
   }
 
+  /**
+   * The Groq circuit breaker. Once one tool shows that the model is out for the day (an answer that deferred with a
+   * Retry-After of hours, or our own token budget), asking again can only waste a call per tool, and the API may
+   * sleep up to a minute inside each. So every remaining tool gets the no-model call at once: the cache or its last
+   * accepted plan, else an informational skip with the reason that opened the breaker.
+   */
+  let breaker: { reason: 'llm_budget' | 'llm_unavailable' | 'llm_timeout' } | null = null;
+
   type Attempt =
     | { kind: 'response'; response: CompileResponse }
     | { kind: 'http'; status: number; retryAfterS: number | null; err: unknown }
@@ -296,6 +304,27 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     }
   }
 
+  /** The reason to open the breaker for, when this answer says the model is out for the day. */
+  function dailyLimit(a: Attempt): 'llm_budget' | 'llm_unavailable' | 'llm_timeout' | null {
+    if (a.kind === 'http')
+      return (a.retryAfterS ?? 0) > MAX_RETRY_WAIT_S ? 'llm_unavailable' : null;
+    if (a.kind === 'response' && a.response.status === 'deferred') {
+      if (a.response.reason === 'llm_budget') return 'llm_budget';
+      if ((a.response.retryAfterSeconds ?? 0) > MAX_RETRY_WAIT_S) return a.response.reason;
+    }
+    return null;
+  }
+
+  function noteDailyLimit(toolSlug: string, a: Attempt): void {
+    const reason = dailyLimit(a);
+    if (reason === null || breaker !== null) return;
+    breaker = { reason };
+    log.warn(
+      { cycleId, toolSlug, reason },
+      'compile circuit breaker open: the model is out for the day; every remaining tool gets the cache or its last plan only',
+    );
+  }
+
   /** Seconds to wait before the one retry, or null when waiting cannot help or is not warranted. */
   function retryWaitS(a: Attempt): number | null {
     let wait: number | null = null;
@@ -321,13 +350,19 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     outOfTime: boolean,
   ): Promise<Planned> {
     const deferWithoutModel = async (
-      reason: 'llm_unavailable' | 'llm_timeout',
+      reason: 'llm_budget' | 'llm_unavailable' | 'llm_timeout',
     ): Promise<Planned> => {
       const a = await askCompile(t, extraction, false);
       return a.kind === 'response'
         ? toPlanned(a.response, extraction)
         : { state: 'deferred', reason };
     };
+
+    if (breaker !== null) {
+      const kept = await deferWithoutModel(breaker.reason);
+      // the no-model answer says llm_timeout; the tool was skipped because of the breaker's reason
+      return kept.state === 'deferred' ? { state: 'deferred', reason: breaker.reason } : kept;
+    }
 
     if (outOfTime) {
       log.warn(
@@ -338,6 +373,7 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
     }
 
     let attempt = await askCompile(t, extraction, true);
+    noteDailyLimit(t.slug, attempt);
     const wait = retryWaitS(attempt);
     if (wait !== null) {
       log.warn(
@@ -346,6 +382,7 @@ export async function runPlan(options: PlanOptions, deps: PlanDeps): Promise<Pla
       );
       await deps.sleep(wait * 1000);
       attempt = await askCompile(t, extraction, true);
+      noteDailyLimit(t.slug, attempt);
     }
 
     if (attempt.kind === 'response') return toPlanned(attempt.response, extraction);

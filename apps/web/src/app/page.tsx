@@ -8,6 +8,7 @@ import { ToolCards, ToolTable } from '@/components/tool-table';
 import { getHome } from '@/lib/cached';
 import { getNow } from '@/lib/data';
 import { filterAndSort, homeHref, parseHomeParams, DEFAULT_PARAMS } from '@/lib/filters';
+import { FACTS, plural, words } from '@/lib/facts';
 import { formatDateTime } from '@/lib/format';
 
 // The leaderboard. Data is cached for 5 minutes and refreshed on demand (see lib/cached.ts). Filters and sort come
@@ -104,7 +105,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       ) : null}
 
       <p className="mt-10 text-xs text-muted">
-        Data refreshes about every five minutes.
+        Data refreshes about every {words(FACTS.dataCacheMinutes)}{' '}
+        {plural(FACTS.dataCacheMinutes, 'minute')}.
         {home.asOf ? <> Latest run: {formatDateTime(home.asOf)}.</> : null}
       </p>
     </>

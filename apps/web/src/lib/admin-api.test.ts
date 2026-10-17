@@ -37,7 +37,42 @@ function api(response: Response | Error) {
   return { api: createAdminApi({ fetch: fetchFn, apiBaseUrl: API, token: TOKEN }), fetchFn };
 }
 
+const STATS = {
+  generatedAt: '2026-10-17T12:00:00.000Z',
+  days: 7,
+  since: '2026-10-10T12:00:00.000Z',
+  cycles: { total: 0, valid: 0, invalid: 0, unfinished: 0, recent: [] },
+  harness: { overall: { runs: 0, errors: 0, rate: 0 }, byDay: [] },
+  tools: [],
+  unknowns: [],
+  llmClassified: [],
+  compile: {
+    deferrals: [],
+    staleRuns: 0,
+    llm: { calls: 0, failedCalls: 0, tokensIn: 0, tokensOut: 0 },
+  },
+  incidents: { open: 0, resolved: 0, confirmed: 0, falsePositive: 0, pendingReview: 0, list: [] },
+  canaries: [],
+  slowest: [],
+  groq: [],
+  storage: { database: { bytes: 1, limitBytes: 2, percent: 50 }, tables: [], objects: null },
+};
+
 describe('createAdminApi', () => {
+  it('reads the stats for a window with the bearer token and parses them', async () => {
+    const { api: a, fetchFn } = api(ok(STATS));
+    const r = await a.stats(3);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.data.storage.database.percent).toBe(50);
+    const [url] = fetchFn.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(API + '/admin/stats?days=3');
+  });
+
+  it('refuses stats of the wrong shape', async () => {
+    const { api: a } = api(ok({ days: 7 }));
+    expect(await a.stats()).toMatchObject({ ok: false });
+  });
+
   it('reads the queue with the bearer token and parses it', async () => {
     const { api: a, fetchFn } = api(ok(queueBody));
     const r = await a.queue();

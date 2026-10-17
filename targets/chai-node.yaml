@@ -1,0 +1,11 @@
+slug: chai-node
+name: Chai
+docsUrl: https://www.chaijs.com/guide/installation/
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L1 of L2 in 1.5 s of steps. Plan: shell npm install --save-dev chai. Resolved: chai@6.3.0. Crawl: root '#content', 7 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1."

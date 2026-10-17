@@ -4,7 +4,7 @@ import { RunResult } from './run-result.js';
 import { GroundingReport, StepIR } from './step-ir.js';
 import { StatusEvent } from './status.js';
 import { Target } from './target.js';
-import { FailureClass, Language, ReviewState, ToolStatus } from './taxonomy.js';
+import { FailureClass, IncidentState, Language, ReviewState, ToolStatus } from './taxonomy.js';
 import { Truncation } from './extraction.js';
 
 // Spec section 11: the API's bodies and responses, shared by apps/api and the CLI client so neither side
@@ -39,6 +39,8 @@ export const SyncResponse = z.object({
   disabled: z.array(z.string()),
   /** Tools an admin paused: a re-sync leaves them off. */
   keptDisabled: z.array(z.string()),
+  /** Targets marked enabled: false that have no tool yet: nothing was created for them. */
+  skipped: z.array(z.string()).default([]),
 });
 
 // ---- POST /internal/cycles
@@ -261,7 +263,268 @@ export const AdminQueueResponse = z.object({
   ),
 });
 export type AdminQueueResponse = z.infer<typeof AdminQueueResponse>;
+// ---- GET /admin/stats?days=N (P9a): everything the calibration review reads, in one answer
+const Day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const Rate = z.number().min(0).max(1);
+export const StatsResponse = z.object({
+  generatedAt: z.iso.datetime(),
+  days: z.number().int(),
+  since: z.iso.datetime(),
+  cycles: z.object({
+    total: z.number().int(),
+    valid: z.number().int(),
+    invalid: z.number().int(),
+    unfinished: z.number().int(),
+    /** Newest first, at most 50. */
+    recent: z.array(
+      z.object({
+        id: Uuid,
+        startedAt: z.iso.datetime(),
+        trigger: z.string(),
+        valid: z.boolean().nullable(),
+        canaryOk: z.boolean().nullable(),
+        durationSeconds: z.number().nullable(),
+        tools: z.number().int(),
+        harnessErrors: z.number().int(),
+        /** Why an invalid cycle is invalid (the canary problems the finish step recorded). */
+        problems: z.array(z.string()),
+      }),
+    ),
+  }),
+  /** Final attempts of real tools that ran, in every finished cycle: errors of ours, as a share. */
+  harness: z.object({
+    overall: z.object({ runs: z.number().int(), errors: z.number().int(), rate: Rate }),
+    byDay: z.array(
+      z.object({ day: Day, runs: z.number().int(), errors: z.number().int(), rate: Rate }),
+    ),
+  }),
+  tools: z.array(
+    z.object({
+      slug: z.string(),
+      name: z.string(),
+      enabled: z.boolean(),
+      level: z.number().int(),
+      status: ToolStatus,
+      pass: z.number().int(),
+      fail: z.number().int(),
+      skipped: z.number().int(),
+      harnessErrors: z.number().int(),
+      /** Runs that never executed (crawl or compile problem): not a verdict on the tool. */
+      notRun: z.number().int(),
+      /** Cycles in which the model was out and no plan came (admin queue items). */
+      deferred: z.number().int(),
+      staleRuns: z.number().int(),
+      /** Pass/fail alternations over the decided runs, as a share: 0 steady, 1 flips every cycle. */
+      flakeScore: Rate,
+      flipping: z.boolean(),
+      medianDurationMs: z.number().int().nullable(),
+      maxDurationMs: z.number().int().nullable(),
+    }),
+  ),
+  unknowns: z.array(
+    z.object({
+      runId: Uuid,
+      slug: z.string(),
+      startedAt: z.iso.datetime(),
+      failedStepId: z.string().nullable(),
+      evidenceLine: z.string().nullable(),
+    }),
+  ),
+  llmClassified: z.array(
+    z.object({
+      runId: Uuid.nullable(),
+      slug: z.string().nullable(),
+      createdAt: z.iso.datetime(),
+      failureClass: z.string().nullable(),
+      confidence: z.number().nullable(),
+      evidenceLine: z.string().nullable(),
+    }),
+  ),
+  compile: z.object({
+    deferrals: z.array(
+      z.object({
+        slug: z.string(),
+        count: z.number().int(),
+        reasons: z.record(z.string(), z.number().int()),
+      }),
+    ),
+    staleRuns: z.number().int(),
+    llm: z.object({
+      calls: z.number().int(),
+      failedCalls: z.number().int(),
+      tokensIn: z.number().int(),
+      tokensOut: z.number().int(),
+    }),
+  }),
+  incidents: z.object({
+    open: z.number().int(),
+    resolved: z.number().int(),
+    confirmed: z.number().int(),
+    falsePositive: z.number().int(),
+    pendingReview: z.number().int(),
+    list: z.array(
+      z.object({
+        id: Uuid,
+        slug: z.string(),
+        state: IncidentState,
+        review: ReviewState,
+        failureClass: FailureClass,
+        openedAt: z.iso.datetime(),
+        confirmedAt: z.iso.datetime().nullable(),
+        resolvedAt: z.iso.datetime().nullable(),
+        docsChanged: z.boolean().nullable(),
+      }),
+    ),
+  }),
+  canaries: z.array(
+    z.object({
+      slug: z.string(),
+      runs: z.number().int(),
+      expected: z.string(),
+      matched: z.number().int(),
+      mismatched: z.number().int(),
+    }),
+  ),
+  slowest: z.array(
+    z.object({
+      slug: z.string(),
+      medianDurationMs: z.number().int(),
+      maxDurationMs: z.number().int(),
+    }),
+  ),
+  groq: z.array(
+    z.object({
+      day: Day,
+      calls: z.number().int(),
+      failedCalls: z.number().int(),
+      tokens: z.number().int(),
+    }),
+  ),
+  storage: z.object({
+    database: z.object({
+      bytes: z.number().int(),
+      limitBytes: z.number().int(),
+      percent: z.number(),
+    }),
+    tables: z.array(
+      z.object({ name: z.string(), rows: z.number().int(), bytes: z.number().int() }),
+    ),
+    /** Supabase Storage (logs, diffs, traces). Null when the database cannot see it (a plain Postgres). */
+    objects: z
+      .object({
+        publicBytes: z.number().int(),
+        privateBytes: z.number().int(),
+        publicCount: z.number().int(),
+        privateCount: z.number().int(),
+        totalBytes: z.number().int(),
+        limitBytes: z.number().int(),
+        targetBytes: z.number().int(),
+        percent: z.number(),
+      })
+      .nullable(),
+  }),
+});
+export type StatsResponse = z.infer<typeof StatsResponse>;
+
+// ---- GET /admin/export/launch (P9a): the numbers a launch post needs, from reviewed and confirmed material only.
+// The schema admits ONLY incidents whose review is CONFIRMED: a response that carries anything else does not parse,
+// so neither the API nor the CLI can publish an unreviewed failure by mistake.
+export const LaunchExport = z.object({
+  generatedAt: z.iso.datetime(),
+  tools: z.object({
+    /** Enabled tools (canaries excluded). */
+    tracked: z.number().int(),
+    /** By the highest level the latest run reached: L3 reached the vendor's API; L2 installed and built. */
+    testedAtL3: z.number().int(),
+    testedAtL2: z.number().int(),
+    testedAtL1: z.number().int(),
+    notYetRun: z.number().int(),
+  }),
+  cycles: z.object({
+    valid: z.number().int(),
+    invalid: z.number().int(),
+    firstAt: z.iso.datetime().nullable(),
+    lastAt: z.iso.datetime().nullable(),
+  }),
+  runs: z.object({
+    /** Final attempts of real tools that ran, in valid cycles. */
+    total: z.number().int(),
+    perTool: z.array(
+      z.object({
+        slug: z.string(),
+        runs: z.number().int(),
+        passes: z.number().int(),
+        fails: z.number().int(),
+      }),
+    ),
+  }),
+  incidents: z.object({
+    confirmed: z.number().int(),
+    byFailureClass: z.record(z.string(), z.number().int()),
+    /** What changed between the last passing run and the first failing one, per confirmed incident. */
+    coincidence: z.object({
+      docsOnly: z.number().int(),
+      dependencyOnly: z.number().int(),
+      both: z.number().int(),
+      neither: z.number().int(),
+      unknown: z.number().int(),
+    }),
+    /** From the first failing run to the incident opening (two failures in valid cycles), and on to a person's confirmation. */
+    medianHoursToDetect: z.number().nullable(),
+    medianHoursToConfirm: z.number().nullable(),
+    list: z.array(
+      z.object({
+        id: Uuid,
+        slug: z.string(),
+        name: z.string(),
+        review: z.literal('CONFIRMED'),
+        failureClass: FailureClass,
+        state: IncidentState,
+        openedAt: z.iso.datetime(),
+        confirmedAt: z.iso.datetime().nullable(),
+        resolvedAt: z.iso.datetime().nullable(),
+        docsChanged: z.boolean().nullable(),
+        dependencyChanged: z.boolean().nullable(),
+        summary: z.string().nullable(),
+        suggestedFix: z.string().nullable(),
+        /** Evidence, as site paths: the tool page, the first failing run, the docs diff. */
+        toolPath: z.string(),
+        firstFailingRunPath: z.string().nullable(),
+        docsDiffPath: z.string().nullable(),
+      }),
+    ),
+  }),
+});
+export type LaunchExport = z.infer<typeof LaunchExport>;
+
+// ---- POST /admin/plans/import (P9a): a plan compiled on a developer machine, to be checked and cached by the server
+export const PlanImportBody = z.object({
+  /** The target as the file says it; the server derives the config hash from it (and from the stored tool). */
+  target: Target,
+  /** The page the plan was compiled from. The server recomputes its content hash and re-runs the grounding validator on it. */
+  extraction: Extraction,
+  plan: z.object({
+    contentHash: z.string().length(64),
+    compilerVersion: z.string().min(1).max(100),
+    model: z.string().min(1).max(200),
+    ir: StepIR,
+    /** Optional cross-check: must equal the config hash the server computes. */
+    configHash: z.string().length(64).optional(),
+  }),
+});
+export type PlanImportBody = z.infer<typeof PlanImportBody>;
+export const PlanImportResponse = z.object({
+  status: z.enum(['imported', 'already_present']),
+  planId: Uuid,
+  contentHash: z.string(),
+  configHash: z.string(),
+  compilerVersion: z.string(),
+});
+export type PlanImportResponse = z.infer<typeof PlanImportResponse>;
+
 export const GcResponse = z.object({
+  /** Bytes the cleanup freed, when Storage could say (the sizes of the objects it removed); null otherwise. */
+  freedBytes: z.number().int().nullable().default(null),
   deletedLogs: z.number().int(),
   deletedDiffs: z.number().int(),
   deletedTraces: z.number().int(),

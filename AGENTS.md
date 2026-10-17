@@ -77,3 +77,10 @@ Backslash escapes (`\n`, `\S`, `​`) in Bash heredocs and some write paths get 
 ## Classifier fixtures
 
 A new classifier rule starts with a fixture (`packages/classifier/fixtures/`; `node scripts/capture-classifier-fixtures.mjs` captures real ones in Docker). A test fails if a rule has no fixture.
+
+## Targets and plans (P9a)
+
+- A target is enabled only after `qsr run <slug>` in real Docker gave an explainable result and you read the log (`docs/TARGET-SELECTION.md` has the criteria and the full candidate table). Draft with `scripts/probe-docs-page.mjs` and `scripts/draft-target.mjs` (they start `enabled: false`), run with `scripts/batch-run.mjs`, record with `scripts/set-target.mjs` / `scripts/apply-run-result.mjs`, then `node scripts/render-target-selection.mjs`. Take `owners` only from the vendor's own docs or repo. `chalk`, `loguru` and `dotenv` are calibration targets only; `hono-node` is the deliberate "needs a person" example.
+- `qsr plans push <slug>|--all` sends locally compiled plans to `POST /admin/plans/import` (Bearer `ADMIN_TOKEN`); the API re-runs the grounding validator, so push before the first production cycle to spare the model quota. `pnpm probe:local --seed-plans` does it against the local API.
+- Every figure on `/methodology` and `/bot` comes from `PIPELINE`, `FREE_TIER` and `TARGET_GOAL` in `packages/core/src/pipeline-facts.ts`; `apps/web/src/lib/honesty.test.tsx` fails if one is hand-typed. Change a constant there, never in the page.
+- `node scripts/scale-estimate.mjs` recomputes the shard, Actions-minute and storage estimates in `docs/NOTES.md`.

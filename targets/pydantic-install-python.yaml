@@ -1,0 +1,11 @@
+slug: pydantic-install-python
+name: Pydantic (install)
+docsUrl: https://docs.pydantic.dev/latest/install/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L1 of L2 in 8.1 s of steps. Plan: shell pip install pydantic. Resolved: annotated-types@0.8.0, pydantic@2.14.1, pydantic_core@2.50.1, typing-inspection@0.4.4, typing_extensions@4.16.0. Crawl: root 'main', 15 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1."

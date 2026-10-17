@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { PIPELINE } from '@qsr/core';
 
 // The trust split of the probe pipeline (spec sections 12 and 14), pinned by parsing the workflow files:
 // the job that runs docs code has no secrets and no permissions, only the report job may write issues, only
@@ -92,6 +93,8 @@ describe('probe.yml has the shape of spec section 12', () => {
       workflow_dispatch: { inputs: Record<string, { required?: boolean }> };
     };
     expect(on.schedule).toEqual([{ cron: '17 */6 * * *' }]);
+    // the cadence the methodology page and the home page quote is the cron's step, not a copy of it
+    expect(on.schedule[0]?.cron.split(' ')[1]).toBe(`*/${PIPELINE.cycleHours}`);
     expect(on.workflow_dispatch.inputs['only']?.required).toBe(false);
   });
 

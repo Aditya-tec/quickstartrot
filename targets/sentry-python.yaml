@@ -1,0 +1,11 @@
+slug: sentry-python
+name: Sentry (Python)
+docsUrl: https://docs.sentry.io/platforms/python/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main
+notes: 'Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 8.1 s of steps. Plan: shell pip install "sentry-sdk" > write main.py, then the harness syntax and import checks (2 passed). Resolved: certifi@2026.7.22, sentry-sdk@2.72.0, urllib3@2.8.0. Crawl: root ''main'', 21 blocks on the page.'

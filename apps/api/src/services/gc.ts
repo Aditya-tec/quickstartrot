@@ -1,5 +1,5 @@
-import { and, eq, inArray, isNotNull, lt, notInArray } from 'drizzle-orm';
-import type { GcResponse, Logger } from '@qsr/core';
+import { and, eq, inArray, isNotNull, lt, notInArray, sql } from 'drizzle-orm';
+import { PIPELINE, type GcResponse, type Logger } from '@qsr/core';
 import { incidents, runs, stepResults } from '@qsr/db';
 import type { Ctx } from '../deps.js';
 import { HttpError } from '../problem.js';
@@ -12,9 +12,35 @@ import { PRIVATE_BUCKET, PUBLIC_BUCKET } from '../storage.js';
 // failure never leaves a row that points at a file that is gone.
 
 const DAY = 24 * 60 * 60 * 1000;
-export const LOG_RETENTION_DAYS = 30;
-export const TRACE_RETENTION_DAYS = 14;
+export const LOG_RETENTION_DAYS = PIPELINE.logRetentionDays;
+export const TRACE_RETENTION_DAYS = PIPELINE.traceRetentionDays;
 const BATCH = 100;
+
+/**
+ * The sizes of objects in a bucket, from the object metadata Supabase keeps in storage.objects (the same database).
+ * Null when the database cannot see that table (a plain Postgres): the freed total is then unknown, never guessed.
+ * Must be called BEFORE the objects are removed: deleting an object deletes its metadata row.
+ */
+async function sizesOf(ctx: Ctx, bucket: string, paths: readonly string[]): Promise<number | null> {
+  let total = 0;
+  try {
+    for (let i = 0; i < paths.length; i += BATCH) {
+      const chunk = paths.slice(i, i + BATCH);
+      const rows = await ctx.db.execute(
+        sql`select coalesce(sum((metadata->>'size')::bigint), 0)::bigint as bytes
+            from storage.objects
+            where bucket_id = ${bucket} and name in (${sql.join(
+              chunk.map((p) => sql`${p}`),
+              sql`, `,
+            )})`,
+      );
+      total += Number((rows[0] as { bytes: string | number } | undefined)?.bytes ?? 0);
+    }
+  } catch {
+    return null;
+  }
+  return total;
+}
 
 export async function collectGarbage(ctx: Ctx, log: Logger): Promise<GcResponse> {
   const { storage } = ctx.deps;
@@ -24,7 +50,13 @@ export async function collectGarbage(ctx: Ctx, log: Logger): Promise<GcResponse>
   const logCutoff = new Date(now.getTime() - LOG_RETENTION_DAYS * DAY);
   const traceCutoff = new Date(now.getTime() - TRACE_RETENTION_DAYS * DAY);
 
-  const removeAll = async (bucket: string, paths: string[]) => {
+  // Bytes freed so far; null as soon as one measurement is impossible.
+  let freed: number | null = 0;
+  const removeAll = async (bucket: string, paths: string[], knownBytes?: number) => {
+    if (paths.length > 0) {
+      const bytes = knownBytes ?? (await sizesOf(ctx, bucket, paths));
+      freed = freed === null || bytes === null ? null : freed + bytes;
+    }
     try {
       for (let i = 0; i < paths.length; i += BATCH)
         await storage.remove(bucket, paths.slice(i, i + BATCH));
@@ -97,10 +129,12 @@ export async function collectGarbage(ctx: Ctx, log: Logger): Promise<GcResponse>
 
   // ---- Playwright traces in the private bucket
   let traces: string[];
+  let oldTraces: { name: string; size: number }[];
   try {
-    traces = (await storage.list(PRIVATE_BUCKET, 'traces'))
-      .filter((o) => Date.parse(o.updatedAt) < traceCutoff.getTime())
-      .map((o) => o.name);
+    oldTraces = (await storage.list(PRIVATE_BUCKET, 'traces')).filter(
+      (o) => Date.parse(o.updatedAt) < traceCutoff.getTime(),
+    );
+    traces = oldTraces.map((o) => o.name);
   } catch (err) {
     log.error({ err }, 'could not list traces');
     throw new HttpError(
@@ -109,9 +143,15 @@ export async function collectGarbage(ctx: Ctx, log: Logger): Promise<GcResponse>
       'Storage cleanup failed; nothing was recorded as deleted.',
     );
   }
-  await removeAll(PRIVATE_BUCKET, traces);
+  await removeAll(
+    PRIVATE_BUCKET,
+    traces,
+    // the listing already carries each trace's size
+    oldTraces.reduce((sum, o) => sum + o.size, 0),
+  );
 
   const result = {
+    freedBytes: freed,
     deletedLogs: logPaths.length,
     deletedDiffs: falsePositives.length,
     deletedTraces: traces.length,

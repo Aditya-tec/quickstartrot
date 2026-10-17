@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import type { Browser, BrowserContext, Page } from 'playwright';
-import { type Extraction, type Logger, noopLogger, type Target } from '@qsr/core';
+import { type Extraction, type Logger, noopLogger, PIPELINE, type Target } from '@qsr/core';
 import { CrawlError } from './errors.js';
 import { contentHash, normalizeBlocks, type RawBlock } from './normalize.js';
 import { collectBlocks } from './page-script.js';
@@ -26,7 +26,8 @@ export interface ExtractOptions {
 const NAV_TIMEOUT_MS = 30_000;
 const IDLE_CAP_MS = 5_000;
 const SETTLE_MS = 300;
-const RETRY_DELAY_MS = 10_000;
+/** One retry, for network errors only; the delay is the methodology's number (PIPELINE in @qsr/core). */
+export const CRAWL_RETRY_DELAY_MS = PIPELINE.crawlRetryDelaySeconds * 1000;
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
@@ -46,7 +47,7 @@ export async function extract(target: Target, opts: ExtractOptions): Promise<Ext
       { toolSlug: target.slug, reason: err.reason },
       'crawl network error, retrying once in 10s',
     );
-    await sleep(RETRY_DELAY_MS);
+    await sleep(CRAWL_RETRY_DELAY_MS);
     return attempt(target, opts);
   }
 }

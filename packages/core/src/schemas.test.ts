@@ -43,6 +43,13 @@ describe('Target', () => {
     });
   });
 
+  it('has an optional enabled flag: absent stays absent (so existing config hashes do not change), false is kept', () => {
+    expect('enabled' in Target.parse(validTarget)).toBe(false);
+    expect(Target.parse({ ...validTarget, enabled: false }).enabled).toBe(false);
+    expect(Target.parse({ ...validTarget, enabled: true }).enabled).toBe(true);
+    expect(Target.safeParse({ ...validTarget, enabled: 'no' }).success).toBe(false);
+  });
+
   it.each(['Resend', 'resend_node', '-x', 'x-', 'a--b', ''])('rejects slug %j', (slug) => {
     expect(Target.safeParse({ ...validTarget, slug }).success).toBe(false);
   });

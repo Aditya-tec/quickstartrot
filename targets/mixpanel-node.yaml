@@ -1,0 +1,11 @@
+slug: mixpanel-node
+name: Mixpanel (Node.js)
+docsUrl: https://docs.mixpanel.com/docs/tracking-methods/sdks/nodejs
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 6.6 s of steps. Plan: shell npm install mixpanel > write index.js, then the harness syntax and import checks (2 passed). Resolved: mixpanel@0.24.0. Crawl: root '#content', 40 blocks on the page."

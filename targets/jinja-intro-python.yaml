@@ -1,0 +1,12 @@
+slug: jinja-intro-python
+name: Jinja (introduction)
+docsUrl: https://jinja.palletsprojects.com/en/stable/intro/
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '[role=main]'
+  codeBlocks: div.highlight pre
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L1 of L2 in 2.2 s of steps. Plan: shell pip install Jinja2. Resolved: Jinja2@3.1.6, MarkupSafe@3.0.4. Crawl: root '[role=main]', 7 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1."

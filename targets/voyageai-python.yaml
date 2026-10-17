@@ -1,0 +1,12 @@
+slug: voyageai-python
+name: Voyage AI (Python)
+docsUrl: https://docs.voyageai.com/docs/quickstart-tutorial
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main article
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED, manual_step. The page has 56 code blocks; the prompt budget showed the model 29 of them. The model's first plan cited a prose block for the install step (source.not_code), and after the one grounding retry the install became a manual step, so nothing ran. Not docs rot. Retry with a narrower extract.root or the larger model once there is quota."

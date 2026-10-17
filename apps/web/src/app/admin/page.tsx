@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { logoutAction } from '@/app/admin/actions';
 import { PendingList } from '@/components/admin/pending-list';
+import { StatusSection } from '@/components/admin/status-section';
 import { Button } from '@/components/ui/button';
 import { createAdminApi } from '@/lib/admin-api';
 import { SESSION_COOKIE, verifySession } from '@/lib/admin-session';
@@ -65,11 +66,12 @@ export default async function AdminPage() {
   )
     redirect('/admin/login');
 
-  const result = await createAdminApi({
+  const api = createAdminApi({
     fetch,
     apiBaseUrl: config.apiBaseUrl,
     token: config.adminToken,
-  }).queue();
+  });
+  const [result, stats] = await Promise.all([api.queue(), api.stats(7)]);
 
   return (
     <>
@@ -167,6 +169,14 @@ export default async function AdminPage() {
             )}
           </Section>
         </>
+      )}
+
+      {stats.ok ? (
+        <StatusSection stats={stats.data} />
+      ) : (
+        <p role="alert" data-testid="status-error" className="mt-10 text-sm text-fail">
+          The pipeline status could not be loaded: {stats.message}
+        </p>
       )}
     </>
   );

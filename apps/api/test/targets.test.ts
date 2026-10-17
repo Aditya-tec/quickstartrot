@@ -1,6 +1,18 @@
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
-import { tools } from '@qsr/db';
+import { CANARY_SLUGS } from '@qsr/core';
+import { runs, tools } from '@qsr/db';
+import { DRIFT_STDERR } from './fixtures.js';
+import {
+  at,
+  canaryResults,
+  fail,
+  finishCycle,
+  newCycle,
+  postRuns,
+  syncTools,
+  toolRow,
+} from './cycle-helpers.js';
 import { resetDb, startTestApp, targetInput, type TestApp } from './helpers.js';
 
 // POST /internal/targets/sync (spec section 11): upsert all targets/*.yaml by slug; disable tools whose file
@@ -38,6 +50,7 @@ d('POST /internal/targets/sync', () => {
       unchanged: [],
       disabled: [],
       keptDisabled: [],
+      skipped: [],
     });
     const chalk = await row('chalk-node');
     expect(chalk).toMatchObject({
@@ -116,6 +129,70 @@ d('POST /internal/targets/sync', () => {
     await sync([]);
     await sync([targetInput('chalk-node')]);
     expect(await row('chalk-node')).toMatchObject({ enabled: false, disabledReason: 'admin' });
+  });
+
+  it('a target with enabled: false is never created, and is reported as skipped', async () => {
+    const res = await sync([
+      targetInput('chalk-node'),
+      targetInput('later-node', { enabled: false }),
+    ]);
+    expect(res.json()).toMatchObject({ created: ['chalk-node'], skipped: ['later-node'] });
+    expect(await row('later-node')).toBeUndefined();
+  });
+
+  it('a tool whose target turns enabled: false is paused, with its history kept, and a re-enable resumes it cleanly', async () => {
+    await syncTools(t, 'zod-node');
+    const cycle1 = await newCycle(t, 0);
+    await postRuns(t, [
+      ...canaryResults(cycle1, at(0)),
+      fail(cycle1, 'zod-node', DRIFT_STDERR, at(0)),
+    ]);
+    await finishCycle(t, cycle1);
+    const before = await toolRow(t, 'zod-node');
+    expect(before).toMatchObject({ status: 'DEGRADED', consecutiveFailures: 1 });
+    const runsBefore = (await t.handle.db.select().from(runs)).filter(
+      (r) => r.toolId === before?.id,
+    ).length;
+    expect(runsBefore).toBe(1);
+
+    // paused by its own file
+    const paused = await t.signed('/internal/targets/sync', {
+      targets: [
+        ...CANARY_SLUGS.map((s) => targetInput(s, { level: 3 })),
+        targetInput('zod-node', { level: 3, enabled: false }),
+      ],
+    });
+    expect(paused.json()).toMatchObject({ disabled: ['zod-node'] });
+    expect(await toolRow(t, 'zod-node')).toMatchObject({
+      enabled: false,
+      disabledReason: 'target_disabled',
+    });
+    expect(
+      (await t.handle.db.select().from(runs)).filter((r) => r.toolId === before?.id),
+    ).toHaveLength(runsBefore);
+    const cycle2 = await t.signed('/internal/cycles', {
+      trigger: 'manual',
+      gitSha: 'abcdef1234567',
+      ghRunId: 77,
+    });
+    expect(cycle2.json().tools.map((x: { slug: string }) => x.slug)).not.toContain('zod-node');
+
+    // enabled again: back in the cycle, with the old streak and failure signature forgotten
+    await syncTools(t, 'zod-node');
+    expect(await toolRow(t, 'zod-node')).toMatchObject({
+      enabled: true,
+      disabledReason: null,
+      consecutiveFailures: 0,
+      consecutivePasses: 0,
+      transientStreak: 0,
+      lastFailureSignature: null,
+    });
+    const cycle3 = await t.signed('/internal/cycles', {
+      trigger: 'manual',
+      gitSha: 'abcdef1234567',
+      ghRunId: 78,
+    });
+    expect(cycle3.json().tools.map((x: { slug: string }) => x.slug)).toContain('zod-node');
   });
 
   it('rejects an invalid target and duplicate slugs without writing anything', async () => {

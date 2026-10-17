@@ -1,0 +1,12 @@
+slug: replicate-node
+name: 'Replicate (Node.js)'
+docsUrl: https://replicate.com/docs/get-started/nodejs
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+enabled: false
+notes: 'DRAFT, not yet run. Candidate from docs/TARGET-SELECTION.md (group: vendor).'

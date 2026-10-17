@@ -1,0 +1,12 @@
+slug: turso-libsql-node
+name: Turso libSQL (TypeScript)
+docsUrl: https://docs.turso.tech/sdk/ts/quickstart
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+  tab: Node.js
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 9.1 s of steps. Plan: shell npm install @libsql/client > write index.ts > append index.ts, then the harness syntax and import checks (2 passed). Resolved: @libsql/client@0.18.0. Crawl: root '#content', tab 'Node.js', 30 blocks on the page."

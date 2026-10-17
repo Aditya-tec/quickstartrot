@@ -1,0 +1,13 @@
+slug: prisma-node
+name: Prisma ORM
+docsUrl: https://www.prisma.io/docs/getting-started/prisma-orm/quickstart/sqlite
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .prose
+  tab: npm
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L0 of L2. The plan (a cache hit, no model call) follows the page's default tab: mkdir, cd, then 'bun init' failed with exit 127 (bun: command not found). Retrying with extract.tab 'npm' gave the same page content. The docs are not wrong, our image has no bun, and a real run would report BROKEN for that, so the target stays disabled until the plan can use the npm form or the image gains bun."

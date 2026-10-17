@@ -17,7 +17,7 @@ import { parseTargetFile, TargetFileError } from '../targets.js';
 import { createLimiter, domainOf } from './crawl-pool.js';
 import { reportHarnessProblem } from './github.js';
 import { runPlan, CRAWL_CONCURRENCY, type PlanDeps } from './plan.js';
-import { runReport, ReportError } from './report.js';
+import { MAX_REPORT_CONCURRENCY, runReport, ReportError } from './report.js';
 import { readdir } from 'node:fs/promises';
 
 // The thin layer between GitHub Actions (environment variables, $GITHUB_OUTPUT, $GITHUB_STEP_SUMMARY) and
@@ -245,10 +245,19 @@ export async function reportCommand(
       results: { type: 'string', default: 'results' },
       plans: { type: 'string', default: 'plans' },
       cycle: { type: 'string' },
+      concurrency: { type: 'string' },
     },
   });
   if (!values.cycle) {
     io.stderr('missing --cycle <id>\n');
+    return 2;
+  }
+  const concurrency = values.concurrency === undefined ? undefined : Number(values.concurrency);
+  if (
+    concurrency !== undefined &&
+    !(Number.isInteger(concurrency) && concurrency >= 1 && concurrency <= MAX_REPORT_CONCURRENCY)
+  ) {
+    io.stderr(`--concurrency must be a whole number from 1 to ${MAX_REPORT_CONCURRENCY}\n`);
     return 2;
   }
   const settings = apiSettings(env);
@@ -279,6 +288,7 @@ export async function reportCommand(
         webBaseUrl: env['WEB_BASE_URL'] || null,
         anonKey: env['SUPABASE_ANON_KEY'] || null,
         runUrl,
+        ...(concurrency === undefined ? {} : { concurrency }),
       },
       {
         api,

@@ -6,7 +6,8 @@ import {
   formatPercent,
   relativeTime,
   shortId,
-} from './format.js';
+  formatBytes,
+} from './format';
 
 // All times are UTC and formatted the same way on the server and in the browser, so there is no hydration
 // mismatch and a screenshot is the same everywhere.
@@ -81,5 +82,17 @@ describe('relativeTime', () => {
 describe('shortId', () => {
   it('is the first 8 characters', () => {
     expect(shortId('0f9d2c1e-aaaa-bbbb-cccc-0123456789ab')).toBe('0f9d2c1e');
+  });
+});
+
+describe('formatBytes', () => {
+  it.each([
+    [0, '0 B'],
+    [1023, '1023 B'],
+    [1024, '1.0 KB'],
+    [5 * 1024 * 1024, '5.0 MB'],
+    [1.5 * 1024 * 1024 * 1024, '1.50 GB'],
+  ])('%d -> %s', (n, text) => {
+    expect(formatBytes(n)).toBe(text);
   });
 });

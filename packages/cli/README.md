@@ -12,6 +12,9 @@ The `qsr` command line (spec sections 12 and 15). From the repo root, `pnpm qsr 
 | `qsr plan` / `execute` / `report` | P7    | implemented |
 | `qsr gc`                          | P7    | implemented |
 | `qsr validate`                    | P7    | implemented |
+| `qsr plans push`                  | P9a   | implemented |
+| `qsr calibration-report`          | P9a   | implemented |
+| `qsr export --launch`             | P9a   | implemented |
 
 ```sh
 pnpm qsr crawl zod-node                  # human summary: title, hash, block counts, code block list
@@ -31,7 +34,7 @@ qsr plan --out plans/ [--shards N] [--only a,b]
 # execute job (NO secrets, NO route to the API; one per shard)
 qsr execute --plans plans/ --shard N --out results/
 # report job (has the secrets; only reads JSON)
-qsr report --results results/ --plans plans/ --cycle <id>
+qsr report --results results/ --plans plans/ --cycle <id> [--concurrency 1..8]
 ```
 
 - **plan** wakes the API, syncs the targets, creates the cycle (idempotent on `GITHUB_RUN_ID` + attempt), crawls every
@@ -47,6 +50,19 @@ qsr report --results results/ --plans plans/ --cycle <id>
   a planned tool with no result, finishes the cycle and writes the outcome table to `$GITHUB_STEP_SUMMARY`. An invalid cycle
   or a harness error rate above 5% opens (or comments on) the `harness` issue. It exits non-zero only if it could not finish;
   every call is idempotent, so the job can be re-run.
+
+**Plans push (P9a).** `qsr plans push <slug>|--all [--dry-run] [--include-disabled]` (needs `API_BASE_URL` and `ADMIN_TOKEN`) crawls
+the page, takes the plan that `qsr run` or `qsr compile` cached locally for that exact content hash, and sends it with its
+extraction to `POST /admin/plans/import`. The API re-validates it, so a plan compiled once locally is not compiled again in
+production. `--dry-run` says what would be pushed and which tools have no local plan.
+
+**Calibration (P9a).** `qsr calibration-report --days 7` prints the Markdown a calibration review reads (cycles, harness error
+rate, per-tool counts and flake score, every UNKNOWN with its evidence, compile deferrals, incidents, canaries, slowest tools,
+model tokens per day, storage). `qsr export --launch [--json|--md]` prints the numbers for the launch post from reviewed and
+confirmed incidents only. Both need `API_BASE_URL` and `ADMIN_TOKEN`.
+
+The plan job has a circuit breaker for the model: once one answer says it is out for the day (a long Retry-After or our token
+budget), every remaining tool gets its cached or last plan only, with no further waiting.
 
 Other commands: `qsr gc` (nightly `POST /admin/gc`) and `qsr validate [--only a,b] [--crawl]` (Zod-checks every target,
 refuses non-public docs URLs and credential-like placeholders; `--crawl` is a dry run with no compile and no secrets).

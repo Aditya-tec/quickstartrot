@@ -1,0 +1,13 @@
+slug: groq-node
+name: 'Groq (Node.js)'
+docsUrl: https://console.groq.com/docs/quickstart
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: 'main'
+  tab: 'JavaScript'
+enabled: false
+notes: 'DRAFT, not yet run. Candidate from docs/TARGET-SELECTION.md (group: vendor).'

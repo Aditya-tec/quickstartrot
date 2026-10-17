@@ -1,0 +1,17 @@
+slug: replicate-python
+name: Replicate (Python)
+docsUrl: https://replicate.com/docs/get-started/python
+language: python
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main
+placeholders:
+  r8_....: qsr_dummy_key
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker, twice, minutes apart): pip install replicate, set REPLICATE_API_TOKEN to the dummy key, write main.py: both harness checks PASS; the run step 'python main.py' FAILS in replicate.run with ReplicateError status 500, detail 'Internal server error'. Reproducible. A 500 for an invalid token is the vendor's behaviour, not rot of the quickstart, and the classifier would not match it. Disabled so it cannot raise an incident; revisit if the API answers 401."

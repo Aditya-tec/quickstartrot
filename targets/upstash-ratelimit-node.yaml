@@ -1,0 +1,12 @@
+slug: upstash-ratelimit-node
+name: Upstash Ratelimit (TypeScript)
+docsUrl: https://upstash.com/docs/redis/sdks/ratelimit-ts/gettingstarted
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L1 of L2. npm install @upstash/ratelimit passed (resolved @upstash/ratelimit@2.2.0); the harness syntax check then failed on index.ts:23 and :26 (TS1108, a return outside a function) because the page's only code block is a middleware fragment, not a program. A cause in the plan input, not docs rot, but a real run would report it as BROKEN, so the target stays disabled until a person picks a runnable block (extract.variants or a different page)."

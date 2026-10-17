@@ -1,0 +1,11 @@
+slug: resend-python
+name: Resend (Python)
+docsUrl: https://resend.com/docs/send-with-python
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 5.8 s of steps. Plan: shell pip install resend > set_env RESEND_API_KEY=... > write main.py, then the harness syntax and import checks (2 passed). Resolved: certifi@2026.7.22, charset-normalizer@3.5.2, idna@3.20, requests@2.34.2, resend@2.50.0, typing_extensions@4.16.0, urllib3@2.8.0. Crawl: root '#content', 20 blocks on the page."

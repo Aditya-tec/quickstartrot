@@ -1,0 +1,11 @@
+slug: posthog-node
+name: PostHog (Node.js)
+docsUrl: https://posthog.com/docs/libraries/node
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: article
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 2.9 s of steps. Plan: shell npm install posthog-node --save > write index.js, then the harness syntax and import checks (2 passed). Resolved: posthog-node@5.56.2. Crawl: root 'article', 158 blocks on the page."

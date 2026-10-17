@@ -5,9 +5,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium, type Browser } from 'playwright';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Target, type TargetInput } from '@qsr/core';
+import { PIPELINE, Target, type TargetInput } from '@qsr/core';
 import { CrawlError } from './errors.js';
-import { extract, type ExtractOptions } from './extract.js';
+import { CRAWL_RETRY_DELAY_MS, extract, type ExtractOptions } from './extract.js';
 import { startFixtureServer, type FixtureServer } from './testing/fixture-server.js';
 
 const FIXTURES = fileURLToPath(new URL('../../../fixtures/docs-site', import.meta.url));
@@ -304,8 +304,9 @@ describe('failure handling', () => {
       },
     });
     expect(err.reason).toBe('network');
-    expect(sleeps).toEqual([10_000]);
-    expect(fetches).toBe(2);
+    expect(sleeps).toEqual([CRAWL_RETRY_DELAY_MS]);
+    expect(CRAWL_RETRY_DELAY_MS).toBe(PIPELINE.crawlRetryDelaySeconds * 1000);
+    expect(fetches).toBe(1 + PIPELINE.crawlRetries);
   });
 
   it('succeeds when the single retry works', async () => {

@@ -1,0 +1,11 @@
+slug: rxjs-node
+name: RxJS
+docsUrl: https://rxjs.dev/guide/installation
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '[role=main]'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L1 of L2 in 4.1 s of steps. Plan: shell npm install rxjs. Resolved: rxjs@7.8.2. Crawl: root '[role=main]', 13 blocks on the page. The page has an install command and no runnable snippet, so the plan stops at the install: the run reaches L1 of the target's L2, and the public page says L1."

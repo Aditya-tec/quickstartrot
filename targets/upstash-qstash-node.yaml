@@ -1,0 +1,13 @@
+slug: upstash-qstash-node
+name: Upstash QStash (TypeScript)
+docsUrl: https://upstash.com/docs/qstash/sdks/ts/gettingstarted
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+placeholders:
+  <QSTASH_TOKEN>: qsr_dummy_key
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.9 s of steps. Plan: shell npm install @upstash/qstash > write index.ts, then the harness syntax and import checks (2 passed). Resolved: @upstash/qstash@2.12.0. Crawl: root 'main article', 17 blocks on the page."

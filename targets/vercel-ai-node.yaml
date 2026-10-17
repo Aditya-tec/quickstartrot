@@ -1,0 +1,13 @@
+slug: vercel-ai-node
+name: Vercel AI SDK
+docsUrl: https://ai-sdk.dev/docs/getting-started/nodejs
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .prose
+  tab: npm
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L0 of L2. The plan (a cache hit, no model call) follows the page's default pnpm tab: mkdir, cd, then 'pnpm init' failed with exit 127 (pnpm: command not found). Retrying with extract.tab 'npm' gave the same page content. The docs are not wrong, our image has no pnpm, and a real run would report BROKEN for that, so the target stays disabled until the harness plan can use the npm form or the image gains pnpm."

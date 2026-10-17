@@ -1,6 +1,7 @@
 import { ImageResponse } from 'next/og';
 import { OG_COLORS, type OgCard } from './og';
 import type { Headline } from '@qsr/core/public';
+import { FACTS, words } from './facts';
 import { headlineText } from './headline';
 
 // The drawing of the Open Graph images (1200x630). Satori renders text as glyphs, never as markup, so a name or an
@@ -115,7 +116,7 @@ export function homeImage(headline: Headline): ImageResponse {
         </div>
       </div>
       <div style={{ display: 'flex', fontSize: 28, color: MUTED }}>
-        Developer quickstarts, run on a clean machine every six hours.
+        Developer quickstarts, run on a clean machine every {words(FACTS.cycleHours)} hours.
       </div>
     </div>,
   );

@@ -1,0 +1,11 @@
+slug: loops-node
+name: Loops
+docsUrl: https://loops.so/docs/sdks/javascript
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: '#content'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 68.6 s of steps. Plan: shell npm install loops > write index.js, then the harness syntax and import checks (2 passed). Resolved: loops@7.3.0. Crawl: root '#content', 9 blocks on the page."

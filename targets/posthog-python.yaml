@@ -1,0 +1,12 @@
+slug: posthog-python
+name: PostHog (Python)
+docsUrl: https://posthog.com/docs/libraries/python
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: article
+  tab: Python
+notes: 'Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 26.9 s of steps. Plan: shell pip install posthog > shell pip install "posthog[async]>=7.45.0" > write main.py, then the harness syntax and import checks (2 passed). Resolved: anyio@4.15.1, backoff@2.2.1, certifi@2026.7.22, charset-normalizer@3.5.2, distro@1.9.0, h11@0.16.0, httpcore@1.0.9, httpx@0.28.1, idna@3.20, posthog@7.71.0, requests@2.34.2, typing_extensions@4.16.0, urllib3@2.8.0. Crawl: root ''article'', tab ''Python'', 190 blocks on the page.'

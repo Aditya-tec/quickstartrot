@@ -60,6 +60,11 @@ export const Target = z.object({
     })
     .optional(),
   notes: z.string().optional(),
+  /**
+   * false: the file stays in the repository (with its notes) but the target is not run. A target that is absent
+   * here counts as enabled, and stays absent after parsing, so the config hash of every existing target is unchanged.
+   */
+  enabled: z.boolean().optional(),
 });
 export type Target = z.infer<typeof Target>;
 export type TargetInput = z.input<typeof Target>;

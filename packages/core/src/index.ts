@@ -16,3 +16,4 @@ export * from './canonical.js';
 export * from './content-hash.js';
 export * from './probe.js';
 export * from './public-url.js';
+export * from './pipeline-facts.js';

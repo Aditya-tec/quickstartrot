@@ -1,0 +1,11 @@
+slug: cheerio-node
+name: Cheerio
+docsUrl: https://cheerio.js.org/docs/intro
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.5 s of steps. Plan: shell npm install cheerio > write index.js > append index.js > append index.js > append index.js, then the harness syntax and import checks (2 passed). Resolved: cheerio@1.2.0. Crawl: root 'main article', 19 blocks on the page."

@@ -1,0 +1,11 @@
+slug: ajv-node
+name: Ajv
+docsUrl: https://ajv.js.org/guide/getting-started.html
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 1.5 s of steps. Plan: shell npm install ajv > write index.js, then the harness syntax and import checks (2 passed). Resolved: ajv@8.20.0. Crawl: root 'main', 15 blocks on the page."

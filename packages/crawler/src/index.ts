@@ -1,4 +1,4 @@
-export { extract, type ExtractOptions } from './extract.js';
+export { CRAWL_RETRY_DELAY_MS, extract, type ExtractOptions } from './extract.js';
 export { CrawlError, CRAWL_ERROR_REASONS, type CrawlErrorReason } from './errors.js';
 export {
   botUserAgent,

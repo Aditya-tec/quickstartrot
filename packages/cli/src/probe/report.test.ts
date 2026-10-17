@@ -14,7 +14,13 @@ import {
 } from '@qsr/core';
 import { ApiError } from '../api-client.js';
 import { GitHubError } from './github.js';
-import { ReportError, runReport, type ReportDeps, type ReportOptions } from './report.js';
+import {
+  REPORT_CONCURRENCY,
+  ReportError,
+  runReport,
+  type ReportDeps,
+  type ReportOptions,
+} from './report.js';
 import {
   CYCLE,
   HASH,
@@ -98,9 +104,13 @@ function fakeApi(
     runError?: (body: RunBody) => Error | null;
     uploadError?: boolean;
     finish?: Partial<FinishResponse>;
+    /** Milliseconds each call takes, so tests can see what overlaps. */
+    latencyMs?: (path: string, body: unknown) => number;
   } = {},
 ) {
   const calls: { path: string; body: unknown }[] = [];
+  let inFlight = 0;
+  const stats = { maxInFlight: 0 };
   const stored = new Map<string, Stored>();
   const uploads: UploadsBody[] = [];
   let n = 0;
@@ -111,6 +121,19 @@ function fakeApi(
     },
     post: (async (p: string, body: unknown) => {
       calls.push({ path: p, body });
+      inFlight += 1;
+      stats.maxInFlight = Math.max(stats.maxInFlight, inFlight);
+      try {
+        const wait = opts.latencyMs?.(p, body) ?? 0;
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+        return await answer(p, body);
+      } finally {
+        inFlight -= 1;
+      }
+    }) as ReportDeps['api']['post'],
+  };
+  const answer = async (p: string, body: unknown): Promise<unknown> => {
+    {
       if (p === '/internal/uploads') {
         if (opts.uploadError) throw new ApiError(502, 'Bad Gateway', 'storage', 'POST x');
         const b = body as UploadsBody;
@@ -169,9 +192,9 @@ function fakeApi(
           ...opts.finish,
         });
       throw new Error(`fakeApi: unexpected ${p}`);
-    }) as ReportDeps['api']['post'],
+    }
   };
-  return { api, calls, stored, uploads, paths: () => calls.map((c) => c.path) };
+  return { api, calls, stored, uploads, stats, paths: () => calls.map((c) => c.path) };
 }
 
 function fakeStorage(fail = false) {
@@ -590,6 +613,134 @@ describe('finishing the cycle', () => {
     await expect(
       report({ options: { cycleId: '22222222-2222-4222-8222-222222222222' } }),
     ).rejects.toBeInstanceOf(ReportError);
+  });
+});
+
+describe('concurrency: tools are reported four at a time (the ingest is idempotent)', () => {
+  const slugs = Array.from({ length: 12 }, (_, i) => 't' + String(i).padStart(2, '0') + '-node');
+  async function twelve() {
+    await writePlans(slugs.map((slug, i) => readyPlan(target(slug), i % 2)));
+    for (const slug of slugs)
+      await writeResult(ok(slug), { s1: 'npm install ok' + String.fromCharCode(10) });
+  }
+  const FIVE = (p: string) => (p === '/internal/uploads' || p === '/internal/runs' ? 25 : 0);
+
+  it('never has more than four tools in flight, and really overlaps them', async () => {
+    await twelve();
+    const api = fakeApi({ latencyMs: FIVE });
+    await report({ api });
+    expect(REPORT_CONCURRENCY).toBe(4);
+    expect(api.stats.maxInFlight).toBeLessThanOrEqual(REPORT_CONCURRENCY);
+    expect(api.stats.maxInFlight).toBeGreaterThanOrEqual(3);
+    expect(api.stored.size).toBe(12);
+  });
+
+  it('reports one tool at a time when asked for a concurrency of 1 (the pre-P9a behaviour)', async () => {
+    await twelve();
+    const api = fakeApi({ latencyMs: FIVE });
+    await report({ api, options: { concurrency: 1 } });
+    expect(api.stats.maxInFlight).toBe(1);
+    expect(api.stored.size).toBe(12);
+  });
+
+  it('keeps the calls of one tool in order: its uploads, then its run; attempts in order', async () => {
+    await writePlans(slugs.slice(0, 6).map((slug, i) => readyPlan(target(slug), i % 2)));
+    for (const slug of slugs.slice(0, 6)) {
+      await writeResult(failed(slug, { attempt: 1 }), { s1: 'one' });
+      await writeResult(ok(slug, { attempt: 2 }), { s1: 'two' });
+    }
+    const api = fakeApi({ latencyMs: FIVE });
+    await report({ api });
+    for (const slug of slugs.slice(0, 6)) {
+      const mine = api.calls
+        .filter(
+          (c) =>
+            (c.body as { toolSlug?: string; runResult?: { toolSlug: string } })?.toolSlug ===
+              slug ||
+            (c.body as { runResult?: { toolSlug: string } })?.runResult?.toolSlug === slug,
+        )
+        .map(
+          (c) =>
+            c.path.replace('/internal/', '') +
+            ((c.body as { attempt?: number }).attempt ??
+              (c.body as { runResult?: { attempt: number } }).runResult?.attempt ??
+              ''),
+        );
+      expect(mine, slug).toEqual(['uploads1', 'runs1', 'uploads2', 'runs2']);
+    }
+  });
+
+  it('finishes the cycle last, after every run was posted', async () => {
+    await twelve();
+    const api = fakeApi({ latencyMs: FIVE });
+    await report({ api });
+    expect(api.paths().at(-1)).toBe('/internal/cycles/' + CYCLE + '/finish');
+    expect(api.paths().filter((p) => p.endsWith('/finish'))).toHaveLength(1);
+    expect(api.paths().filter((p) => p === '/internal/runs')).toHaveLength(12);
+  });
+
+  it('writes the same summary whatever order the answers arrive in', async () => {
+    await twelve();
+    const forward = await report({
+      api: fakeApi({
+        latencyMs: (p, b) =>
+          p === '/internal/runs'
+            ? 5 + (Number((b as RunBody).runResult.toolSlug.slice(1, 3)) % 4) * 9
+            : 0,
+      }),
+    });
+    const backward = await report({
+      api: fakeApi({
+        latencyMs: (p, b) =>
+          p === '/internal/runs'
+            ? 5 + (3 - (Number((b as RunBody).runResult.toolSlug.slice(1, 3)) % 4)) * 9
+            : 0,
+      }),
+    });
+    expect(forward.summaries).toEqual(backward.summaries);
+    expect(forward.outcome.rows.map((r) => r.slug)).toEqual(
+      backward.outcome.rows.map((r) => r.slug),
+    );
+    expect(forward.outcome.rows.map((r) => r.slug)).toEqual(slugs);
+  });
+
+  it('is clearly faster than one tool at a time (12 tools, 25 ms per call)', async () => {
+    await twelve();
+    const started = Date.now();
+    await report({ api: fakeApi({ latencyMs: FIVE }) });
+    const elapsed = Date.now() - started;
+    // one at a time would be 12 x 2 calls x 25 ms = 600 ms; four at a time is about 150 ms
+    expect(elapsed).toBeLessThan(420);
+  });
+
+  it('one failing run stops the report before finishing, and no tool still queued is started after it', async () => {
+    await twelve();
+    const api = fakeApi({
+      latencyMs: FIVE,
+      runError: (body) =>
+        body.runResult.toolSlug === 't01-node'
+          ? new ApiError(503, 'x', undefined, 'POST /internal/runs')
+          : null,
+    });
+    await expect(report({ api })).rejects.toBeInstanceOf(ReportError);
+    expect(api.paths().some((p) => p.endsWith('/finish'))).toBe(false);
+    // t01 was in the first four, so most of the twelve were never started
+    expect(api.paths().filter((p) => p === '/internal/runs').length).toBeLessThan(12);
+  });
+
+  it('a re-run after that failure completes the cycle without duplicating anything', async () => {
+    await twelve();
+    const api = fakeApi({ latencyMs: FIVE });
+    await expect(
+      report({
+        api: fakeApi({
+          runError: (b) =>
+            b.runResult.toolSlug === 't05-node' ? new Error('Could not reach the API') : null,
+        }),
+      }),
+    ).rejects.toBeInstanceOf(ReportError);
+    await report({ api });
+    expect(api.stored.size).toBe(12);
   });
 });
 

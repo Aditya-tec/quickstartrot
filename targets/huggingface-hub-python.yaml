@@ -1,0 +1,13 @@
+slug: huggingface-hub-python
+name: Hugging Face Hub (Python)
+docsUrl: https://huggingface.co/docs/huggingface_hub/quick-start
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: .prose
+  codeBlocks: pre
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L1 of L2. pip install --upgrade huggingface_hub passed (16.6 s). The plan then wrote the page's first snippet as main.py, but it is a REPL transcript (the first line is '>>> from huggingface_hub import hf_hub_download'), so the harness syntax check failed with SyntaxError. A cause in the docs format, not rot; a real run would report BROKEN, so the target stays disabled until the snippet can be selected (extract.variants or another page). Crawled with codeBlocks 'pre'."

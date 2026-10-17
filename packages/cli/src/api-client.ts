@@ -21,7 +21,10 @@ export interface WakeOptions {
 }
 export interface ApiClientOptions {
   baseUrl: string;
-  secret: string;
+  /** The HMAC secret: signs every POST to /internal/*. */
+  secret?: string;
+  /** The admin token: sent as a bearer header on /admin/* (GET and POST). Use one of the two. */
+  bearerToken?: string;
   fetch?: typeof fetch;
   /** Milliseconds since the epoch. Injected so a test can move time without waiting. */
   now?: () => number;
@@ -66,6 +69,8 @@ export interface WakeResult {
 export interface ApiClient {
   health(): Promise<Health>;
   wakeApi(): Promise<WakeResult>;
+  /** GET with the same retries as post. Carries the bearer token when the client has one; never signed. */
+  get<T = unknown>(path: string, schema?: z.ZodType<T>): Promise<T>;
   post<T = unknown>(path: string, body: unknown, schema?: z.ZodType<T>): Promise<T>;
 }
 
@@ -83,6 +88,10 @@ function describeNetworkError(err: unknown): string {
 }
 
 export function createApiClient(options: ApiClientOptions): ApiClient {
+  if (!options.secret && !options.bearerToken)
+    throw new Error(
+      'createApiClient needs a secret (internal routes) or a bearerToken (admin routes)',
+    );
   const base = options.baseUrl.replace(/\/+$/, '');
   const doFetch = options.fetch ?? fetch;
   const now = options.now ?? Date.now;
@@ -138,6 +147,49 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
     return parseJson(res, route, Health);
   }
 
+  /** One request with the retries: 502/503/504 and network errors, with backoff; everything else fails at once. */
+  async function send<T>(
+    method: 'GET' | 'POST',
+    path: string,
+    body: unknown,
+    schema?: z.ZodType<T>,
+  ): Promise<T> {
+    const route = `${method} ${path}`;
+    const raw = method === 'POST' ? Buffer.from(JSON.stringify(body), 'utf8') : null;
+    let failure: Error = new Error(`${route} was not attempted`);
+    for (let attempt = 1; attempt <= retry.attempts; attempt++) {
+      const headers: Record<string, string> = raw ? { 'content-type': 'application/json' } : {};
+      if (options.bearerToken) {
+        headers['authorization'] = `Bearer ${options.bearerToken}`;
+      } else if (raw && options.secret) {
+        // A fresh timestamp and signature per attempt: a long outage must not age the request out of the
+        // server's 300 s window. The body bytes are identical every time.
+        const timestamp = Math.floor(now() / 1000);
+        headers[TIMESTAMP_HEADER] = String(timestamp);
+        headers[SIGNATURE_HEADER] = signRequest(options.secret, timestamp, raw);
+      }
+      let res: Response | null = null;
+      try {
+        res = await doFetch(`${base}${path}`, {
+          method,
+          headers,
+          ...(raw ? { body: raw } : {}),
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+      } catch (err) {
+        failure = new Error(`Could not reach ${base}${path}: ${describeNetworkError(err)}`);
+      }
+      if (res !== null) {
+        if (res.ok) return parseJson(res, route, schema);
+        const error = await errorFor(res, route);
+        if (!RETRYABLE.has(res.status)) throw error;
+        failure = error;
+      }
+      if (attempt < retry.attempts) await sleep(retryDelay(attempt, res));
+    }
+    throw failure;
+  }
+
   return {
     health,
 
@@ -162,38 +214,10 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       }
     },
 
-    async post<T = unknown>(path: string, body: unknown, schema?: z.ZodType<T>): Promise<T> {
-      const route = `POST ${path}`;
-      const raw = Buffer.from(JSON.stringify(body), 'utf8');
-      let failure: Error = new Error(`${route} was not attempted`);
-      for (let attempt = 1; attempt <= retry.attempts; attempt++) {
-        // A fresh timestamp and signature per attempt: a long outage must not age the request out of the
-        // server's 300 s window. The body bytes are identical every time.
-        const timestamp = Math.floor(now() / 1000);
-        let res: Response | null = null;
-        try {
-          res = await doFetch(`${base}${path}`, {
-            method: 'POST',
-            headers: {
-              'content-type': 'application/json',
-              [TIMESTAMP_HEADER]: String(timestamp),
-              [SIGNATURE_HEADER]: signRequest(options.secret, timestamp, raw),
-            },
-            body: raw,
-            signal: AbortSignal.timeout(timeoutMs),
-          });
-        } catch (err) {
-          failure = new Error(`Could not reach ${base}${path}: ${describeNetworkError(err)}`);
-        }
-        if (res !== null) {
-          if (res.ok) return parseJson(res, route, schema);
-          const error = await errorFor(res, route);
-          if (!RETRYABLE.has(res.status)) throw error;
-          failure = error;
-        }
-        if (attempt < retry.attempts) await sleep(retryDelay(attempt, res));
-      }
-      throw failure;
-    },
+    get: <T = unknown>(path: string, schema?: z.ZodType<T>): Promise<T> =>
+      send('GET', path, undefined, schema),
+
+    post: <T = unknown>(path: string, body: unknown, schema?: z.ZodType<T>): Promise<T> =>
+      send('POST', path, body, schema),
   };
 }

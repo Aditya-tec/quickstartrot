@@ -1,0 +1,11 @@
+slug: mocha-node
+name: Mocha
+docsUrl: https://mochajs.org/#getting-started
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.5 s of steps. Plan: shell npm i -D mocha > write test/example.test.js > write package.json, then the harness syntax and import checks (2 passed). Resolved: mocha@12.0.3. Crawl: root 'main', 20 blocks on the page."

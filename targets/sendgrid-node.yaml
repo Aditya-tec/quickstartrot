@@ -1,0 +1,18 @@
+slug: sendgrid-node
+name: SendGrid (Node.js)
+docsUrl: https://www.twilio.com/docs/sendgrid/for-developers/sending-email/quickstart-nodejs
+language: node
+level: 3
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+  codeBlocks: pre
+placeholders:
+  <Your API Key>: qsr_dummy_key
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at step s4, shell 'npm init' (exit 1): the docs say plain 'npm init', which asks for a package name and stops at the prompt. The vendor's quickstart did not fail: the plan kept an interactive step that the harness (which runs npm init -y itself) should have dropped. Disabled until the compiler treats a plain 'npm init' like the harness-provided project init (P9b). The crawl is fine: 16 code blocks under 'main article' with codeBlocks 'pre'."

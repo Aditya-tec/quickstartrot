@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Headline as HeadlineData } from '@qsr/core/public';
 import { formatDateTime } from '@/lib/format';
+import { FACTS, plural, words, type Facts } from '@/lib/facts';
 import { headlineText, tierBreakdown } from '@/lib/headline';
 import type { ToolSummary } from '@/lib/model';
 import { cn } from '@/lib/utils';
@@ -33,10 +34,12 @@ export function Headline({
   headline,
   tested,
   asOf,
+  facts = FACTS,
 }: {
   headline: HeadlineData;
   tested: readonly ToolSummary[];
   asOf: string | null;
+  facts?: Facts;
 }) {
   const text = headlineText(headline.passing, headline.tested);
   const tiers = tierBreakdown(tested);
@@ -55,7 +58,8 @@ export function Headline({
             {'. '}
           </>
         ) : null}
-        Every quickstart is run on a fresh machine every six hours.
+        Every quickstart is run on a fresh machine every {words(facts.cycleHours)}{' '}
+        {plural(facts.cycleHours, 'hour')}.
         {headline.failing > 0 || headline.verifying > 0 ? (
           <>
             {' '}

@@ -1,0 +1,12 @@
+slug: prettier-node
+name: Prettier
+docsUrl: https://prettier.io/docs/install
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: .markdown
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step after 5 steps passed (npm install prettier, .prettierrc, .prettierignore, husky and lint-staged, npx husky init): 'Create the .husky/pre-commit file with the following content' has no code block to copy. Reached L1 of L2. A deliberate stop, not a failure; kept disabled so it does not add noise to the Needs a person group."

@@ -1,0 +1,14 @@
+slug: twilio-node
+name: Twilio (Node.js)
+docsUrl: https://www.twilio.com/docs/messaging/quickstart/node
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+  tab: Node.js
+  codeBlocks: pre
+enabled: false
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L1 of L2. npm install twilio passed (4.1 s); the plan then wrote send_sms.js from page blocks that are alternatives (SMS and MMS variants), and the harness syntax check failed (SyntaxError: Unexpected identifier 'body'). A plan-input cause, not docs rot; a real run would report BROKEN, so the target stays disabled until a variant can be selected. Crawled with codeBlocks 'pre' (the default selector found none)."
