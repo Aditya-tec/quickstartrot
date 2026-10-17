@@ -63,6 +63,8 @@ const SKIP_DIRS = new Set([
   '.git',
   'coverage',
   '.qsr-cache',
+  '.qsr-runs', // local scratch of scripts/batch-run.mjs and friends (git-ignored)
+  '.probe-local',
 ]);
 const TEXT_EXT = new Set([
   '.ts',

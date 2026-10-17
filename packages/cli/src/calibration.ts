@@ -230,6 +230,24 @@ export function renderCalibrationReport(stats: StatsResponse): string {
     '',
   );
   add(`Stale-plan runs: ${stats.compile.staleRuns}`, '');
+  add('### Content hash churn', '');
+  add(
+    ...(stats.compile.hashChurn.tools.length === 0
+      ? [NONE]
+      : [
+          ...table(
+            ['Tool', 'Distinct hashes', 'Flag'],
+            stats.compile.hashChurn.tools.map((c) => [
+              c.slug,
+              String(c.distinctHashes),
+              c.flagged ? `VOLATILE: ${stats.compile.hashChurn.flagAt} or more` : '',
+            ]),
+          ),
+          '',
+          `${stats.compile.hashChurn.flagAt} or more distinct hashes in the window usually mean a value on the page that rotates by itself (a generated demo key, a date, a nonce). Each one costs a compile; see extract.hashIgnore in docs/TARGET-SELECTION.md.`,
+        ]),
+    '',
+  );
   add('### Model tokens per day', '');
   add(
     ...(stats.groq.length === 0

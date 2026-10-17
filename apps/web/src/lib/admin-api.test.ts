@@ -49,6 +49,7 @@ const STATS = {
   compile: {
     deferrals: [],
     staleRuns: 0,
+    hashChurn: { flagAt: 3, tools: [] },
     llm: { calls: 0, failedCalls: 0, tokensIn: 0, tokensOut: 0 },
   },
   incidents: { open: 0, resolved: 0, confirmed: 0, falsePositive: 0, pendingReview: 0, list: [] },

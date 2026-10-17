@@ -56,7 +56,7 @@ describe('@qsr/core/public', () => {
       'SubmissionBody',
     ])
       expect(mod, name).toHaveProperty(name);
-  });
+  }, 30_000); // a cold import of the whole graph; under a loaded machine it can pass 5 s
 
   it('reaches no Node built-in, anywhere in its import graph', () => {
     const graph = walk(path.join(SRC, 'public.ts'));

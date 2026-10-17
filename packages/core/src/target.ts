@@ -24,6 +24,82 @@ export const VariantsConfig = z
   .strict();
 export type VariantsConfig = z.infer<typeof VariantsConfig>;
 
+export const HASH_IGNORE_LIMITS = Object.freeze({
+  maxRules: 5,
+  maxPatternLength: 200,
+  maxReplacementLength: 100,
+});
+
+/**
+ * Why a regular expression is not accepted as a hashIgnore pattern, or null when it is. The patterns come from the
+ * target files (reviewed in a pull request) and run over every block of a docs page, so a pattern that can backtrack
+ * catastrophically must not load: no back-references, and no group that contains a quantifier or an alternation and
+ * is itself quantified with * + or {n,m}. A conservative scan (escapes and character classes are skipped), not a proof.
+ */
+export function unsafeRegexReason(source: string): string | null {
+  if (source.length > HASH_IGNORE_LIMITS.maxPatternLength)
+    return `longer than ${HASH_IGNORE_LIMITS.maxPatternLength} characters`;
+  if (/\\[1-9]|\\k</.test(source)) return 'back-references are not allowed';
+  const open: { inner: boolean }[] = [];
+  let i = 0;
+  const quantifierAt = (at: number): boolean => {
+    const c = source[at];
+    return c === '*' || c === '+' || (c === '{' && /^\{\d+(,\d*)?\}/.test(source.slice(at)));
+  };
+  while (i < source.length) {
+    const c = source[i] as string;
+    if (c === '\\') {
+      i += 2;
+      continue;
+    }
+    if (c === '[') {
+      i++;
+      while (i < source.length && source[i] !== ']') i += source[i] === '\\' ? 2 : 1;
+      i++;
+      const top = open[open.length - 1];
+      if (top && quantifierAt(i)) top.inner = true;
+      continue;
+    }
+    if (c === '(') open.push({ inner: false });
+    else if (c === '|') {
+      const top = open[open.length - 1];
+      if (top) top.inner = true;
+    } else if (c === ')') {
+      const group = open.pop();
+      if (group?.inner && quantifierAt(i + 1))
+        return 'a quantified group that contains a quantifier or an alternation';
+      const parent = open[open.length - 1];
+      if (parent && (group?.inner || quantifierAt(i + 1))) parent.inner = true;
+    } else if (quantifierAt(i)) {
+      const top = open[open.length - 1];
+      if (top) top.inner = true;
+    }
+    i++;
+  }
+  return null;
+}
+
+/**
+ * One rule of `extract.hashIgnore`: a regular expression (always applied globally) and its replacement
+ * ($1 style group references work). Applied ONLY when the content hash is computed, so a page that shows a value
+ * that rotates on every visit (a generated demo key) keeps one plan-cache key. The stored extraction and the plan
+ * keep the verbatim text.
+ */
+export const HashIgnoreRule = z
+  .object({
+    pattern: z
+      .string()
+      .min(1)
+      .refine(isRegex, 'not a valid regular expression')
+      .superRefine((p, ctx) => {
+        const reason = unsafeRegexReason(p);
+        if (reason !== null) ctx.addIssue({ code: 'custom', message: reason });
+      }),
+    replaceWith: z.string().max(HASH_IGNORE_LIMITS.maxReplacementLength),
+  })
+  .strict();
+export type HashIgnoreRule = z.infer<typeof HashIgnoreRule>;
+
 // Spec section 6: one YAML file per tracked tool in targets/<slug>.yaml.
 export const Target = z.object({
   slug: z
@@ -45,6 +121,8 @@ export const Target = z.object({
     tab: z.string().optional(),
     ignoreBlocksMatching: z.array(z.string()).default([]),
     variants: VariantsConfig.optional(),
+    /** Absent for every target but the few whose page shows a rotating token; absent stays absent after parsing. */
+    hashIgnore: z.array(HashIgnoreRule).max(HASH_IGNORE_LIMITS.maxRules).optional(),
   }),
   placeholders: z.record(z.string(), z.string()).default({}),
   expect: z

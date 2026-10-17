@@ -19,4 +19,14 @@ describe('committed targets', () => {
       expect(t.runtime.image.startsWith('ghcr.io/'), t.slug).toBe(true);
     }
   });
+
+  // Go-live after P9a: hashIgnore changes how a page is hashed, so it exists only where a page was shown to print a
+  // value that rotates by itself. Every other target hashes exactly as before (packages/core content-hash.test.ts).
+  it('only the two Ably pages (a rotating demo key) use extract.hashIgnore', async () => {
+    const withRules = (await loadAllTargets(TARGETS_DIR, { canaries: true }))
+      .filter((t) => t.extract.hashIgnore !== undefined)
+      .map((t) => t.slug)
+      .sort();
+    expect(withRules).toEqual(['ably-node', 'ably-python']);
+  });
 });

@@ -8,6 +8,7 @@ import {
   type GroundingContext,
 } from '@qsr/compiler';
 import {
+  applyHashIgnore,
   compileConfigHash,
   contentHash,
   hashJson,
@@ -33,6 +34,15 @@ import { HttpError } from '../problem.js';
 //   - the truncation record is recomputed, not copied.
 // The result is stored exactly like a compiled plan, so the production compile hits it as a cache hit.
 
+/** A copy of a JSON value with every string passed through `fn` (the plan is data: numbers and structure are untouched). */
+function mapStrings<T>(value: T, fn: (s: string) => string): T {
+  if (typeof value === 'string') return fn(value) as T;
+  if (Array.isArray(value)) return value.map((v) => mapStrings(v, fn)) as T;
+  if (value !== null && typeof value === 'object')
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, mapStrings(v, fn)])) as T;
+  return value;
+}
+
 const unprocessable = (detail: string): HttpError =>
   new HttpError(422, 'Unprocessable Entity', detail);
 
@@ -44,7 +54,10 @@ export async function importPlan(
   const { db, deps } = ctx;
   const { extraction, plan } = body;
 
-  if (extraction.contentHash !== contentHash(extraction.blocks, extraction.variants))
+  if (
+    extraction.contentHash !==
+    contentHash(extraction.blocks, extraction.variants, body.target.extract.hashIgnore)
+  )
     throw new HttpError(
       400,
       'Bad Request',
@@ -92,12 +105,22 @@ export async function importPlan(
     deps.config.compilerModel ? { model: deps.config.compilerModel } : {},
   );
   const { truncation } = selectBlocks(extraction, config.maxDocsChars);
+  // A target with hashIgnore rules has a page value that rotates by itself, so the plan (compiled from an earlier
+  // crawl) and the extraction sent now may differ in exactly that value and still be the same page. Only for such a
+  // target, and only here, both sides go through the same rules before the validator compares them. The plan that is
+  // stored is the one that was sent, with its own verbatim text.
+  const rules = target.extract.hashIgnore;
   const ctx2: GroundingContext = {
-    blocks: extraction.blocks,
+    blocks:
+      rules === undefined
+        ? extraction.blocks
+        : extraction.blocks.map((b) => ({ ...b, text: applyHashIgnore(b.text, rules) })),
     placeholders: target.placeholders,
     language: target.language,
   };
-  const report = validateGrounding(plan.ir, ctx2);
+  const checked =
+    rules === undefined ? plan.ir : mapStrings(plan.ir, (s) => applyHashIgnore(s, rules));
+  const report = validateGrounding(checked, ctx2);
   if (!report.ok)
     throw unprocessable(
       `The plan failed the grounding validator: ${report.violations

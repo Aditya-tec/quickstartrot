@@ -11,14 +11,14 @@ const target = Target.parse(yamlObject); // applies defaults, throws ZodError on
 const ir = StepIR.safeParse(llmJson); // never trust LLM output without parsing
 ```
 
-| Export                                          | Spec section | Purpose                                         |
-| ----------------------------------------------- | ------------ | ----------------------------------------------- |
-| `ToolStatus`, `RunOutcome`, `FailureClass`, ... | 5            | Enums shared with the database                  |
-| `Target`                                        | 6            | One `targets/<slug>.yaml` file                  |
-| `Extraction`, `ExtractionBlock`                 | 7            | Crawler output                                  |
-| `Step`, `StepIR`, `SourceRef`, `Expect`         | 8            | The typed plan the compiler produces            |
-| `GroundingReport`                               | 8            | Output of the deterministic grounding validator |
-| `RunResult`, `StepResult`                       | 9            | Executor output contract                        |
+| Export                                          | Spec section | Purpose                                                                                      |
+| ----------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------- |
+| `ToolStatus`, `RunOutcome`, `FailureClass`, ... | 5            | Enums shared with the database                                                               |
+| `Target`                                        | 6            | One `targets/<slug>.yaml` file (optional `extract.hashIgnore`: see docs/TARGET-SELECTION.md) |
+| `Extraction`, `ExtractionBlock`                 | 7            | Crawler output                                                                               |
+| `Step`, `StepIR`, `SourceRef`, `Expect`         | 8            | The typed plan the compiler produces                                                         |
+| `GroundingReport`                               | 8            | Output of the deterministic grounding validator                                              |
+| `RunResult`, `StepResult`                       | 9            | Executor output contract                                                                     |
 
 `RunResult` is exactly the spec section 9 shape. The version-drift capture of section 10 (`runner_env.resolved`) is stored inside `runnerEnv` as a JSON string under `RUNNER_ENV_KEYS.resolved`; `parseResolved(runnerEnv)` reads it back.
 

@@ -1,7 +1,14 @@
 import { and, desc, eq, gte, inArray, or, sql } from 'drizzle-orm';
-import { CANARY_EXPECTATIONS, FREE_TIER, type CanarySlug, type StatsResponse } from '@qsr/core';
+import {
+  CANARY_EXPECTATIONS,
+  FREE_TIER,
+  PIPELINE,
+  type CanarySlug,
+  type StatsResponse,
+} from '@qsr/core';
 import {
   adminQueueItems,
+  docSnapshots,
   incidents,
   llmCalls,
   probeCycles,
@@ -276,6 +283,21 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
     canaryStats.set(slug, entry);
   }
 
+  // ---- content hash churn: distinct snapshots (one per content hash) last seen inside the window, real tools only
+  const seenHashes = await db
+    .select({ toolId: docSnapshots.toolId, n: sql<number>`count(*)::int` })
+    .from(docSnapshots)
+    .where(gte(docSnapshots.lastSeenAt, since))
+    .groupBy(docSnapshots.toolId);
+  const hashChurn = seenHashes
+    .filter((r) => r.n >= 2 && !isCanary(r.toolId) && toolById.has(r.toolId))
+    .map((r) => ({
+      slug: (toolById.get(r.toolId) as { slug: string }).slug,
+      distinctHashes: r.n,
+      flagged: r.n >= PIPELINE.hashChurnFlagAt,
+    }))
+    .sort((a, b) => b.distinctHashes - a.distinctHashes || (a.slug < b.slug ? -1 : 1));
+
   // ---- storage
   const dbSize = await db.execute(
     sql`select pg_database_size(current_database())::bigint as bytes`,
@@ -373,6 +395,7 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
           reasons,
         })),
       staleRuns: perTool.reduce((sum, t) => sum + t.staleRuns, 0),
+      hashChurn: { flagAt: PIPELINE.hashChurnFlagAt, tools: hashChurn },
       llm: {
         calls: calls.length,
         failedCalls: calls.filter((c) => !c.ok).length,

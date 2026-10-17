@@ -137,6 +137,13 @@ function seeded(over: Partial<StatsResponse> = {}): StatsResponse {
       deferrals: [{ slug: 'beta-node', count: 2, reasons: { llm_budget: 1, llm_unavailable: 1 } }],
       staleRuns: 3,
       llm: { calls: 40, failedCalls: 2, tokensIn: 100_000, tokensOut: 20_000 },
+      hashChurn: {
+        flagAt: 3,
+        tools: [
+          { slug: 'ably-python', distinctHashes: 5, flagged: true },
+          { slug: 'beta-node', distinctHashes: 2, flagged: false },
+        ],
+      },
     },
     incidents: {
       open: 2,
@@ -221,6 +228,25 @@ describe('formatBytes', () => {
 
 describe('renderCalibrationReport', () => {
   const md = renderCalibrationReport(seeded());
+
+  it('lists the pages whose content hash changed more than once, and flags 3 or more as volatile', () => {
+    expect(md).toContain('### Content hash churn');
+    expect(md).toContain('| ably-python | 5 | VOLATILE: 3 or more |');
+    expect(md).toMatch(/\| beta-node \| 2 \| +\|/);
+    expect(md).not.toContain('| beta-node | 2 | VOLATILE');
+    expect(md).toMatch(
+      /3 or more distinct hashes in the window usually mean a value on the page that rotates/,
+    );
+  });
+
+  it('says so when no page changed more than once', () => {
+    const quiet = renderCalibrationReport(
+      seeded({
+        compile: { ...seeded().compile, hashChurn: { flagAt: 3, tools: [] } },
+      }),
+    );
+    expect(quiet).toMatch(/Content hash churn\s+None\./);
+  });
 
   it('starts with the window and what it covers', () => {
     expect(md).toMatch(/^# Calibration report/);
@@ -323,6 +349,7 @@ describe('renderCalibrationReport', () => {
           deferrals: [],
           staleRuns: 0,
           llm: { calls: 0, failedCalls: 0, tokensIn: 0, tokensOut: 0 },
+          hashChurn: { flagAt: 3, tools: [] },
         },
         incidents: {
           open: 0,

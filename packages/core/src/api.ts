@@ -349,6 +349,13 @@ export const StatsResponse = z.object({
       }),
     ),
     staleRuns: z.number().int(),
+    /** Pages whose content hash changed in the window (2 or more distinct hashes), most first. */
+    hashChurn: z.object({
+      flagAt: z.number().int(),
+      tools: z.array(
+        z.object({ slug: z.string(), distinctHashes: z.number().int(), flagged: z.boolean() }),
+      ),
+    }),
     llm: z.object({
       calls: z.number().int(),
       failedCalls: z.number().int(),

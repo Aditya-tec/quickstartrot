@@ -149,6 +149,7 @@ createServer(async (req, res) => {
         compile: {
           deferrals: [],
           staleRuns: 0,
+          hashChurn: { flagAt: 3, tools: [] },
           llm: { calls: 4, failedCalls: 0, tokensIn: 9000, tokensOut: 2000 },
         },
         incidents: {

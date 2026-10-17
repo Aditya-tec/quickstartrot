@@ -3,6 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'v
 import { FREE_TIER, StatsResponse } from '@qsr/core';
 import {
   adminQueueItems,
+  docSnapshots,
   incidents,
   llmCalls,
   probeCycles,
@@ -402,6 +403,38 @@ d('GET /admin/stats', () => {
     ]);
     expect(s.compile.staleRuns).toBe(1);
     expect(s.compile.llm).toEqual({ calls: 3, failedCalls: 1, tokensIn: 3000, tokensOut: 700 });
+  });
+
+  it('counts the distinct content hashes each tool had in the window and flags 3 or more (a page that will not hold still)', async () => {
+    const { id } = await seed();
+    const snap = (slug: string, n: number, lastSeenAgo: number) =>
+      db()
+        .insert(docSnapshots)
+        .values({
+          toolId: id[slug] as string,
+          contentHash: slug.slice(0, 3) + String(n).padStart(61, '0'),
+          extraction: { blocks: [] },
+          firstSeenAt: ago(lastSeenAgo + HOUR),
+          lastSeenAt: ago(lastSeenAgo),
+        });
+    await snap('alpha-node', 1, 2 * DAY); // one hash: steady
+    await snap('alpha-node', 2, 12 * DAY); // seen last 12 days ago: outside the window
+    for (const n of [1, 2, 3, 4]) await snap('beta-node', n, n * DAY - 2 * HOUR); // four hashes: flagged
+    for (const n of [1, 2]) await snap('gamma-python', n, n * HOUR); // two: listed, not flagged
+    for (const n of [1, 2, 3]) await snap('canary-pass-node', n, n * HOUR); // canaries are not pages
+    const s = await stats();
+    expect(s.compile.hashChurn).toEqual({
+      flagAt: 3,
+      tools: [
+        { slug: 'beta-node', distinctHashes: 4, flagged: true },
+        { slug: 'gamma-python', distinctHashes: 2, flagged: false },
+      ],
+    });
+    // a smaller window counts fewer: only beta's hashes last seen 22 and 46 hours ago are inside 2 days
+    expect((await stats('?days=2')).compile.hashChurn.tools).toEqual([
+      { slug: 'beta-node', distinctHashes: 2, flagged: false },
+      { slug: 'gamma-python', distinctHashes: 2, flagged: false },
+    ]);
   });
 
   it('counts incidents by state and review, and lists them', async () => {

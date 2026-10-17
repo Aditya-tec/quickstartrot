@@ -42,6 +42,8 @@ export const PIPELINE = Object.freeze({
   recurrenceWindowDays: RECURRENCE_WINDOW_DAYS,
   /** Pinned to CANARY_SLUGS by pipeline-facts.test.ts (canary.ts reaches Node-only modules, so it is not imported here). */
   canaryCount: 4,
+  /** A page with this many distinct content hashes in the calibration window is flagged as one that will not hold still. */
+  hashChurnFlagAt: 3,
   logRetentionDays: 30,
   traceRetentionDays: 14,
   /** Ethics rules (spec section 14): an opt-out is honoured within this many hours. */

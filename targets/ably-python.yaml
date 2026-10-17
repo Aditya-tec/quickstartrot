@@ -8,4 +8,7 @@ runtime:
   pythonVersion: '3.12'
 extract:
   root: main article
-notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 15.1 s of steps. Plan: shell mkdir ably-python-quickstart > shell cd ably-python-quickstart > shell python -m venv venv > shell pip install ably > write main.py, then the harness syntax and import checks (2 passed). Resolved: ably@3.1.4, anyio@4.15.1, certifi@2026.7.22, h11@0.16.0, h2@4.4.1, hpack@4.2.0, httpcore@1.0.9, httpx@0.28.1, hyperframe@6.1.0, idna@3.20, msgpack@1.2.3, pyee@13.0.1, typing_extensions@4.16.0, websockets@15.0.1. Crawl: root 'main article', 42 blocks on the page."
+  hashIgnore:
+    - pattern: '\b([A-Za-z0-9_-]{5,8})\.[A-Za-z0-9_-]{5,8}:(?=\*{3,})'
+      replaceWith: '$1.KEYID:'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 15.1 s of steps. Plan: shell mkdir ably-python-quickstart > shell cd ably-python-quickstart > shell python -m venv venv > shell pip install ably > write main.py, then the harness syntax and import checks (2 passed). Resolved: ably@3.1.4, anyio@4.15.1, certifi@2026.7.22, h11@0.16.0, h2@4.4.1, hpack@4.2.0, httpcore@1.0.9, httpx@0.28.1, hyperframe@6.1.0, idna@3.20, msgpack@1.2.3, pyee@13.0.1, typing_extensions@4.16.0, websockets@15.0.1. Crawl: root 'main article', 42 blocks on the page. The page prints a generated demo API key (xVLyHw.<id>:*****) whose id rotates every few hours, which changed the content hash and cost a compile each time; extract.hashIgnore leaves that id out of the hash only (go-live diagnosis, 2026-10-17, docs/NOTES.md). The stored extraction and the plan keep the verbatim key."

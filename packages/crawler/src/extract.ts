@@ -189,7 +189,7 @@ async function crawlPage(
     title: await page.title(),
     fetchedAt: now().toISOString(),
     blocks,
-    contentHash: contentHash(blocks, resolved?.report),
+    contentHash: contentHash(blocks, resolved?.report, target.extract.hashIgnore),
     ...(resolved ? { variants: resolved.report } : {}),
   };
 }

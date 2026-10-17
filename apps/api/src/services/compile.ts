@@ -75,15 +75,19 @@ export async function compileForTool(
   }
 
   const extraction = body.extraction as NonNullable<CompileBody['extraction']>;
-  // Never trust a hash a runner sends: a forged one would put somebody else's plan under these blocks.
-  if (extraction.contentHash !== contentHash(extraction.blocks, extraction.variants))
+  const target = Target.parse(tool.config);
+  // Never trust a hash a runner sends: a forged one would put somebody else's plan under these blocks. The stored
+  // target says how the hash is made (hashIgnore: a page value that rotates by itself is left out of the hash).
+  if (
+    extraction.contentHash !==
+    contentHash(extraction.blocks, extraction.variants, target.extract.hashIgnore)
+  )
     throw new HttpError(
       400,
       'Bad Request',
       'The extraction content hash does not match its blocks.',
     );
 
-  const target = Target.parse(tool.config);
   const configHash = compileConfigHash(target);
   const [snapshot] = await db
     .insert(docSnapshots)

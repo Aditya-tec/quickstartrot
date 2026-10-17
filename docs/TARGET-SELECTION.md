@@ -77,6 +77,38 @@ wired up. Their notes say so. `hono-node` stays as a deliberate **"needs a perso
 interactive scaffolder, so the correct plan is a single manual step. It shows what a manual stop looks like and is not counted
 in the headline.
 
+## Pages that print a rotating value (`extract.hashIgnore`)
+
+The content hash of a page is the plan-cache key, so a value on the page that changes by itself (a demo key the site generates for each
+visitor, a date, a nonce) makes the key change and costs one compile each time. The Ably quickstarts are the case found so far: they print
+a demo API key `xVLyHw.<id>:*****` whose id rotates every few hours. `qsr calibration-report` now lists any page with 3 or more distinct
+hashes in its window ("Content hash churn") so the next one is found by the report and not by hand.
+
+A target can declare rules that are applied **only when its content hash is computed**:
+
+```yaml
+extract:
+  root: main article
+  hashIgnore:
+    - pattern: '\b([A-Za-z0-9_-]{5,8})\.[A-Za-z0-9_-]{5,8}:(?=\*{3,})' # <prefix>.<id>: followed by a mask of 3 or more stars
+      replaceWith: '$1.KEYID:'
+```
+
+- Each rule is a regular expression (applied globally to the text of every block) and its replacement; `$1` style references work. Up to 5
+  rules; a pattern up to 200 characters, a replacement up to 100.
+- The extraction that is stored and shown, and the plan, keep the **verbatim** text. Only the hash ignores the value. A plan cached under a
+  hash is therefore run as it was compiled (with the key id it saw then), which for a demo key that L2 never contacts does not matter. If a
+  rotating value ever mattered to what runs, this field is the wrong tool.
+- Patterns are checked when the target loads: an invalid regular expression, a back-reference, or a quantified group that contains a
+  quantifier or an alternation (`(a+)+`, `(a|aa)*`) is rejected, so a pattern cannot backtrack catastrophically over a page.
+- A pattern must be narrow enough that it cannot hide a real change. The Ably rule needs the mask of stars, which a real key never has; a
+  real-looking key with the same prefix is not normalized (tested).
+- `qsr plans push` and `POST /admin/plans/import` apply the same rules to both the plan and the extraction before the grounding validator
+  compares them, for these targets only, so a plan compiled before the key rotated is still accepted. The plan stored is the one sent.
+- A target without `hashIgnore` hashes exactly as before. `packages/core/src/content-hash.test.ts` pins this on a gzipped fixture of 51
+  live pages whose hashes were made by the function before the field existed; `committed-targets.test.ts` allows the field only on the two
+  Ably targets.
+
 ## What a result means
 
 The result of one local run is evidence for the decision above, nothing more. The numbers on the site come from the scheduled
