@@ -10,7 +10,7 @@ import {
   type Target,
 } from '@qsr/core';
 import { ApiError, createApiClient, type ApiClient } from '../api-client.js';
-import { processIo, type CliIo } from '../commands.js';
+import { botUrlFromEnv, processIo, type CliIo } from '../commands.js';
 import { GoldenPlanError, loadGoldenPlan } from '../canary.js';
 import { isCanarySlug } from '../canary.js';
 import { parseTargetFile, TargetFileError } from '../targets.js';
@@ -95,6 +95,14 @@ export async function planCommand(
     return 2;
   }
 
+  let botUrl: string;
+  try {
+    botUrl = botUrlFromEnv(env);
+  } catch (err) {
+    io.stderr(`${(err as Error).message}\n`);
+    return 2;
+  }
+
   const targetsDir = path.resolve(values.targets);
   let all: Target[];
   try {
@@ -128,7 +136,7 @@ export async function planCommand(
         });
       browser = await launchBrowser();
       const b = browser;
-      crawl = (t) => extract(t, { browser: b, log });
+      crawl = (t) => extract(t, { browser: b, log, botUrl });
     }
     const writeOutput = appender(env, 'GITHUB_OUTPUT', io);
     const writeSummary = appender(env, 'GITHUB_STEP_SUMMARY', io);
@@ -350,6 +358,15 @@ export async function validateCommand(
       only: { type: 'string', default: '' },
     },
   });
+  let botUrl: string | null = null;
+  if (values.crawl) {
+    try {
+      botUrl = botUrlFromEnv();
+    } catch (err) {
+      io.stderr(`${(err as Error).message}\n`);
+      return 2;
+    }
+  }
   const { targets, errors } = await parseTargetsDir(path.resolve(values.targets));
   if (errors.length > 0) {
     for (const e of errors) io.stderr(`${e}\n`);
@@ -375,7 +392,7 @@ export async function validateCommand(
     if (!crawl) {
       browser = await launchBrowser();
       const b = browser;
-      crawl = (t) => extract(t, { browser: b, log });
+      crawl = (t) => extract(t, { browser: b, log, ...(botUrl ? { botUrl } : {}) });
     }
     const run = createLimiter(CRAWL_CONCURRENCY);
     const doCrawl = crawl;

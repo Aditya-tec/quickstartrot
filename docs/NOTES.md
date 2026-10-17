@@ -13,6 +13,80 @@ only**: they have no API to reach, so they prove the pipeline works, not that a 
 wired up. Resend is the model case: its SDK prints the 401 and exits 0, so the log shows the client
 reached the endpoint.
 
+## Findings from P8 (the website)
+
+### Pre-flight results
+
+- **Migration 0005** (pre-flight and stale runs excluded from `pass_rate_30d`) was already applied live; **migration 0006 was added
+  and applied live** (`public_tools` +`last_run_id`, `last_outcome`, `last_reached_level`, `last_skip_reason`, `decided_30d`; new
+  `public_run_history`, the newest 60 final runs per tool; `public_runs` recreated; `public_incidents` +`version_diff`, CONFIRMED
+  only; `SELECT` granted to `anon` and `authenticated` on all four). Live RLS suite: 37 of 37.
+- **A real leak was found and closed at the database layer.** Before 0006, `public_runs` sent `failure_class`, `failure_signature`,
+  `failed_step_id` and every step's `exit_code`, `stdout_tail`, `stderr_tail` and `log_path` to anyone with the anon key, for
+  failed runs nobody had reviewed. Now the view nulls them unless the run did not fail, the failure is about us (CRAWL_ERROR or
+  COMPILER_ERROR), or the tool has a CONFIRMED incident (`details_published`). `apps/api/test/public-views.test.ts` (anon-role
+  transactions) and the live RLS tests pin it.
+- **Storage:** buckets `public-artifacts` (public) and `private-artifacts` exist. `pnpm smoke:storage` signs an upload like
+  `/internal/uploads`, uploads gzip with the request shape `qsr report` uses (shared function `putToSignedUrl`), reads it back
+  from the public URL (raw gzip, `application/gzip`, no `Content-Encoding`, `Access-Control-Allow-Origin: *`) and deletes it.
+  **After a delete the public CDN still serves the file for up to `max-age=3600`** (upload sets `cacheControl: 3600`); the script
+  checks the delete on the uncached authenticated endpoint. A real production log loads in the browser through the viewer.
+  `decodeLog` also accepts already-decoded bytes (it checks the gzip magic number), in case a CDN ever applies `Content-Encoding`.
+- **Crawler user agent** is `QuickstartRotBot/1.0 (+<BOT_INFO_URL>)`, read from configuration (`resolveBotUrl`; default
+  `https://quickstartrot.vercel.app/bot`; must be an https URL without spaces, controls or `)`). Wired as `vars.BOT_INFO_URL`
+  into the `plan` job of `probe.yml` and into `validate-targets.yml` only; the workflow tests fail if `execute` or `report`
+  mention it.
+
+### Decisions
+
+- **One status function.** `publicStatus` (in `@qsr/core/public`) is the only place that turns a tool row, its last outcome and
+  "has a confirmed open incident" into passing / failing / verifying / unknown / needs a person. The pages, the badge and the OG
+  image all call it. "failing" requires a confirmed open incident, whatever the status string says.
+- **`@qsr/core/public`** is a browser-safe subpath (zod and plain functions; a test walks its import graph and fails on a Node
+  built-in). The main entry of core imports `node:crypto`.
+- **Headline.** X of Y counts tested tools only (passing, failing, verifying). `SKIPPED` manual-stop tools are in neither X nor
+  Y; they are listed under "Needs a person". Never-run tools are under "Not yet tested". Under the headline, passes are broken
+  down by level: L3 (reached the vendor) versus L2 (installed, code parses and imports resolve, **not run against the vendor**)
+  versus L1.
+- **An unreviewed failure also hides which step failed**: its failed step shows "Being verified" instead of "Failed", and the
+  streak reads "N failed in a row", never "failing".
+- **Admin.** Login compares `ADMIN_TOKEN` in constant time (SHA-256 digests + `timingSafeEqual`), then sets an HMAC-signed,
+  8-hour cookie (`httpOnly`, `secure`, `sameSite=strict`, path `/admin`); the cookie never holds the token. Middleware (Edge, Web
+  Crypto) guards `/admin/*`; every server action re-checks the session. Failed logins are limited in memory (5 per 15 minutes
+  per client): **on serverless that is per instance and resets when an instance is recycled**, so it only slows a guesser; the
+  API's limiter on bad bearer tokens is the backstop. A reviewed incident stays on screen with its message until reload (Next
+  refreshes the page after `revalidateTag`; `PendingList` keeps it).
+- **Revalidation contract:** the API (P6) sends `POST` with the header `x-revalidate-secret`; the web route checks that header in
+  constant time. Pages stay cached up to 5 minutes without it.
+- **CSP keeps `'unsafe-inline'` for scripts** (Next's inline hydration payload; a nonce would make every page dynamic and give up
+  ISR). Mitigations: no third-party script, no raw-HTML API anywhere (lint rule + test), `frame-ancestors 'none'`, `connect-src`
+  limited to self and the Supabase project. The badge gets its own CSP (`default-src 'none'`). `'unsafe-eval'` is development only.
+- **`htmlLimitedBots: /.*/`** in `next.config.ts`: Next 15.5 streams metadata for ordinary browsers, so a desktop Lighthouse
+  run (and any non-bot link preview) saw no `<meta description>`. Now metadata is in `<head>` for everyone.
+- **`/incidents` is `force-dynamic`** so the build never reads the database; `unstable_cache` still caches it for 5 minutes.
+- **Local gotcha:** `.next/cache` survives rebuilds, so a `QSR_DATA=fixtures` build followed by a live build served the old
+  fixture data until `.next` was deleted. It does not affect Vercel (a clean cache per build).
+- **Submit.** `POST /api/submit` validates with `SubmissionBody` and `validateSubmissionUrl` (core), drops honeypot hits as if they
+  worked, forwards to the API with up to 4 retries on network errors and 502/503/504 (waits 2, 3, 5, 7 s, 8 s per attempt: inside
+  a 60-second function), and forwards the visitor address (`x-real-ip`) as `x-forwarded-for` so the API's 5-a-day limit is per
+  visitor (needs `TRUST_PROXY=true` on Render, the default).
+
+### Numbers (2026-10-17)
+
+Unit tests in apps/web: see `pnpm --filter @qsr/web test`. Playwright: desktop + 375 px projects, every page, axe in light and
+dark with zero violations; leak tests for every page (HTML and RSC), the badge, sitemap, robots and the DOM; revalidation test.
+Lighthouse on the production build with fixtures: mobile performance 91 to 95, everything else 100 (desktop all 100); the
+remaining mobile performance gap is first and largest contentful paint under Lighthouse's simulated slow 4G, mostly the shared
+103 kB of framework JavaScript.
+
+### What P9 should know
+
+- The live data had 10 tracked tools, 9 testable, 4 at L3 and 5 at L2; one (hono) stops at a manual step.
+- Scale: the home page loads `public_tools` and the newest 28 runs per tool in two paged requests (PostgREST caps a response
+  at 1000 rows; `SupabaseDataSource` pages with `range`). At 50 tools that is 1400 history rows: fine. Past a few hundred tools,
+  add a database-side aggregate instead.
+- The admin queue shows signatures and draft summaries of unreviewed incidents on purpose; it is the only place that does.
+
 ## P7 follow-up: the first real runs, and the tidy-up commit
 
 ### What the first real runs showed (2026-10-16, probes #1 to #5)

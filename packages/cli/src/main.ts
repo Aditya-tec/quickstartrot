@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import pino from 'pino';
 import { classifyCommand } from './classify.js';
-import { compileCommand, crawlCommand, loadDotEnv, USAGE } from './commands.js';
+import { compileCommand, ConfigError, crawlCommand, loadDotEnv, USAGE } from './commands.js';
 import { executeCommand } from './probe/execute-command.js';
 import {
   gcCommand,
@@ -46,7 +46,7 @@ async function main(argv: string[]): Promise<number> {
 try {
   process.exitCode = await main(process.argv.slice(2));
 } catch (err) {
-  if (err instanceof TargetFileError) {
+  if (err instanceof TargetFileError || err instanceof ConfigError) {
     process.stderr.write(`${err.message}\n`);
     process.exitCode = 2;
   } else {

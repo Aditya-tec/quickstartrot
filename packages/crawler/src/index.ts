@@ -1,6 +1,12 @@
 export { extract, type ExtractOptions } from './extract.js';
 export { CrawlError, CRAWL_ERROR_REASONS, type CrawlErrorReason } from './errors.js';
-export { botUserAgent, BOT_TOKEN, DEFAULT_BOT_URL, assertRobotsAllowed } from './robots.js';
+export {
+  botUserAgent,
+  BOT_TOKEN,
+  DEFAULT_BOT_URL,
+  assertRobotsAllowed,
+  resolveBotUrl,
+} from './robots.js';
 export {
   contentHash,
   normalizeBlocks,

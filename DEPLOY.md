@@ -16,7 +16,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
 You need three different values for `INGEST_HMAC_SECRET`, `ADMIN_TOKEN` and `SUBMISSION_IP_SECRET`
-(a fourth for `REVALIDATE_SECRET` when the web app exists, phase P8). Never reuse one for two purposes.
+(a fourth for `REVALIDATE_SECRET`, shared with the website: see the Vercel section at the end). Never reuse one for two purposes.
 
 ## 1. Create the Supabase Storage buckets
 
@@ -59,8 +59,8 @@ Supabase dashboard → your project:
 | `SUPABASE_URL`              | yes\*    | step 2. \*Without it, `/internal/uploads` and `/admin/gc` answer 503                      |
 | `SUPABASE_SERVICE_ROLE_KEY` | yes\*    | step 2                                                                                    |
 | `WEB_ORIGIN`                | no       | your Vercel domain, e.g. `https://quickstartrot.vercel.app` (comma separated for several) |
-| `REVALIDATE_URL`            | no       | the web app's revalidation endpoint; leave empty until phase P8                           |
-| `REVALIDATE_SECRET`         | no       | leave empty until phase P8                                                                |
+| `REVALIDATE_URL`            | no       | the web app's revalidation endpoint; set it in the Vercel section, V3                     |
+| `REVALIDATE_SECRET`         | no       | the same value as on Vercel (V3)                                                          |
 | `TURNSTILE_SECRET`          | no       | enables the CAPTCHA check on `POST /submissions`; leave empty to run without it           |
 | `COMPILE_TIMEOUT_MS`        | no       | default `100000`                                                                          |
 | `RATE_LIMIT_PER_MINUTE`     | no       | default `120`                                                                             |
@@ -140,13 +140,13 @@ Do this after the smoke script (step 6) passes. The first run uses three real to
 
 ### What must be set first
 
-| Where                                               | Name                 | Kind     | Needed by         | Value                                                                                     |
-| --------------------------------------------------- | -------------------- | -------- | ----------------- | ----------------------------------------------------------------------------------------- |
-| GitHub → Settings → Secrets and variables → Actions | `INGEST_HMAC_SECRET` | secret   | plan, report      | the same value as on Render (step 5)                                                      |
-|                                                     | `API_BASE_URL`       | variable | plan, report      | the Render URL, no trailing slash (step 5)                                                |
-|                                                     | `SUPABASE_ANON_KEY`  | variable | report, snapshot  | the PUBLIC anon key (Supabase → Project Settings → API). Not the service-role key         |
-|                                                     | `SUPABASE_URL`       | variable | snapshot          | `https://<ref>.supabase.co`                                                               |
-|                                                     | `WEB_BASE_URL`       | variable | report (optional) | the Vercel URL once the site exists (phase P8); until then run ids are shown as short ids |
+| Where                                               | Name                 | Kind     | Needed by         | Value                                                                             |
+| --------------------------------------------------- | -------------------- | -------- | ----------------- | --------------------------------------------------------------------------------- |
+| GitHub → Settings → Secrets and variables → Actions | `INGEST_HMAC_SECRET` | secret   | plan, report      | the same value as on Render (step 5)                                              |
+|                                                     | `API_BASE_URL`       | variable | plan, report      | the Render URL, no trailing slash (step 5)                                        |
+|                                                     | `SUPABASE_ANON_KEY`  | variable | report, snapshot  | the PUBLIC anon key (Supabase → Project Settings → API). Not the service-role key |
+|                                                     | `SUPABASE_URL`       | variable | snapshot          | `https://<ref>.supabase.co`                                                       |
+|                                                     | `WEB_BASE_URL`       | variable | report (optional) | `https://quickstartrot.vercel.app`: run links in the report open the run page     |
 
 Never add the service-role key, the Groq key or the admin token to GitHub: only the API (Render) holds them.
 The **execute** job reads no secret and no variable at all; a test fails the build if it ever does.
@@ -218,3 +218,111 @@ Quick diagnosis:
 | Summary says the cycle is **INVALID**                             | a canary behaved differently; the summary names which. No status was changed. A `harness` issue is opened |
 | A `harness` issue appears with "harness error rate"               | more than 5% of tools produced no result (a shard crashed or timed out); re-run, then send me the logs    |
 | `execute` fails with "Docker is not reachable"                    | a GitHub runner problem; re-run the failed job                                                            |
+
+---
+
+# Deploying the website (Vercel)
+
+The website (`apps/web`) is a Next.js 15 app on Vercel. It reads only the four public views of Supabase with the PUBLIC anon
+key, shows data that is cached for five minutes, and is refreshed at once when the API finishes a probe cycle. The Vercel
+project already exists with **Root Directory = `apps/web`**; `apps/web/vercel.json` holds the install command, the build
+command and an "ignored build step", so a commit that touches only docs, targets, workflows or other packages does not deploy.
+
+## V1. Project settings (once)
+
+In Vercel → your project → **Settings → General**:
+
+| Setting                                                                  | Value                                                                          |
+| ------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| Root Directory                                                           | `apps/web`                                                                     |
+| **Include source files outside of the Root Directory in the Build Step** | **Enabled** (the app imports `packages/core`, so the build needs the monorepo) |
+| Node.js Version                                                          | `22.x`                                                                         |
+| Framework Preset                                                         | Next.js (also set in `vercel.json`)                                            |
+| Production Branch                                                        | `main`                                                                         |
+
+Install, build and "ignored build step" come from `apps/web/vercel.json`; leave the matching fields in the dashboard
+unchanged (the "Override" switch off) so the file wins. The build is `pnpm turbo run build --filter=@qsr/web`, which builds
+`packages/core` first.
+
+## V2. Environment variables
+
+Vercel → **Settings → Environment Variables**, scope **Production** (add Preview too if you want preview deployments to
+work). **`NEXT_PUBLIC_*` values are baked in at build time: change one and you must redeploy.** Names only below; the last
+column says where each value comes from.
+
+| Name                             | Required | Where the value comes from                                                                                                                 |
+| -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NEXT_PUBLIC_SITE_URL`           | yes      | `https://quickstartrot.vercel.app` (no trailing slash). Used for canonical links, badge snippets, the sitemap and the bot page             |
+| `NEXT_PUBLIC_SUPABASE_URL`       | yes      | Supabase → Project Settings → API → **Project URL** (the same value as `SUPABASE_URL` on Render)                                           |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY`  | yes      | Supabase → Project Settings → API → **anon / public** key. **Never the service-role key**: the app refuses to start with one               |
+| `API_BASE_URL`                   | yes      | the Render service URL, for example `https://quickstartrot-api.onrender.com` (server side only; the browser never sees it)                 |
+| `ADMIN_TOKEN`                    | yes      | **the same value as `ADMIN_TOKEN` on Render** (at least 32 characters). You type it on `/admin/login`; server actions use it as the bearer |
+| `ADMIN_SESSION_SECRET`           | yes      | a NEW random secret, at least 32 characters, different from `ADMIN_TOKEN` (see below). Signs the admin session cookie                      |
+| `REVALIDATE_SECRET`              | yes      | a random secret of at least 16 characters; **the same value must be set on Render** (V3)                                                   |
+| `NEXT_PUBLIC_CONTACT_EMAIL`      | no       | an address shown on `/bot` for opt-out requests. Leave empty to show only the GitHub issue form                                            |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | no       | Cloudflare Turnstile site key for the submit form. If you set it, also set `TURNSTILE_SECRET` on Render; otherwise leave both empty        |
+
+Generate the two new secrets on your own machine (each run prints a different value):
+
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Use one run for `ADMIN_SESSION_SECRET` and another for `REVALIDATE_SECRET`. Do not reuse any other secret.
+
+## V3. Tell Render about the website
+
+On Render → the API service → **Environment**, set this. It is what makes the site refresh the moment a cycle finishes or an
+incident is confirmed:
+
+| Name                | Value                                                                                                   |
+| ------------------- | ------------------------------------------------------------------------------------------------------- |
+| `WEB_ORIGIN`        | `https://quickstartrot.vercel.app` (the allowed web origin, for CORS)                                   |
+| `REVALIDATE_URL`    | `https://quickstartrot.vercel.app/api/revalidate`                                                       |
+| `REVALIDATE_SECRET` | the **same** value as `REVALIDATE_SECRET` on Vercel                                                     |
+| `TRUST_PROXY`       | `true` (the default). The submit form forwards the visitor address, so the 5-a-day limit is per visitor |
+
+Saving redeploys the API. The API sends the secret in the `x-revalidate-secret` header; failing to reach the site is logged and
+never blocks a cycle.
+
+## V4. GitHub (optional)
+
+The crawler identifies itself as `QuickstartRotBot/1.0 (+<BOT_INFO_URL>)`. The default is `https://quickstartrot.vercel.app/bot`,
+which is the page this site serves, so you can leave it. To set it explicitly: GitHub → repo → Settings → Secrets and variables →
+Actions → **Variables** → `BOT_INFO_URL` = `https://quickstartrot.vercel.app/bot`.
+
+## V5. Deploy
+
+Push to `main` (or Vercel → Deployments → Redeploy). The first deploy builds the app with the variables above. A later push that
+changes only docs, `targets/`, `.github/`, other packages or `apps/api` is skipped by the ignored build step (the deployment shows
+"Ignored"); a change under `apps/web`, in `packages/core`, or in the lockfile builds.
+
+## V6. After the deploy: checklist
+
+1. **Home loads**: `https://quickstartrot.vercel.app` shows "X of Y developer quickstarts work on a fresh machine right now" with a
+   recent "As of" time.
+2. **A tool page and a run page open**, and "Show log" on a step loads and shows text.
+3. **The badge works in a README**: put the Markdown from any tool page into a README or a GitHub issue, for example
+   `[![Quickstart status](https://quickstartrot.vercel.app/api/badge/resend-node)](https://quickstartrot.vercel.app/tools/resend-node)`;
+   GitHub shows `quickstart | passing`.
+4. **The social image unfurls**: open `https://quickstartrot.vercel.app/api/og/resend-node` (a PNG), then paste a tool page URL into
+   a chat or a link-preview tester.
+5. **Admin login works**: open `/admin`, you are sent to `/admin/login`; sign in with the `ADMIN_TOKEN`; the queue loads. (If the
+   API was asleep this takes up to a minute.)
+6. **Revalidation works**: from your machine, with the same secret as on Vercel:
+   `curl -i -X POST https://quickstartrot.vercel.app/api/revalidate -H "x-revalidate-secret: <REVALIDATE_SECRET>"` answers `200`
+   (and `401` without the header).
+7. **Submit works**: submit a test URL on `/submit`; "Waking the server" may appear for up to a minute, then "received".
+8. `https://quickstartrot.vercel.app/robots.txt` disallows `/admin` and `/api/`; `/sitemap.xml` lists the tools.
+
+## V7. If something is wrong
+
+| Symptom                                               | Likely cause                                                                                                         |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Pages show "This page could not load"                 | `NEXT_PUBLIC_SUPABASE_URL` or the anon key is wrong, or migration 0006 is not applied (the web reads its views)      |
+| Logs do not open ("could not be loaded")              | the `public-artifacts` bucket is missing or not public; or `NEXT_PUBLIC_SUPABASE_URL` was changed without a redeploy |
+| `/admin/login` says `ADMIN_SESSION_SECRET is not set` | add it on Vercel and redeploy                                                                                        |
+| `/admin` says "The API rejected the admin token"      | `ADMIN_TOKEN` differs between Vercel and Render                                                                      |
+| The site updates only every five minutes              | `REVALIDATE_URL` / `REVALIDATE_SECRET` on Render are empty or differ from Vercel's                                   |
+| Submitting says "limit of submissions" for everyone   | `TRUST_PROXY=false` on Render: the API sees Vercel's address for every visitor                                       |
+| A docs-only commit did not deploy                     | that is the ignored build step working                                                                               |

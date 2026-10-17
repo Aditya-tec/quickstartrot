@@ -96,6 +96,68 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
     expect(rows[0]?.grounding_report).toEqual({ ok: true, violations: [] });
   });
 
+  it('public_runs hides the cause of an unreviewed failure and publishes a confirmed one (migration 0006)', async () => {
+    type Step = { stderr_tail: string | null; log_path: string | null };
+    type Row = {
+      outcome: string;
+      failure_class: string | null;
+      failure_signature: string | null;
+      details_published: boolean;
+      steps: Step[];
+    };
+    const pending = (
+      await anon(
+        `public_runs?tool_slug=eq.${SEED_SLUGS.pending}&outcome=eq.FAIL&select=outcome,failure_class,failure_signature,details_published,steps`,
+      )
+    ).body as Row[];
+    expect(pending.length).toBeGreaterThan(0);
+    for (const r of pending) {
+      expect(r.details_published).toBe(false);
+      expect(r.failure_class).toBeNull();
+      expect(r.failure_signature).toBeNull();
+      expect(r.steps.every((s) => s.stderr_tail === null && s.log_path === null)).toBe(true);
+    }
+    expect(JSON.stringify(pending)).not.toContain('client.send is not a function');
+
+    const confirmed = (
+      await anon(
+        `public_runs?tool_slug=eq.${SEED_SLUGS.confirmed}&outcome=eq.FAIL&select=outcome,failure_class,failure_signature,details_published,steps`,
+      )
+    ).body as Row[];
+    expect(confirmed.length).toBeGreaterThan(0);
+    expect(confirmed.every((r) => r.details_published && r.failure_class !== null)).toBe(true);
+    expect(confirmed.every((r) => r.failure_signature === 'seed-sig-confirmed')).toBe(true);
+    // the confirmed incident's steps keep their output; the pending tool's are blank (checked above)
+    expect(JSON.stringify(confirmed)).toContain('added 1 package');
+  });
+
+  it('public_run_history has one light row per run, no cause, newest first, ranked (migration 0006)', async () => {
+    const { body } = await anon(
+      `public_run_history?tool_slug=like.seed-*&select=tool_slug,kind,rn,run_id,started_at&order=started_at.desc`,
+    );
+    const rows = body as { tool_slug: string; kind: string; rn: number }[];
+    expect(rows.length).toBeGreaterThan(0);
+    expect(
+      rows.filter((r) => r.tool_slug === SEED_SLUGS.pending).every((r) => r.kind === 'fail'),
+    ).toBe(true);
+    expect(
+      rows.filter((r) => r.tool_slug === SEED_SLUGS.healthy).every((r) => r.kind === 'pass'),
+    ).toBe(true);
+    expect(JSON.stringify(body)).not.toContain('client.send');
+    expect(Object.keys((body as object[])[0] as object).sort()).toEqual(
+      ['kind', 'rn', 'run_id', 'started_at', 'tool_slug'].sort(),
+    );
+  });
+
+  it('public_tools carries the latest run of each tool (migration 0006)', async () => {
+    const { body } = await anon(
+      `public_tools?slug=eq.${SEED_SLUGS.healthy}&select=slug,last_run_id,last_outcome,last_reached_level,decided_30d`,
+    );
+    const row = (body as { last_run_id: string | null; last_outcome: string | null }[])[0];
+    expect(row?.last_run_id).toBeTruthy();
+    expect(row?.last_outcome).toBe('PASS');
+  });
+
   it('public_incidents lists only CONFIRMED incidents and hides internal notes', async () => {
     const { body } = await anon(
       `public_incidents?tool_slug=like.seed-*&select=tool_slug,review,events`,
@@ -115,6 +177,7 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
         ['public_tools', 'slug'],
         ['public_runs', 'tool_slug'],
         ['public_incidents', 'tool_slug'],
+        ['public_run_history', 'tool_slug'],
       ] as const) {
         const { body } = await anon(`${view}?${col}=eq.${SEED_SLUGS.confirmed}&select=${col}`);
         expect(body).toEqual([]);

@@ -21,6 +21,7 @@ import {
 import { ApiError, type ApiClient } from '../api-client.js';
 import type { HarnessProblemResult } from './github.js';
 import { renderSummary, type SummaryRow } from './summary.js';
+import { putToSignedUrl } from './upload.js';
 
 // `qsr report` (spec section 12). It runs in the job that has the secrets, after the execute jobs, and
 // reads the results those jobs uploaded. Those results come from a job that ran code copied from the
@@ -238,17 +239,11 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
       for (const target of response.files) {
         const data = wanted.find((w) => w.stepId === target.stepId)?.data;
         if (!data) continue;
-        // Same shape as supabase-js `uploadToSignedUrl`: multipart with the file under an empty field name.
-        const form = new FormData();
-        form.append('cacheControl', '3600');
-        form.append('', new Blob([new Uint8Array(data)], { type: 'application/gzip' }));
-        const res = await deps.fetch(target.signedUrl, {
-          method: 'PUT',
-          headers: {
-            'x-upsert': 'true',
-            ...(options.anonKey ? { apikey: options.anonKey } : {}),
-          },
-          body: form,
+        const res = await putToSignedUrl({
+          fetch: deps.fetch,
+          signedUrl: target.signedUrl,
+          data,
+          anonKey: options.anonKey ?? null,
         });
         if (res.ok) logPaths[target.stepId] = target.path;
         else

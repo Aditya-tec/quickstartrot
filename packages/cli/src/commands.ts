@@ -11,7 +11,7 @@ import {
   type LlmClient,
   type PlanCache,
 } from '@qsr/compiler';
-import { CrawlError, extract, launchBrowser } from '@qsr/crawler';
+import { CrawlError, extract, launchBrowser, resolveBotUrl } from '@qsr/crawler';
 import { formatCompileResult } from './format.js';
 import { loadTarget } from './targets.js';
 
@@ -59,6 +59,24 @@ export function loadDotEnv(file = '.env'): void {
   }
 }
 
+/** A setting that is present but wrong: the command stops with exit code 2 and says which variable. */
+export class ConfigError extends Error {
+  override readonly name = 'ConfigError';
+}
+
+/**
+ * The bot page for the crawler's User-Agent: BOT_INFO_URL, else the site's /bot page. The plan jobs get it
+ * from the repository variable of the same name; a wrong value stops the command instead of being sent to
+ * every site we crawl.
+ */
+export function botUrlFromEnv(env: NodeJS.ProcessEnv = process.env): string {
+  try {
+    return resolveBotUrl(env['BOT_INFO_URL']);
+  } catch (err) {
+    throw new ConfigError(err instanceof Error ? err.message : String(err));
+  }
+}
+
 export interface CliIo {
   stdout: (text: string) => void;
   stderr: (text: string) => void;
@@ -86,6 +104,12 @@ export async function crawlCommand(
   const slug = positionals[0];
   if (!slug) {
     io.stderr(`missing <slug>\n\n${USAGE}`);
+    return 2;
+  }
+  try {
+    botUrlFromEnv();
+  } catch (err) {
+    io.stderr(`${(err as Error).message}\n`);
     return 2;
   }
   const target = await loadTarget(path.resolve(values.targets), slug);
@@ -124,11 +148,13 @@ export async function crawlOnce(
   io: CliIo,
   traceDir?: string,
 ): Promise<Extraction | null> {
+  const botUrl = botUrlFromEnv();
   const browser = await launchBrowser();
   try {
     return await extract(target, {
       browser,
       log,
+      botUrl,
       ...(traceDir ? { traceDir: path.resolve(traceDir) } : {}),
     });
   } catch (err) {

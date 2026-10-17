@@ -1,0 +1,31 @@
+name: Submit a quickstart
+description: Suggest a developer quickstart for QuickstartRot to track.
+title: 'Submit: '
+labels: ['submission']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A person reads each submission. The URL is never fetched automatically. Only public https documentation
+        pages for Node.js or Python quickstarts that run in a terminal can be tracked.
+  - type: input
+    id: docs-url
+    attributes:
+      label: Docs URL of the quickstart
+      placeholder: https://docs.example.com/quickstart
+    validations:
+      required: true
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      options:
+        - Node.js
+        - Python
+    validations:
+      required: true
+  - type: textarea
+    id: note
+    attributes:
+      label: Note (optional)
+      description: Which section is the quickstart, or anything a tester should know.

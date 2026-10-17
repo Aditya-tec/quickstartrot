@@ -1,0 +1,147 @@
+@import 'tailwindcss';
+
+/*
+  Design tokens. Calm and restrained: warm neutrals, one teal accent, and five status colours that are always
+  paired with an icon and a word (colour is never the only signal). Light by default, dark by the system
+  preference or the toggle (data-theme). Contrast is checked by axe in both themes on every page.
+*/
+:root {
+  color-scheme: light;
+  --background: #fbfbfa;
+  --surface: #ffffff;
+  --surface-2: #f4f3f0;
+  --foreground: #1a1a19;
+  --muted: #5b5a56;
+  --border: #e2e1dc;
+  --border-strong: #c9c8c2;
+  --accent: #0b6767;
+  --accent-foreground: #ffffff;
+  --ring: #0b6767;
+
+  --pass: #17663a;
+  --pass-bg: #e5f3ea;
+  --fail: #a3211d;
+  --fail-bg: #fbe8e7;
+  --verify: #7d5200;
+  --verify-bg: #faf0d6;
+  --unknown: #4f5964;
+  --unknown-bg: #ebedef;
+  --person: #1f4a9a;
+  --person-bg: #e7edfa;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --background: #0d0e0f;
+    --surface: #151718;
+    --surface-2: #1b1e20;
+    --foreground: #ecece9;
+    --muted: #a4a49d;
+    --border: #2a2d2f;
+    --border-strong: #3d4144;
+    --accent: #66cdc5;
+    --accent-foreground: #07201e;
+    --ring: #66cdc5;
+
+    --pass: #6fd69a;
+    --pass-bg: #12291c;
+    --fail: #ff948e;
+    --fail-bg: #301817;
+    --verify: #f3c868;
+    --verify-bg: #2b2208;
+    --unknown: #b0bac3;
+    --unknown-bg: #20252a;
+    --person: #9bbaff;
+    --person-bg: #16213b;
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0d0e0f;
+  --surface: #151718;
+  --surface-2: #1b1e20;
+  --foreground: #ecece9;
+  --muted: #a4a49d;
+  --border: #2a2d2f;
+  --border-strong: #3d4144;
+  --accent: #66cdc5;
+  --accent-foreground: #07201e;
+  --ring: #66cdc5;
+
+  --pass: #6fd69a;
+  --pass-bg: #12291c;
+  --fail: #ff948e;
+  --fail-bg: #301817;
+  --verify: #f3c868;
+  --verify-bg: #2b2208;
+  --unknown: #b0bac3;
+  --unknown-bg: #20252a;
+  --person: #9bbaff;
+  --person-bg: #16213b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring: var(--ring);
+  --color-pass: var(--pass);
+  --color-pass-bg: var(--pass-bg);
+  --color-fail: var(--fail);
+  --color-fail-bg: var(--fail-bg);
+  --color-verify: var(--verify);
+  --color-verify-bg: var(--verify-bg);
+  --color-unknown: var(--unknown);
+  --color-unknown-bg: var(--unknown-bg);
+  --color-person: var(--person);
+  --color-person-bg: var(--person-bg);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  background: var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-feature-settings: 'ss01', 'cv11';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Counts and rates line up in columns. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* A visible focus ring everywhere, for keyboard users. */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

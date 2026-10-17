@@ -308,4 +308,9 @@ export const BASE_TABLES = [
 ] as const;
 
 /** The only relations the anon role may select (spec section 5, public read path). */
-export const PUBLIC_VIEWS = ['public_tools', 'public_runs', 'public_incidents'] as const;
+export const PUBLIC_VIEWS = [
+  'public_tools',
+  'public_runs',
+  'public_incidents',
+  'public_run_history',
+] as const;

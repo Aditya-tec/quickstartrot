@@ -208,12 +208,32 @@ describe('pull requests never run with privileges', () => {
     }
   });
 
-  it('validate-targets runs on pull_request and references no secret, variable or token', () => {
+  it('validate-targets runs on pull_request and references no secret and no token; its only variable is BOT_INFO_URL', () => {
     const v = workflow('validate-targets.yml');
     expect(triggers(v)).toEqual(['pull_request']);
     const raw = code(text('validate-targets.yml'));
-    expect(raw).not.toMatch(/secrets\.|vars\.|github\.token|GITHUB_TOKEN/);
+    expect(raw).not.toMatch(/secrets\.|github\.token|GITHUB_TOKEN/);
+    // a repository variable is public configuration (the bot page URL); fork pull requests do not get it at all
+    const vars = [...raw.matchAll(/vars\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
+    expect(vars.length).toBeGreaterThan(0);
+    expect(new Set(vars)).toEqual(new Set(['BOT_INFO_URL']));
     expect(v.permissions).toEqual({ contents: 'read' });
+  });
+});
+
+describe('BOT_INFO_URL: the crawler identifies itself from configuration', () => {
+  it('the plan job and the validate-targets crawl get it', () => {
+    const plan = job('probe.yml', 'plan');
+    const planStep = plan.steps?.find((s) => s.id === 'plan');
+    expect(planStep?.env?.['BOT_INFO_URL']).toBe('${{ vars.BOT_INFO_URL }}');
+    const validate = job('validate-targets.yml', 'validate');
+    const crawlStep = validate.steps?.find((s) => s.run?.includes('--crawl'));
+    expect(crawlStep?.env?.['BOT_INFO_URL']).toBe('${{ vars.BOT_INFO_URL }}');
+  });
+
+  it('the execute and report jobs never see it (execute crawls nothing and holds no variables)', () => {
+    expect(json(job('probe.yml', 'execute'))).not.toContain('BOT_INFO_URL');
+    expect(json(job('probe.yml', 'report'))).not.toContain('BOT_INFO_URL');
   });
 });
 

@@ -51,6 +51,11 @@ jobs:
         env:
           QSR_REQUIRE_DOCKER: '1'
       - run: pnpm build
+      # The website, end to end: the production build with seeded fixtures and a stub API (no secrets, no network):
+      # pages, filters, the safety rule (an unreviewed incident leaks nowhere), badge, submit, admin, and axe on every
+      # page in both themes at 375 and 1280 px.
+      - name: Web end-to-end tests
+        run: pnpm --filter @qsr/web test:e2e --project=desktop --project=mobile --project=revalidate
       - run: pnpm audit --prod
 
   # Lints every workflow file, including the shell in its run: blocks. A finding fails the build.

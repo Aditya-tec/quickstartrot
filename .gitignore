@@ -19,3 +19,11 @@ docs/SPEC.md
 .vitest/
 .qsr-runs/
 .probe-local/
+
+# apps/web test output
+apps/web/screenshots/
+apps/web/e2e/.tmp/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/web/lighthouse-reports/
+apps/web/next-env.d.ts

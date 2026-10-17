@@ -60,6 +60,16 @@ Backslash escapes (`\n`, `\S`, `​`) in Bash heredocs and some write paths get 
 - CI runs actionlint (pinned image) over `.github/workflows/*.yml`; a finding fails the build. Run it locally the same way.
 - `pnpm probe:local` runs plan -> execute -> report against a local API and Postgres before anything is deployed.
 
+## Website (P8)
+
+- `apps/web` reads only the public views, through `DataSource` (`QSR_DATA=fixtures` for seeded data). Pages never import supabase-js and never receive a raw row: they get view models from `src/lib/service.ts`.
+- **An unreviewed failure shows "verifying" and no cause anywhere** (HTML, RSC payload, badge, image, JSON). `publicStatus`, `confirmedOnly` and `sanitizeRun` (`@qsr/core/public`) are the only way to a status or a run, and the fixtures contain poisoned rows on purpose. `e2e/leak.spec.ts` must stay green; never weaken it.
+- No `dangerouslySetInnerHTML`, `innerHTML` or similar anywhere in `apps/web` (lint rule in `eslint.config.js` and `src/lib/no-raw-html.test.ts`). Logs and diffs are rendered as React text.
+- Client components import `@qsr/core/public`, never `@qsr/core` (the main entry has Node built-ins).
+- The admin token and the API address are read only on the server (server actions, route handlers). `/admin` is guarded by the middleware and each action re-checks the session.
+- Web tests: `pnpm --filter @qsr/web test` (vitest) and `pnpm --filter @qsr/web test:e2e` (Playwright and axe against `next build`, fixtures and a stub API; build first). New pages must be added to `e2e/pages.ts`, which feeds the axe, leak and screenshot specs. The e2e suite is a CI step.
+- `.next/cache` survives rebuilds: delete `apps/web/.next` when switching between fixture and live data locally.
+
 ## Secret gate (pre-commit)
 
 `pnpm secrets:check` scans the STAGED changes with gitleaks (a local binary, else the pinned Docker image) and exits non-zero on any finding, or when it cannot run (it fails closed). Husky runs it from `.husky/pre-commit`; `pnpm test:scripts` proves it blocks (a fake token staged in a scratch repo, and a real `git commit` refused). Never work around it by allowlisting a real value: `.gitleaks.toml` allowlists only documented placeholders. CI also scans the full history.

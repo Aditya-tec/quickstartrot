@@ -17,3 +17,10 @@ minimumReleaseAgeExclude:
   - '@vitest/mocker@5.0.5'
   - '@vitest/spy@5.0.5'
   - vitest@5.0.5
+  - geist@1.8.1
+  - lucide-react@1.58.0
+
+# Next 15 depends on postcss 8.4.31, which has advisories (GHSA-6g55-p6wh-862q and others). The app never processes
+# attacker-supplied CSS, but `pnpm audit --prod` gates CI, so use the patched version the app already builds with.
+overrides:
+  postcss@<8.5.23: 8.5.30

@@ -10,7 +10,27 @@ const robotsParser = robotsParserModule as unknown as RobotsParser;
 
 /** Product token matched against `User-agent:` lines in robots.txt. */
 export const BOT_TOKEN = 'QuickstartRotBot';
-export const DEFAULT_BOT_URL = 'https://github.com/Aditya-tec/quickstartrot';
+/** The page a site owner reads about the bot (the site's /bot page). Configurable: see resolveBotUrl. */
+export const DEFAULT_BOT_URL = 'https://quickstartrot.vercel.app/bot';
+
+/**
+ * The bot page URL from configuration (BOT_INFO_URL): the default when unset or empty, otherwise a plain
+ * https URL. A bad value throws: a typo must not silently put the wrong contact into every request header.
+ */
+export function resolveBotUrl(value: string | undefined): string {
+  const v = (value ?? '').trim();
+  if (v === '') return DEFAULT_BOT_URL;
+  let parsed: URL;
+  try {
+    parsed = new URL(v);
+  } catch {
+    throw new Error('BOT_INFO_URL is not a valid URL');
+  }
+  // No whitespace, control characters or ")" (it would end the product comment) in what goes into a header.
+  if (parsed.protocol !== 'https:' || parsed.hostname === '' || /[\s\x00-\x1f\x7f)]/.test(v))
+    throw new Error('BOT_INFO_URL must be a plain https URL without spaces or parentheses');
+  return v;
+}
 
 export function botUserAgent(botUrl: string = DEFAULT_BOT_URL): string {
   return `${BOT_TOKEN}/1.0 (+${botUrl})`;

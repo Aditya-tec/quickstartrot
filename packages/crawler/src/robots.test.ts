@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CrawlError } from './errors.js';
-import { assertRobotsAllowed, botUserAgent, type FetchLike } from './robots.js';
+import {
+  assertRobotsAllowed,
+  botUserAgent,
+  DEFAULT_BOT_URL,
+  resolveBotUrl,
+  type FetchLike,
+} from './robots.js';
 
 const ua = botUserAgent();
 const respond =
@@ -10,6 +16,41 @@ const respond =
 describe('botUserAgent', () => {
   it('identifies the bot with a contact URL', () => {
     expect(ua).toMatch(/^QuickstartRotBot\/1\.0 \(\+https:\/\/.+\)$/);
+  });
+});
+
+describe('the user agent string', () => {
+  it('is exactly QuickstartRotBot/1.0 (+<bot page>), and the default bot page is the site /bot page', () => {
+    expect(DEFAULT_BOT_URL).toBe('https://quickstartrot.vercel.app/bot');
+    expect(botUserAgent()).toBe('QuickstartRotBot/1.0 (+https://quickstartrot.vercel.app/bot)');
+    expect(botUserAgent('https://bots.example.org/qsr')).toBe(
+      'QuickstartRotBot/1.0 (+https://bots.example.org/qsr)',
+    );
+  });
+});
+
+describe('resolveBotUrl (BOT_INFO_URL from configuration)', () => {
+  it('falls back to the default when nothing is configured, including an empty variable', () => {
+    expect(resolveBotUrl(undefined)).toBe(DEFAULT_BOT_URL);
+    expect(resolveBotUrl('')).toBe(DEFAULT_BOT_URL);
+    expect(resolveBotUrl('   ')).toBe(DEFAULT_BOT_URL);
+  });
+
+  it('accepts an https URL, trimmed', () => {
+    expect(resolveBotUrl('  https://example.org/bot  ')).toBe('https://example.org/bot');
+  });
+
+  it.each(['not a url', 'http://example.org/bot', 'javascript:alert(1)', 'ftp://x/y', 'https://'])(
+    'refuses %s loudly, so a typo cannot silently put a wrong contact in every request',
+    (bad) => {
+      expect(() => resolveBotUrl(bad)).toThrow(/BOT_INFO_URL/);
+    },
+  );
+
+  it('refuses a value that could break a header or the product comment', () => {
+    expect(() => resolveBotUrl('https://example.org/bot\r\nX-Evil: 1')).toThrow(/BOT_INFO_URL/);
+    expect(() => resolveBotUrl('https://example.org/a b')).toThrow(/BOT_INFO_URL/);
+    expect(() => resolveBotUrl('https://example.org/a)b')).toThrow(/BOT_INFO_URL/);
   });
 });
 

@@ -1,0 +1,38 @@
+name: Opt out of QuickstartRot
+description: Ask us to stop testing a quickstart and hide its history. We act within 24 hours.
+title: 'Opt-out: '
+labels: ['opt-out']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for telling us. We disable the tool and hide its history within 24 hours of this issue.
+        You can also block `QuickstartRotBot` in your `robots.txt`; the crawler obeys it.
+  - type: input
+    id: docs-url
+    attributes:
+      label: Docs URL of the quickstart
+      description: The page we test, as shown on the quickstart's page on the site.
+      placeholder: https://docs.example.com/quickstart
+    validations:
+      required: true
+  - type: input
+    id: tool-page
+    attributes:
+      label: Page on QuickstartRot (optional)
+      placeholder: /tools/example-node
+  - type: dropdown
+    id: relationship
+    attributes:
+      label: Your relationship to the product
+      options:
+        - I work on this product or its documentation
+        - I am the maintainer of the open-source project
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Anything we should know (optional)
+      description: Do not paste secrets or private information; this issue is public.

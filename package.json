@@ -19,7 +19,8 @@
     "secrets:check": "node scripts/secrets-check.mjs",
     "test:scripts": "node --test \"scripts/*.test.mjs\"",
     "smoke:api": "turbo run build --filter=@qsr/cli... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/smoke-api.ts",
-    "probe:local": "turbo run build --filter=@qsr/cli... --filter=@qsr/api... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-local.ts"
+    "probe:local": "turbo run build --filter=@qsr/cli... --filter=@qsr/api... --output-logs=errors-only && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/probe-local.ts",
+    "smoke:storage": "turbo run build --filter=@qsr/api... --filter=@qsr/cli... --output-logs=errors-only && node --env-file=.env --experimental-strip-types --disable-warning=ExperimentalWarning scripts/smoke-storage.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",

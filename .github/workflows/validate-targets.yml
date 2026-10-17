@@ -35,6 +35,8 @@ jobs:
       - name: Validate every target, then crawl the ones this pull request touches
         env:
           BASE_REF: ${{ github.base_ref }}
+          # Public configuration, not a secret: the page named in the crawler's User-Agent. Fork PRs get it empty.
+          BOT_INFO_URL: ${{ vars.BOT_INFO_URL }}
         run: |
           set -euo pipefail
           slugs="$(git diff --name-only --diff-filter=AM "origin/${BASE_REF}...HEAD" -- 'targets/*.yaml' | xargs -r -n1 basename -s .yaml | paste -sd, -)"
