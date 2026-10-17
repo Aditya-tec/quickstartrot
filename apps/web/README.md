@@ -61,3 +61,10 @@ proves a page keeps its cached state until the endpoint is called with the secre
 ## Local files that are not committed
 
 `screenshots/` (`pnpm exec playwright test --project=screenshots`), `lighthouse-reports/`, `test-results/`, `e2e/.tmp/`.
+
+## Deploying
+
+`vercel.json` has an ignored build step: Vercel skips a commit whose diff does not touch `apps/web`, `packages/core`, the lockfile or the
+workspace files ("The deployment was canceled because the Ignored Build Step command returned exit code 0"). That is intended, but it
+also skips the very first deploy when the newest commit only changed docs. If that happens, push any change under `apps/web`, or run
+`vercel --prod` from the repository root. `DEPLOY.md` has the full checklist.
