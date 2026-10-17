@@ -14,6 +14,8 @@ export const HARNESS_CHECK_KIND = 'harness_check';
 export const CHECK_IDS = {
   syntax: 'qsr-check-syntax',
   imports: 'qsr-check-imports',
+  /** Experimental, off in every production cycle: see planChecks and docs/DETECTION-POWER.md. */
+  exports: 'qsr-check-exports',
 } as const;
 
 export const CHECK_TIMEOUT_S = 60;
@@ -59,7 +61,7 @@ const CHECK_SHELL = '# qsr-harness-check\nexec timeout -k 5 "$1" "${@:2}"';
  * prove importable, and level 2 is not claimed). They run after the last file write AND the last
  * install, whichever comes later: imports resolve from what is installed by then.
  */
-export function planChecks(ir: StepIR): CheckPlan | null {
+export function planChecks(ir: StepIR, options: { exports?: boolean } = {}): CheckPlan | null {
   const files = checkableFiles(ir);
   if (files.length === 0) return null;
   let afterIndex = 0;
@@ -70,13 +72,19 @@ export function planChecks(ir: StepIR): CheckPlan | null {
   const language = ir.language;
   const script = language === 'node' ? NODE_CHECK_SCRIPT : PYTHON_CHECK_SCRIPT;
   const command = language === 'node' ? NODE_CHECK_COMMAND : PYTHON_CHECK_COMMAND;
-  const check = (id: string, mode: 'syntax' | 'imports'): HarnessCheck => ({
+  const check = (id: string, mode: 'syntax' | 'imports' | 'exports'): HarnessCheck => ({
     id,
     argv: ['bash', '-lc', CHECK_SHELL, '_', String(CHECK_TIMEOUT_S), ...command, mode, ...files],
     stdin: script,
   });
   return {
     afterIndex,
-    checks: [check(CHECK_IDS.syntax, 'syntax'), check(CHECK_IDS.imports, 'imports')],
+    // The export check is a feature flag: it loads installed packages (the only check that does) and changes what a level-2
+    // pass means, so it is added only when a caller asks for it. No workflow, `qsr execute` or `qsr plan` asks.
+    checks: [
+      check(CHECK_IDS.syntax, 'syntax'),
+      check(CHECK_IDS.imports, 'imports'),
+      ...(options.exports === true ? [check(CHECK_IDS.exports, 'exports')] : []),
+    ],
   };
 }

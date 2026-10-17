@@ -98,6 +98,14 @@ export const RULES: readonly Rule[] = [
     pattern: /Cannot find module '[^']*node_modules[\\/][^']+'/,
   },
   {
+    id: 'check.export_missing',
+    failureClass: 'API_DRIFT',
+    description:
+      'The package is installed but no longer exports a name the docs import (found by the experimental qsr-check-exports, which is off unless asked for).',
+    stepKinds: CHECK,
+    pattern: /qsr-check-exports: (?:'[^']+' does not export '|cannot import (?:name|module) ')/,
+  },
+  {
     id: 'check.syntax',
     failureClass: 'DOCS_SNIPPET_ERROR',
     description: "The docs' code does not parse.",

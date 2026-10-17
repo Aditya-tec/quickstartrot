@@ -47,6 +47,7 @@ async function harness(
     plans?: CompiledPlan[];
     crawl?: (t: Target) => Promise<Extraction>;
     post?: (path: string, body: unknown) => unknown;
+    saved?: { slug: string; hash: string }[];
   } = {},
 ): Promise<Harness> {
   const cache = createMemoryCache();
@@ -77,9 +78,37 @@ async function harness(
         return extractionFor(t);
       }),
     log: recordingLogger(),
+    ...(opts.saved
+      ? {
+          saveExtraction: async (e: Extraction, t: Target) => {
+            opts.saved?.push({ slug: t.slug, hash: e.contentHash });
+          },
+        }
+      : {}),
   };
   return { deps, posts, crawled };
 }
+
+describe('runPlansPush keeps the crawled page next to its plan (for qsr mutate)', () => {
+  it('saves the extraction when a plan exists for it, on a dry run too', async () => {
+    const saved: { slug: string; hash: string }[] = [];
+    const h = await harness({ plans: [plan(A)], saved });
+    await runPlansPush({ targets: [A], dryRun: true }, h.deps);
+    expect(saved).toEqual([{ slug: 'a-node', hash: HASH }]);
+    expect(h.posts).toHaveLength(0);
+    await runPlansPush({ targets: [A], dryRun: false }, h.deps);
+    expect(saved).toHaveLength(2);
+  });
+
+  it('saves nothing for a page that has no plan, a rejected plan, or a failed crawl', async () => {
+    const saved: { slug: string; hash: string }[] = [];
+    const none = await harness({ saved });
+    await runPlansPush({ targets: [A], dryRun: true }, none.deps);
+    const rejected = await harness({ plans: [{ ...plan(A), accepted: false, ir: null }], saved });
+    await runPlansPush({ targets: [A], dryRun: true }, rejected.deps);
+    expect(saved).toEqual([]);
+  });
+});
 
 describe('runPlansPush', () => {
   it('crawls the page, finds the plan for exactly that page, and imports it with the target and the extraction', async () => {

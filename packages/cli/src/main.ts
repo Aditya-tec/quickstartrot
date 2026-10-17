@@ -11,6 +11,7 @@ import {
 } from './probe/pipeline-commands.js';
 import { calibrationCommand } from './calibration.js';
 import { exportCommand } from './launch-export.js';
+import { mutateCommand } from './mutate/command.js';
 import { plansCommand } from './plans-command.js';
 import { runCommand } from './run.js';
 import { TargetFileError } from './targets.js';
@@ -44,6 +45,8 @@ async function main(argv: string[]): Promise<number> {
       return exportCommand(rest, log);
     case 'plans':
       return plansCommand(rest, log);
+    case 'mutate':
+      return mutateCommand(rest, log);
     case 'validate':
       return validateCommand(rest, log);
     default:

@@ -15,6 +15,7 @@ The `qsr` command line (spec sections 12 and 15). From the repo root, `pnpm qsr 
 | `qsr plans push`                  | P9a   | implemented |
 | `qsr calibration-report`          | P9a   | implemented |
 | `qsr export --launch`             | P9a   | implemented |
+| `qsr mutate`                      | P9c   | implemented |
 
 ```sh
 pnpm qsr crawl zod-node                  # human summary: title, hash, block counts, code block list
@@ -63,6 +64,14 @@ confirmed incidents only. Both need `API_BASE_URL` and `ADMIN_TOKEN`.
 
 The plan job has a circuit breaker for the model: once one answer says it is out for the day (a long Retry-After or our token
 budget), every remaining tool gets its cached or last plan only, with no further waiting.
+
+**Detection power (P9c).** `qsr mutate <slug>|--all [--sample N] [--seed S] [--operators a,b] [--concurrency 2]` mutation-tests the monitor, locally and only
+locally. It takes each target's cached extraction and accepted plan (`qsr plans push` leaves both in `.qsr-cache`), makes one deterministic change
+to the docs code and to the plan step that quotes it, checks that the real grounding validator still accepts the pair, runs the quickstart in the
+usual Docker sandbox, and records whether it failed and how the classifier labelled it. Controls (the unmutated plans) run first. It never calls the
+API (a test pins that), never crawls and never asks a model. `--plan-only` counts the mutants; `--baseline <json> --exports-check` re-runs the
+survivors with the experimental export check on; `--render <json> [--compare <json>]` writes `docs/DETECTION-POWER.md` and
+`docs/detection-power.json` from saved results. See `docs/DETECTION-POWER.md`.
 
 Other commands: `qsr gc` (nightly `POST /admin/gc`) and `qsr validate [--only a,b] [--crawl]` (Zod-checks every target,
 refuses non-public docs URLs and credential-like placeholders; `--crawl` is a dry run with no compile and no secrets).

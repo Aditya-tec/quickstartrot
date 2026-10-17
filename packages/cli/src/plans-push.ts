@@ -29,6 +29,8 @@ export interface PlansPushDeps {
   cache: PlanCache;
   /** Crawls one page. Throws CrawlError. */
   crawl(target: Target): Promise<Extraction>;
+  /** Keeps the crawled page next to its plan, so `qsr mutate` can start from them with no new crawl. */
+  saveExtraction?(extraction: Extraction, target: Target): Promise<void>;
   log: Logger;
 }
 
@@ -86,6 +88,7 @@ export async function runPlansPush(
       });
       continue;
     }
+    await deps.saveExtraction?.(extraction, target);
     if (options.dryRun) {
       results.push({ slug: target.slug, status: 'would_push' });
       continue;

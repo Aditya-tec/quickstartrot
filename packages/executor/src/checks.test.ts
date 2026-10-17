@@ -115,6 +115,46 @@ describe('planChecks', () => {
     expect(p?.afterIndex).toBe(1);
   });
 
+  it('adds the experimental export check only when asked, after syntax and imports, with the same script and file list', () => {
+    const ir = plan([write('s1', 'a.js'), write('s2', 'sub/b.mjs')]);
+    expect(planChecks(ir)?.checks.map((c) => c.id)).toEqual([CHECK_IDS.syntax, CHECK_IDS.imports]); // today's behaviour, unchanged
+    expect(planChecks(ir, {})?.checks.map((c) => c.id)).toEqual([
+      CHECK_IDS.syntax,
+      CHECK_IDS.imports,
+    ]);
+    expect(planChecks(ir, { exports: false })?.checks.map((c) => c.id)).toEqual([
+      CHECK_IDS.syntax,
+      CHECK_IDS.imports,
+    ]);
+    const on = planChecks(ir, { exports: true });
+    expect(on?.checks.map((c) => c.id)).toEqual([
+      CHECK_IDS.syntax,
+      CHECK_IDS.imports,
+      CHECK_IDS.exports,
+    ]);
+    expect(CHECK_IDS.exports).toBe('qsr-check-exports');
+    const third = on?.checks[2];
+    expect(third?.stdin).toBe(NODE_CHECK_SCRIPT);
+    expect(third?.argv.slice(4)).toEqual([
+      '60',
+      ...NODE_CHECK_COMMAND,
+      'exports',
+      'a.js',
+      'sub/b.mjs',
+    ]);
+    expect(on?.afterIndex).toBe(planChecks(ir)?.afterIndex);
+  });
+
+  it('the export check scripts block the network in-process and never call what a package exports', () => {
+    expect(NODE_CHECK_SCRIPT).toContain('net.Socket.prototype.connect = refuse');
+    expect(NODE_CHECK_SCRIPT).toContain('globalThis.fetch = refuse');
+    expect(PYTHON_CHECK_SCRIPT).toContain('socket.getaddrinfo = refuse');
+    expect(PYTHON_CHECK_SCRIPT).toContain('socket.create_connection = refuse');
+    // the only things done with a loaded module: a membership test, hasattr and find_spec
+    expect(NODE_CHECK_SCRIPT).toContain('name in Object(mod)');
+    expect(PYTHON_CHECK_SCRIPT).toContain('hasattr(mod, name)');
+  });
+
   it('is two harness-owned checks, syntax then imports, with fixed ids', () => {
     const p = planChecks(plan([write('s1', 'a.js'), write('s2', 'sub/b.mjs')]));
     expect(p?.checks.map((c) => c.id)).toEqual([CHECK_IDS.syntax, CHECK_IDS.imports]);

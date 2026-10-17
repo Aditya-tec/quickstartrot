@@ -18,6 +18,7 @@ docs/SPEC.md
 .qsr-cache/
 .vitest/
 .qsr-runs/
+.qsr-mutate*
 .probe-local/
 
 # apps/web test output

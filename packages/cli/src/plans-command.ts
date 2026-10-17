@@ -1,9 +1,11 @@
+import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { createFileCache } from '@qsr/compiler';
 import { extract, launchBrowser } from '@qsr/crawler';
 import type { Logger, Target } from '@qsr/core';
 import { adminClientFromEnv } from './admin-client.js';
+import { extractionFile } from './mutate/inputs.js';
 import { botUrlFromEnv, ConfigError, processIo, USAGE, type CliIo } from './commands.js';
 import { renderPushResults, runPlansPush } from './plans-push.js';
 import { loadAllTargets, loadTarget } from './targets.js';
@@ -70,6 +72,11 @@ export async function plansCommand(
         api,
         cache: createFileCache(path.resolve(values['cache-dir']), log),
         crawl: (t) => extract(t, { browser, log, botUrl }),
+        saveExtraction: async (e, t) => {
+          const file = extractionFile(path.resolve(values['cache-dir']), t.slug, e.contentHash);
+          await mkdir(path.dirname(file), { recursive: true });
+          await writeFile(file, JSON.stringify(e));
+        },
         log,
       },
     );

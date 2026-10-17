@@ -24,7 +24,8 @@
  *          "imports" aliases (#x) are NOT checked. Also: require() in an ES module is a failure.
  */
 export const NODE_CHECK_SCRIPT = String.raw`import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { createRequire, isBuiltin } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -206,9 +207,106 @@ function checkImports() {
   }
 }
 
+// exports (experimental, off unless the executor is asked for it): for every static NAMED import of an installed package
+// (import { A } from 'pkg', or const { A } = require('pkg')), load the package once, in this process, and check that it
+// exports A. This is the only check that executes package code (an import runs the module body), so it runs with the
+// network blocked in-process (sockets, DNS and fetch throw) and never calls anything the package exports. TypeScript files
+// are skipped: a named import there may be a type, which has no runtime export. A package that cannot be loaded here is
+// reported as unchecked, never as a failure of the docs.
+const NAMED_ESM_RE = /^[ \t]*import\s+(?!type\b)(?:[\w$]+\s*,\s*)?\{([^}]*)\}\s*from\s*(['"])([^'"\n]+)\2/gm;
+const NAMED_CJS_RE = /(?:const|let|var)\s*\{([^}]*)\}\s*=\s*require\s*\(\s*(['"])([^'"\n]+)\2\s*\)/g;
+
+async function blockNetwork() {
+  const refuse = () => {
+    throw new Error('qsr-check-exports: the network is blocked while packages are loaded');
+  };
+  // CommonJS module objects are writable (the ES namespace objects are not); the ES builtins are then re-synced from them.
+  const net = req('node:net');
+  net.Socket.prototype.connect = refuse;
+  const dns = req('node:dns');
+  for (const name of ['lookup', 'resolve', 'resolve4', 'resolve6']) {
+    dns[name] = refuse;
+    dns.promises[name] = refuse;
+  }
+  globalThis.fetch = refuse;
+  const { syncBuiltinESMExports } = await import('node:module');
+  syncBuiltinESMExports();
+}
+
+function namedBindings(list) {
+  const names = [];
+  for (const part of list.split(',')) {
+    const t = part.trim();
+    if (t === '' || /^type\s/.test(t)) continue;
+    const name = t.split(/\s+as\s+|\s*:\s*/)[0].replace(/\s*=.*$/, '').trim();
+    if (/^[A-Za-z_$][\w$]*$/.test(name) && name !== 'default') names.push(name);
+  }
+  return names;
+}
+
+// Found by qsr mutate (P9c): "node --check" exits 0 for a .js file that uses import when no package.json says
+// "type": "module" (Node detects the module syntax, then checks nothing), so a broken ES-module .js file passes the
+// syntax check. Such a file is parsed here as a module, from a copy named .mjs.
+function checkEsmSyntax() {
+  const dir = mkdtempSync(path.join(tmpdir(), 'qsr-esm-'));
+  let n = 0;
+  for (const f of files) {
+    if (!/\.js$/.test(f) || !existsSync(abs(f))) continue;
+    const src = readFileSync(abs(f), 'utf8');
+    if (packageType(f) === 'module' || !isEsm(f, src)) continue;
+    const copy = path.join(dir, 'esm-' + n++ + '.mjs');
+    writeFileSync(copy, src);
+    const r = spawnSync(process.execPath, ['--check', copy], { cwd, encoding: 'utf8' });
+    if (r.status !== 0) {
+      const detail = r.stderr
+        .split('\n')
+        .filter((l) => !/^\s+at /.test(l) && !/^Node\.js v/.test(l))
+        .join('\n')
+        .split(copy)
+        .join(f)
+        .trim();
+      fail(f, '\n' + detail);
+    }
+  }
+}
+
+async function checkExports() {
+  checkEsmSyntax();
+  await blockNetwork();
+  const cache = new Map();
+  const unchecked = [];
+  for (const f of files) {
+    if (!existsSync(abs(f)) || isTs(f)) continue;
+    const src = stripComments(readFileSync(abs(f), 'utf8'));
+    const esm = isEsm(f, src);
+    const sites = [];
+    for (const re of [NAMED_ESM_RE, NAMED_CJS_RE]) for (const m of src.matchAll(re)) sites.push({ names: namedBindings(m[1]), spec: m[3], index: m.index, cjs: re === NAMED_CJS_RE });
+    for (const site of sites) {
+      const { spec } = site;
+      if (isBuiltin(spec) || spec.startsWith('.') || spec.startsWith('/') || spec.startsWith('#') || site.names.length === 0) continue;
+      const key = (esm && !site.cjs ? 'esm:' : 'cjs:') + spec;
+      if (!cache.has(key)) {
+        try {
+          cache.set(key, esm && !site.cjs ? await import(spec) : req(spec));
+        } catch (error) {
+          cache.set(key, null);
+          unchecked.push(spec + ' (' + String(error && error.message ? error.message : error).split('\n')[0] + ')');
+        }
+      }
+      const mod = cache.get(key);
+      if (mod === null || mod === undefined) continue;
+      for (const name of site.names) {
+        if (!(name in Object(mod))) fail(f + ':' + lineOf(src, site.index), "qsr-check-exports: '" + spec + "' does not export '" + name + "' (imported from " + f + ')');
+      }
+    }
+  }
+  if (unchecked.length > 0) console.log('qsr-check-exports: not checked, the package could not be loaded here: ' + [...new Set(unchecked)].join('; '));
+}
+
 try {
   if (mode === 'syntax') checkSyntax();
   else if (mode === 'imports') checkImports();
+  else if (mode === 'exports') await checkExports();
   else throw new Error('unknown mode ' + mode);
 } catch (err) {
   console.error('qsr: harness check crashed: ' + (err && err.stack ? err.stack : err));
@@ -340,11 +438,99 @@ def check_imports():
                 fail(where, "ModuleNotFoundError: No module named '" + module.split('.')[0] + "' (imported from " + f + ')')
 
 
+def block_network():
+    import socket
+
+    def refuse(*args, **kwargs):
+        raise OSError('qsr-check-exports: the network is blocked while packages are loaded')
+
+    socket.socket.connect = refuse
+    socket.socket.connect_ex = refuse
+    socket.getaddrinfo = refuse
+    socket.create_connection = refuse
+
+
+def check_exports():
+    # exports (experimental, off unless the executor is asked for it): for every static "from pkg import name" of an
+    # installed top-level package, import the package once (this runs its module body, so the network is blocked in-process)
+    # and check that it has the name, as an attribute or as a submodule. Nothing the package defines is called. A package
+    # that cannot be imported here is reported as unchecked, never as a failure of the docs.
+    block_network()
+    loaded = {}
+    unchecked = []
+    for f in files:
+        if not os.path.isfile(f):
+            continue
+        try:
+            with open(f, encoding='utf-8') as fh:
+                tree = ast.parse(fh.read(), filename=f)
+        except SyntaxError:
+            continue
+        found = []
+        collect(tree, False, found)
+        sites = []
+
+        def visit(node, optional):
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                sites.append((node.lineno, node.module, [a.name for a in node.names if a.name != '*'], optional))
+            elif isinstance(node, ast.Import):
+                # 'import pkg.sub': only the dotted forms matter here (a plain 'import pkg' is the imports check job)
+                sites.extend((node.lineno, a.name, [], optional) for a in node.names if '.' in a.name)
+            if isinstance(node, TRY_NODES):
+                covered = optional or handlers_catch_import_errors(node.handlers)
+                for s in node.body:
+                    visit(s, covered)
+                for h in node.handlers:
+                    visit(h, optional)
+                for s in node.orelse + node.finalbody:
+                    visit(s, optional)
+            else:
+                for child in ast.iter_child_nodes(node):
+                    visit(child, optional)
+
+        visit(tree, False)
+        for line, module, names, optional in sites:
+            top = module.split('.')[0]
+            if optional or not module_exists(top, f):
+                continue
+            if module not in loaded:
+                saved = list(sys.path)
+                sys.path[:0] = [os.path.dirname(os.path.abspath(f)), cwd]
+                try:
+                    loaded[module] = importlib.import_module(module)
+                except BaseException as error:
+                    loaded[module] = None
+                    missing = getattr(error, 'name', None)
+                    if isinstance(error, ModuleNotFoundError) and missing and (module == missing or module.startswith(missing + '.')):
+                        # the package is installed, but the module the docs import from it is not in it
+                        fail(f + ':' + str(line), "qsr-check-exports: cannot import module '" + module + "' (" + str(error) + ") (imported from " + f + ')')
+                    else:
+                        unchecked.append(module + ' (' + type(error).__name__ + ': ' + str(error).split(chr(10))[0] + ')')
+                finally:
+                    sys.path[:] = saved
+            mod = loaded[module]
+            if mod is None:
+                continue
+            for name in names:
+                if hasattr(mod, name):
+                    continue
+                try:
+                    if importlib.util.find_spec(module + '.' + name) is not None:
+                        continue
+                except (ImportError, ValueError, AttributeError):
+                    pass
+                fail(f + ':' + str(line), "qsr-check-exports: cannot import name '" + name + "' from '" + module + "' (imported from " + f + ')')
+    if unchecked:
+        print('qsr-check-exports: not checked, the package could not be imported here: ' + '; '.join(sorted(set(unchecked))))
+
+
 try:
     if mode == 'syntax':
         check_syntax()
     elif mode == 'imports':
         check_imports()
+    elif mode == 'exports':
+        check_exports()
     else:
         raise ValueError('unknown mode ' + mode)
 except Exception:

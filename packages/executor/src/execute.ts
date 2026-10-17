@@ -63,6 +63,11 @@ export interface ExecuteDeps {
   signal?: AbortSignal | undefined;
   /** Extra values to redact besides placeholder values and set_env values. */
   secrets?: readonly string[];
+  /**
+   * Also run the experimental export check (qsr-check-exports) after the syntax and imports checks. Off by default and never
+   * set by the probe: only `qsr mutate --exports-check` and `qsr run --exports-check` ask for it.
+   */
+  exportsCheck?: boolean;
 }
 
 /** A failure of the harness itself (never the vendor's quickstart): the run outcome is HARNESS_ERROR. */
@@ -463,7 +468,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
   const installIds = new Set(
     ir.steps.flatMap((s) => (s.kind === 'shell' && isInstallCommand(s.command) ? [s.id] : [])),
   );
-  const checkPlan = planChecks(ir);
+  const checkPlan = planChecks(ir, { exports: deps.exportsCheck === true });
   const lastInstall = ir.steps.reduce(
     (last, s, i) => (s.kind === 'shell' && isInstallCommand(s.command) ? i : last),
     -1,
