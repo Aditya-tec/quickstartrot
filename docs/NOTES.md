@@ -11,9 +11,16 @@ below): `chalk-node`, `loguru-python` and `dotenv-python` are calibration target
 
 ## Go-live (after P9a)
 
-State on 2026-10-17: CI is green on `39e3834` (workflow `ci`, run 39048670528). Production push is **not done**: `API_BASE_URL` is empty in the local `.env`
-and the URL in DEPLOY.md (`quickstartrot-api.onrender.com`) did not answer, so there is no verified route to the Render API yet. `ADMIN_TOKEN` (48
-characters) and `INGEST_HMAC_SECRET` (64) are set locally, and have not been compared with Render's values. Nothing was sent to production.
+State on 2026-10-17 (evening): CI was green on `39e3834` and `b9a981a`. The code of this section is `daa5ff0`. Production: the API is
+`https://quickstartrot-api.onrender.com` (Render free instance; a cold start took 52 s), `/health` is 200 with the database up, the admin
+Bearer request returned 200 (so `ADMIN_TOKEN` matches Render) and a signed request got past the HMAC check (400 for an empty body, not 401).
+The website is deployed on Vercel at `https://quickstartrot.vercel.app` (`/`, `/bot`, `/methodology`, `/robots.txt`, `/sitemap.xml`,
+`/api/badge/chalk-node`, `/api/og/resend-node` and `/admin/login` answered 200). The first Vercel build was skipped by the ignored build
+step, because the newest commit only touched docs; a one-line change under `apps/web` (`5df8fc5`) started it (see `apps/web/README.md`).
+
+**Plans in production:** `qsr plans push --all` imported 41 plans and found 10 already present (from the earlier real cycles); a second and a
+third run imported 0 and reported all 51 already there. Note that `--dry-run` never asks the server, so it can only say `would_push` or
+`no_local_plan`; "already present" shows only on a real push, which is idempotent. After this the model is not needed for the first full cycle.
 
 ### Ably hash drift: diagnosis
 
@@ -31,34 +38,52 @@ characters) and `INGEST_HMAC_SECRET` (64) are set locally, and have not been com
   no block on any other page matches the key shape `<id>.<id>:***`. So Ably is the only page that drifts.
 - **Cost if left alone:** up to one compile per Ably page per cycle (about 3.4k tokens each, so at most 8 compiles, about 27k tokens a day, 18% of
   the 150k budget), and a `compile_deferred` queue item whenever the model is out.
-- **Proposals (nothing changed; waiting for an answer):**
-  1. Recommended: in `contentHash` only, replace a key of the exact shape `<5-8 chars>.<5-8 chars>:` followed by three or more `*` with
-     `<5-8 chars>.<KEYID>:***` before hashing. Stars never appear in a real key, so the shape cannot hide a real change. The stored extraction and the
-     plan keep the verbatim text; a cache hit then runs the key id from compile time, which is a demo key and not contacted at L2. Effect on the
-     other 49 cache keys: none (no block of theirs matches; checked on today's crawl of all 51). Effect on Ably: both hashes change once, and the
-     local plans for them are keyed by old hashes, so they need their two compiles anyway. Nothing is in production yet, so no production cache key
-     is invalidated. The change touches `packages/core/src/content-hash.ts` (the crawler and the API's re-check both use it) and needs a test with a
-     fixture for the shape and one proving a non-matching block hashes as before.
-  2. Hash only code blocks and filename hints: not recommended. It changes every target's hash (51 recompiles, about 174k tokens, 2 days) and
-     does not help, because the volatile token is inside a code block.
-  3. No code change: accept up to 8 compiles a day for Ably, or set both Ably targets to `enabled: false` until 1 is decided (49 targets).
+- **Decision: option 1, scoped per target** (`extract.hashIgnore`, not a global normalizer in `content-hash.ts`). Implemented in `daa5ff0`:
+  - Schema: an optional `extract.hashIgnore: [{ pattern, replaceWith }]` (at most 5 rules; a pattern up to 200 characters, a replacement up
+    to 100; always applied globally; `$1` references work). Patterns are checked when the target loads: valid regex, no back-reference, no
+    quantified group that contains a quantifier or an alternation. The field stays absent when not given, so no other target's config hash
+    changes. Documented in `docs/TARGET-SELECTION.md` and the core README.
+  - Hash: `contentHash(blocks, variants?, hashIgnore?)`. Without rules the payload is byte for byte the old one. Proof:
+    `packages/core/src/content-hash.test.ts` recomputes the hash of 51 live extractions (a gzipped fixture; the expected hashes were made
+    by the function before the field existed) with no rules, `undefined` and `[]`: 51 of 51 equal. The old function also passes those
+    same cases (the new tests fail 17 of 71 against it, all of them about the new behaviour), and `committed-targets.test.ts` allows
+    `hashIgnore` only on `ably-node` and `ably-python`.
+  - Rule on the two Ably targets: `<5-8 chars>.<5-8 chars>:` followed (look-ahead) by three or more `*` becomes `<prefix>.KEYID:`. A real-looking
+    key with the same prefix and no stars is NOT normalized (tested, as are one or two stars).
+  - Where the hash is made: the crawler uses the target's rules; the compile route and `POST /admin/plans/import` recompute it with the
+    stored (compile) or sent (import) target's rules. The stored extraction and the plan keep the verbatim text.
+  - **Plan compiled with key id A, page now showing key id B** (`apps/api/test/hash-ignore.test.ts`): same normalized hash; the production
+    compile returns the cached plan (`status ok`, `fromCache`, no model call, no `llm_calls` row, no COMPILER_ERROR), and the plan that
+    comes back still carries key id A, which is what the executor runs (the executor never reads the extraction). Nothing on a cache hit
+    re-runs the grounding validator. The one place that did was `plans import`: pushing the plan from id A with the extraction of id B
+    failed with `file.content_mismatch` (shown by switching the fix off). For targets with rules only, the plan and the extraction now
+    both go through the rules before the validator compares them; the plan stored is the one that was sent. A tampered command or any
+    other change on the page is still refused (422 and 400). A hash made without the rule for such a target is refused by the compile
+    route (400).
+  - A crawler test (`extract.hash-ignore.test.ts`, two fixture pages that differ only in the key id) pins that the real extraction gives one
+    hash with the rule, two without, and keeps the verbatim key.
+  - **Hash churn:** `GET /admin/stats` and `qsr calibration-report` list every page with 2 or more distinct content hashes seen in the
+    window ("Content hash churn") and flag 3 or more as VOLATILE (`PIPELINE.hashChurnFlagAt`). Canaries are left out. In production today:
+    none.
+- **Cost:** two local recompiles for the new hashes (about 17k tokens including one re-run on a stale build), then pushed.
+- **Not done, on purpose:** option 2 (hash code blocks only) and a global normalizer.
 
 ### Review kit for the first full cycle
 
 **What a healthy run looks like at 51 targets (55 tools with the canaries)**
 
-- Plan job summary: `10 shards, 4 canaries.` and a table with 51 rows. `ready` for 49 or 51; the Ably rows say `ready` if their compile worked or
-  `skipped` / `deferred: <reason>` if the model was out. No `pre_failed` rows. The plan job takes about 3 to 6 minutes (51 pages, 4 at a time).
+- Plan job summary: `10 shards, 4 canaries.` and a table with 51 rows. `ready` for all 51 (every plan is in production already). A row that says
+  `skipped` / `deferred: <reason>` means that page changed after the push and the model was out. No `pre_failed` rows. The plan job takes about 3 to 6 minutes (51 pages, 4 at a time).
 - Execute: 10 shard jobs, about 5 tools each (shard 0 also has the other three canaries). Each shard about 3 to 8 minutes; the first run is slower
   (image pulls, no caches).
-- Report headline: `49 passed, 0 failed, 1 skipped (51 tools, 4 canaries)` is the best case. `47 passed, 0 failed, 3 skipped` is the case where
-  both Ably plans are deferred. The skipped rows are `hono-node` (a manual step, by design) and any `deferred: ...` Ably row; tell them apart by the
-  Plan column. Six rows show `L1 / L2` and PASS (chai, socketio, jinja-intro, flask-install, rxjs, pydantic-install); five show `L3 / L3`
+- Report headline: `50 passed, 0 failed, 1 skipped (51 tools, 4 canaries)` is the best case (50 + 1 = 51). The one skipped row is
+  `hono-node` (a manual step, by design). Every extra skipped row says `deferred: ...` in the Plan column and needs a look. Six rows show `L1 / L2` and PASS (chai, socketio, jinja-intro, flask-install, rxjs, pydantic-install); five show `L3 / L3`
   (chalk, loguru, dotenv, anthropic-node, resend-node). Canary rows: `canary-fail-dep` FAIL `DEPENDENCY_RESOLUTION`, `canary-fail-drift` FAIL
   `API_DRIFT`, the two `canary-pass-*` PASS. Those two FAIL rows are correct.
 - Whole workflow about 15 to 25 minutes (estimate 16 to 18 plus first-run overhead). Over 45 minutes is a stop sign.
 - Status engine after one cycle: a PASS moves a tool from UNKNOWN to HEALTHY at once; hono and the deferred ones stay UNKNOWN. A first FAIL
-  makes a tool DEGRADED, which is not public. BROKEN needs two failures in valid cycles and your review.
+  makes a tool DEGRADED, which is not public. The site currently shows the 9 tools of the earlier test cycles ("9 of 9 ... work", 4 at L3 and
+  5 at L2); it fills out to 51 once the first full cycle is reported. BROKEN needs two failures in valid cycles and your review.
 
 **First 30 minutes after it finishes**
 
@@ -66,10 +91,12 @@ characters) and `INGEST_HMAC_SECRET` (64) are set locally, and have not been com
 2. `pnpm qsr calibration-report --days 1` (below). Cycles: 1 valid, 0 invalid. Harness error rate: 0 is expected; the bar is under 2%, and
    `qsr report` opens a `harness` issue at 5%.
 3. Canaries: four lines, mismatched 0.
-4. Compile deferrals: only `ably-node` and `ably-python`, or none. Any other tool deferred means the budget guard or the model failed: look at
-   Model tokens per day and stop to think before the next cycle.
+4. Compile deferrals: none expected, because every plan is already in production. Any deferral means a page changed after the push (or the
+   budget guard tripped): look at Model tokens per day, and at Content hash churn.
 5. UNKNOWN classifications: none expected. Anything there is a failure no rule matched, so a real run failed. Read its evidence line.
-6. The admin page (Pipeline status and the queue): the queue should hold only `compile_deferred` items for Ably, at most. Incidents to review: 0.
+6. The admin page (Pipeline status and the queue). Baseline today: 10 informational items from the earlier test cycles (5 `skipped` for
+   `hono-node`, the manual step, and 5 old `compile_deferred` for drizzle-node, loguru-python and vitest-node from days when the model was out).
+   After the first full cycle only NEW items count. Incidents to review: 0.
 7. Storage: the database gauge at a few percent and objects far below 1%.
 8. The site: open two tool pages and one run page; a failing tool, if any, must say "verifying" with no cause.
 
@@ -78,7 +105,7 @@ characters) and `INGEST_HMAC_SECRET` (64) are set locally, and have not been com
 ```
 pnpm qsr calibration-report --days 1
 pnpm qsr export --launch --md        # refuses anything not reviewed and confirmed; "No incident has been confirmed yet" is right
-pnpm qsr plans push --all --dry-run  # should be all `already_there` plus the Ably rows
+pnpm qsr plans push --all            # idempotent: 51 already_there, 0 imported (a dry run only says would_push)
 ```
 
 How to read the report: **Cycles** (valid / invalid and why; an invalid cycle changed no status). **Harness error rate** (errors of ours as a share of
