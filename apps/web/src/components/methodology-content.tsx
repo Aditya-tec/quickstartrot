@@ -42,7 +42,14 @@ const LEVELS = [
   },
 ];
 
-export function MethodologyContent({ facts }: { facts: Facts }) {
+export function MethodologyContent({
+  facts,
+  detection,
+}: {
+  facts: Facts;
+  /** The detection-power section (its figures come from docs/detection-power.json, not from `facts`). */
+  detection?: React.ReactNode;
+}) {
   const f = facts;
   return (
     <>
@@ -147,6 +154,8 @@ export function MethodologyContent({ facts }: { facts: Facts }) {
         interactive prompt, is marked &ldquo;needs a person&rdquo;. It is listed separately, is not
         a failure, and is not counted in the headline number.
       </P>
+
+      {detection}
 
       <H2 id="before-failing">Before a quickstart is called failing</H2>
       <P>

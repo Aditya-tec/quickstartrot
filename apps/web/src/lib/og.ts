@@ -1,4 +1,5 @@
-import type { PublicStatus } from '@qsr/core/public';
+import type { DetectionSummary, PublicStatus } from '@qsr/core/public';
+import { l2Findings } from './detection';
 import { formatDay } from './format';
 import type { OgData } from './service';
 import { STATUS_STYLE } from './status-style';
@@ -41,6 +42,31 @@ export function ogCard(data: OgData): OgCard {
         ? `Quickstart failing since ${formatDay(data.failingSince)}`
         : null,
     errorLine: failing && data.errorLine ? clipText(data.errorLine, MAX_ERROR) : null,
+  };
+}
+
+/** What the /methodology image shows: the level 2 code-level result the page quotes, from the same data. */
+export interface MethodologyCard {
+  lead: string;
+  rest: string;
+  footer: string;
+}
+
+/**
+ * No percentage, no figure added across install-level and code-level mutants, and level 3 as a number of quickstarts with no rate:
+ * the same three rules as the section of the page. Every figure is read from the data.
+ */
+export function methodologyCard(data: DetectionSummary): MethodologyCard {
+  const f = l2Findings(data);
+  const runtime = `${f.runtimeTested} renamed names, renamed methods or misnamed options`;
+  return {
+    lead: `${f.detected} of ${f.tested}`,
+    rest:
+      `planted code breakages noticed at Level 2. ` +
+      (f.runtimeDetected === 0
+        ? `It noticed none of the ${runtime}.`
+        : `It noticed ${f.runtimeDetected} of the ${runtime}.`),
+    footer: `Level 3 rests on ${data.l3Targets.length} ${data.l3Targets.length === 1 ? 'quickstart' : 'quickstarts'} and has no rate. How we test, and what a green badge does not prove.`,
   };
 }
 

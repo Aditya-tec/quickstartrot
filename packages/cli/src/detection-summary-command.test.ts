@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DetectionSummary } from '@qsr/core';
+import { badgeParagraph, DetectionSummary, levelStatements } from '@qsr/core';
 import {
   buildSummaryFromRepo,
   detectionSummaryCommand,
@@ -109,5 +109,49 @@ describe('qsr detection-summary', () => {
     const before = await readFile(file, 'utf8');
     await detectionSummaryCommand(['--check', '--root', dir], log, io());
     expect(await readFile(file, 'utf8')).toBe(before);
+  });
+});
+
+// "Use approved wording B": the sentences the site and the README quote are the approved ones in docs/DETECTION-POWER.md, with the
+// figures read from the data. If a new measurement changes a figure, the hand-written recommendation must be updated with it, and this
+// fails until it is: the page can never say something the document does not.
+describe('the wording the site and the README quote is the approved wording', () => {
+  const approved = async () => readFile(path.join(ROOT, 'docs', 'DETECTION-POWER.md'), 'utf8');
+  const quoted = (md: string, lead: string): string => {
+    const line = md.split('\n').find((l) => l.startsWith(lead));
+    if (!line) throw new Error(`docs/DETECTION-POWER.md has no line starting ${lead}`);
+    return /"(.*)"/.exec(line)?.[1] ?? '';
+  };
+
+  it('badge paragraph = Candidate B (the one number written as a word in the document is a digit here)', async () => {
+    const md = await approved();
+    expect(md).toMatch(/\*\*Preferred: B\.\*\*/);
+    const b = quoted(md, '- **Candidate B');
+    expect(badgeParagraph(await buildSummaryFromRepo(ROOT))).toBe(
+      b.replace('rests on two quickstarts so far', 'rests on 2 quickstarts so far'),
+    );
+  });
+
+  it('L1 and L2 lines = the approved per-level lines', async () => {
+    const md = await approved();
+    const s = levelStatements(await buildSummaryFromRepo(ROOT));
+    expect(s.L1).toBe(quoted(md, '- **L1:**'));
+    expect(s.L2).toBe(quoted(md, '- **L2:**'));
+  });
+
+  it('L3 line = the approved line, with the number of quickstarts named instead of "a small number"', async () => {
+    const md = await approved();
+    const s = levelStatements(await buildSummaryFromRepo(ROOT));
+    const approvedL3 = quoted(md, '- **L3:**');
+    const [head] = approvedL3.split(' It rests on ');
+    expect(s.L3.startsWith(`${head ?? ''} It rests on `)).toBe(true);
+    expect(s.L3.endsWith('so we quote no detection rate for it.')).toBe(true);
+  });
+
+  it('executed-locally line = the approved line, with the number of targets stated', async () => {
+    const md = await approved();
+    const s = levelStatements(await buildSummaryFromRepo(ROOT));
+    const withoutCount = s.local.replace(/ \d+ targets? (?:is|are) of that kind here\./, '');
+    expect(withoutCount).toBe(quoted(md, '- **Executed locally:**'));
   });
 });

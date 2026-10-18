@@ -111,6 +111,13 @@ export function Headline({
               className="underline underline-offset-2 hover:text-foreground"
             >
               what each level proves
+            </Link>{' '}
+            and{' '}
+            <Link
+              href="/methodology#detection"
+              className="underline underline-offset-2 hover:text-foreground"
+            >
+              how well each level sees a broken quickstart
             </Link>
             .
           </p>

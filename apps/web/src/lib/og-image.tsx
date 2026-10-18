@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { OG_COLORS, type OgCard } from './og';
+import { OG_COLORS, type MethodologyCard, type OgCard } from './og';
 import type { Headline } from '@qsr/core/public';
 import { FACTS, words } from './facts';
 import { headlineText } from './headline';
@@ -76,6 +76,46 @@ export function toolImage(card: OgCard): ImageResponse {
       </div>
       <div style={{ display: 'flex', fontSize: 28, color: MUTED }}>
         Does the quickstart work on a fresh machine?
+      </div>
+    </div>,
+  );
+}
+
+export function methodologyImage(card: MethodologyCard): ImageResponse {
+  return respond(
+    <div
+      style={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        background: BG,
+        color: FG,
+        padding: 72,
+      }}
+    >
+      <div style={{ display: 'flex', fontSize: 30, color: MUTED }}>QuickstartRot · Methodology</div>
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div
+          style={{
+            display: 'flex',
+            fontSize: 150,
+            fontWeight: 700,
+            color: '#66cdc5',
+            lineHeight: 1,
+          }}
+        >
+          {card.lead}
+        </div>
+        <div
+          style={{ display: 'flex', fontSize: 44, marginTop: 24, maxWidth: 1020, lineHeight: 1.25 }}
+        >
+          {card.rest}
+        </div>
+      </div>
+      <div style={{ display: 'flex', fontSize: 26, color: MUTED, maxWidth: 1040, lineHeight: 1.3 }}>
+        {card.footer}
       </div>
     </div>,
   );
