@@ -2,7 +2,7 @@ import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
 import { signRequest } from '@qsr/core';
-import { ApiError, ApiWakeError, createApiClient } from './api-client.js';
+import { ApiError, REPORT_RETRY_STATUSES, ApiWakeError, createApiClient } from './api-client.js';
 
 // The client the probe workflow uses to talk to the API: HMAC-signed JSON, a wake-up phase for the Render
 // free tier (cold start 30-60 s), and retries with backoff on 502/503/504 and network errors. A fake HTTP
@@ -20,7 +20,10 @@ interface Fake {
   url: string;
   seen: Seen[];
   /** Per-request behaviour: status (and body) for the Nth request, counting from 0. */
-  script: (n: number, req: Seen) => { status: number; body?: unknown; destroy?: boolean };
+  script: (
+    n: number,
+    req: Seen,
+  ) => { status: number; body?: unknown; destroy?: boolean; headers?: Record<string, string> };
   close: () => Promise<void>;
 }
 
@@ -44,7 +47,7 @@ async function fake(script: Fake['script']): Promise<Fake> {
       const n = seen.push(entry) - 1;
       const reply = script(n, entry);
       if (reply.destroy) return req.socket.destroy();
-      res.writeHead(reply.status, { 'content-type': 'application/json' });
+      res.writeHead(reply.status, { 'content-type': 'application/json', ...reply.headers });
       res.end(JSON.stringify(reply.body ?? {}));
     });
   });
@@ -59,7 +62,7 @@ async function fake(script: Fake['script']): Promise<Fake> {
   };
 }
 
-const HEALTH = { status: 'ok', db: true, time: '2026-10-16T12:00:00.000Z' };
+const HEALTH = { status: 'ok', time: '2026-10-16T12:00:00.000Z' };
 
 /** A sleep that records instead of waiting, plus a clock that moves only when sleep is called. */
 function clock(startMs = Date.parse('2026-10-16T12:00:00Z')) {
@@ -494,5 +497,84 @@ describe('wakeApi', () => {
     });
     await expect(client.wakeApi()).rejects.toBeInstanceOf(ApiWakeError);
     expect(c.state.sleeps).toEqual([1_000, 1_000, 1_000]);
+  });
+});
+
+// The report job posts about two requests per tool, so a report is on the order of a hundred requests from one address, against a limit of
+// 120 a minute; an outage adds retries to that. A 429 means the request was NOT processed, so waiting out its Retry-After is safe. It is
+// opt-in: the plan job treats a 429 from the model quota (a Retry-After of hours) differently and must see it at once.
+describe('retryStatuses: a rate limit a caller chooses to wait out', () => {
+  const limited = {
+    status: 429,
+    headers: { 'retry-after': '20' },
+    body: { title: 'Too Many Requests' },
+  };
+
+  it('by default a 429 is thrown at once, whatever its Retry-After', async () => {
+    const api = await fake(() => limited);
+    const c = clock();
+    const client = createApiClient({ baseUrl: api.url, secret: SECRET, sleep: c.sleep });
+    const err = (await client.post('/internal/runs', {}).catch((e: unknown) => e)) as ApiError;
+    expect(err.status).toBe(429);
+    expect(err.retryAfterS).toBe(20);
+    expect(api.seen).toHaveLength(1);
+    expect(c.state.sleeps).toEqual([]);
+  });
+
+  it('with 429 listed it waits at least the Retry-After (not just its own backoff) and tries again, signed afresh', async () => {
+    const api = await fake((n) => (n < 2 ? limited : { status: 200, body: { ok: 1 } }));
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      secret: SECRET,
+      now: c.now,
+      sleep: c.sleep,
+      retryStatuses: [429, 502, 503, 504],
+    });
+    expect(await client.post('/internal/runs', { a: 1 })).toEqual({ ok: 1 });
+    expect(c.state.sleeps).toEqual([20_000, 20_000]); // its own backoff would have been 2 s and 4 s
+    const stamps = api.seen.map((s) => Number(s.headers['x-qsr-timestamp']));
+    expect(new Set(stamps).size).toBe(3);
+  });
+
+  it('caps a Retry-After of hours, and gives up with the 429 after the attempts', async () => {
+    const api = await fake(() => ({ ...limited, headers: { 'retry-after': '7200' } }));
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      secret: SECRET,
+      now: c.now,
+      sleep: c.sleep,
+      retry: { attempts: 3, baseDelayMs: 2_000, maxDelayMs: 30_000 },
+      retryStatuses: [429],
+    });
+    const err = (await client.post('/internal/runs', {}).catch((e: unknown) => e)) as ApiError;
+    expect(err.status).toBe(429);
+    expect(api.seen).toHaveLength(3);
+    expect(c.state.sleeps).toEqual([60_000, 60_000]);
+  });
+
+  it('every other 4xx is still thrown at once, even with 429 listed', async () => {
+    const api = await fake(() => ({ status: 400, body: { title: 'Bad Request' } }));
+    const c = clock();
+    const client = createApiClient({
+      baseUrl: api.url,
+      secret: SECRET,
+      sleep: c.sleep,
+      retryStatuses: [429, 502, 503, 504],
+    });
+    await expect(client.post('/internal/runs', {})).rejects.toBeInstanceOf(ApiError);
+    expect(api.seen).toHaveLength(1);
+  });
+
+  it('the report command builds its client with 429 listed', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(new URL('./probe/pipeline-commands.ts', import.meta.url), 'utf8');
+    const report = source.slice(
+      source.indexOf('export async function reportCommand'),
+      source.indexOf('export async function gcCommand'),
+    );
+    expect(report).toContain('retryStatuses: REPORT_RETRY_STATUSES');
+    expect(REPORT_RETRY_STATUSES).toEqual([429, 502, 503, 504]);
   });
 });

@@ -78,7 +78,7 @@ If the build log says `pnpm: command not found`, change the service's **Build Co
 
 Render dashboard → **quickstartrot-api** → the URL under the service name, of the form
 `https://quickstartrot-api.onrender.com` (the exact subdomain may carry a suffix if the name was taken).
-Open `<url>/health`: it should answer `{"status":"ok","db":true,"time":"…"}`.
+Open `<url>/health`: it should answer `{"status":"ok","time":"…"}`. It is shallow on purpose (no database), because Render restarts the service when it does not answer within five seconds. The database check is `GET <url>/admin/ready` with `Authorization: Bearer <ADMIN_TOKEN>`: `{"status":"ok","db":true,"time":"…"}`.
 
 ## 5. Tell GitHub Actions where the API is
 
@@ -99,11 +99,12 @@ $env:INGEST_HMAC_SECRET = "<secret #1>"
 pnpm smoke:api --url https://quickstartrot-api.onrender.com
 ```
 
-Expected output (six PASS lines, exit code 0):
+Expected output (PASS lines, exit code 0):
 
 ```
 PASS  wake - answered after 38 s (5 tries)
-PASS  /health - status=ok db=true time=…
+PASS  /health - status=ok time=… (shallow: no database)
+PASS  /admin/ready - status 200   (when ADMIN_TOKEN is set in the shell)
 PASS  signed POST /internal/cycles - cycle … (created=true, N enabled tools)
 PASS  bad signature - expected 401, got 401
 PASS  stale timestamp - expected 401, got 401

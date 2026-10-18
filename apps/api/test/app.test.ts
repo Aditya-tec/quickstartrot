@@ -30,18 +30,86 @@ beforeEach(async () => {
 
 const validSync = { targets: [targetInput('chalk-node')] };
 
+// Render's health check calls this every few seconds and restarts the instance when it does not answer within five seconds. So it must be
+// shallow: no database, no storage, no model, no HMAC. A database ping here meant that a burst of requests that queued for the 5-connection
+// pool also delayed Render's own probe, and Render restarted the service (two "health check timed out" events on 2026-10-18, each in the
+// minute a launch-check burst of GET /health ended). The database check lives at GET /admin/ready, behind the admin token.
 d('GET /health', () => {
-  it('answers 200 with a database ping, and needs no credentials', async () => {
+  it('answers 200 with the time, and needs no credentials', async () => {
     const res = await t.app.inject({ method: 'GET', url: '/health' });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ status: 'ok', db: true, time: '2026-10-16T12:00:00.000Z' });
+    expect(res.json()).toEqual({ status: 'ok', time: '2026-10-16T12:00:00.000Z' });
     expect(res.headers['content-type']).toMatch(/application\/json/);
+  });
+
+  it('does not use the database: it is still a 200 when the pool is closed', async () => {
+    const broken = await startTestApp(dbUrl as string);
+    await broken.handle.close();
+    const res = await broken.app.inject({ method: 'GET', url: '/health' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ status: 'ok', time: '2026-10-16T12:00:00.000Z' });
+    await broken.app.close();
+  });
+
+  it('answers at once while every pooled connection is busy and twenty requests wait for one', async () => {
+    // the whole pool; a postgres.js query only starts when it is executed
+    const busy = Array.from({ length: 5 }, () => t.handle.sql`select pg_sleep(1.5)`.execute());
+    await new Promise((r) => setTimeout(r, 50));
+    const waiting = Array.from({ length: 20 }, () => t.admin('GET', '/admin/queue'));
+    await new Promise((r) => setTimeout(r, 50));
+    const timings: number[] = [];
+    for (let i = 0; i < 5; i += 1) {
+      const t0 = performance.now();
+      const res = await t.app.inject({ method: 'GET', url: '/health' });
+      timings.push(performance.now() - t0);
+      expect(res.statusCode).toBe(200);
+    }
+    expect(
+      Math.max(...timings),
+      `health took ${timings.map((x) => Math.round(x)).join(', ')} ms`,
+    ).toBeLessThan(100);
+    await Promise.all(busy);
+    expect((await Promise.all(waiting)).every((r) => r.statusCode === 200)).toBe(true);
+  });
+
+  it('writes no log line for a probe (Render calls it all day), but still logs other requests', async () => {
+    t.logs.length = 0;
+    await t.app.inject({ method: 'GET', url: '/health' });
+    await t.app.inject({ method: 'GET', url: '/health' });
+    expect(t.logs).toEqual([]);
+    await t.app.inject({ method: 'GET', url: '/nope' });
+    expect(t.logs.join('')).toContain('/nope');
+  });
+
+  it('is still rate limited like every route (a flood from one address cannot use it to burn the CPU)', async () => {
+    const strict = await startTestApp(dbUrl as string, { config: { RATE_LIMIT_PER_MINUTE: '3' } });
+    const codes: number[] = [];
+    for (let i = 0; i < 5; i += 1)
+      codes.push(
+        (await strict.app.inject({ method: 'GET', url: '/health', remoteAddress: '203.0.113.50' }))
+          .statusCode,
+      );
+    expect(codes).toEqual([200, 200, 200, 429, 429]);
+    await strict.close();
+  });
+});
+
+d('GET /admin/ready', () => {
+  it('needs the admin token', async () => {
+    const res = await t.app.inject({ method: 'GET', url: '/admin/ready' });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('pings the database and says so', async () => {
+    const res = await t.admin('GET', '/admin/ready');
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ status: 'ok', db: true, time: '2026-10-16T12:00:00.000Z' });
   });
 
   it('is a 503 problem (not a crash, no details) when the database cannot be reached', async () => {
     const broken = await startTestApp(dbUrl as string);
     await broken.handle.close();
-    const res = await broken.app.inject({ method: 'GET', url: '/health' });
+    const res = await broken.admin('GET', '/admin/ready');
     expect(res.statusCode).toBe(503);
     expect(res.headers['content-type']).toMatch(/application\/problem\+json/);
     expect(res.json()).toMatchObject({ status: 503, title: 'Service Unavailable' });
@@ -151,7 +219,7 @@ d('logging', () => {
   it('puts a request id in every log line of a request, and returns it in the response', async () => {
     const res = await t.app.inject({
       method: 'GET',
-      url: '/health',
+      url: '/nope', // not /health: a probe writes no log lines
       headers: { 'x-request-id': 'req-abc-123' },
     });
     expect(res.headers['x-request-id']).toBe('req-abc-123');

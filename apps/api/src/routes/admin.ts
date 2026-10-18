@@ -15,6 +15,7 @@ import {
 import type { Ctx } from '../deps.js';
 import { confirmIncident, disableTool, markFalsePositive } from '../services/admin-actions.js';
 import { loadQueue } from '../services/admin.js';
+import { registerReadyRoute } from './health.js';
 import { importPlan } from '../services/plans-import.js';
 import { loadLaunchExport } from '../services/launch-export.js';
 import { loadL3ShadowReport } from '../services/l3-shadow.js';
@@ -27,6 +28,8 @@ const Ok = z.object({ ok: z.literal(true) });
 /** /admin/*: behind the bearer-token hook registered by buildApp. */
 export function registerAdminRoutes(app: FastifyInstance, ctx: Ctx): void {
   const r = app.withTypeProvider<ZodTypeProvider>();
+
+  registerReadyRoute(app, ctx); // the database check: GET /admin/ready
 
   r.get('/admin/queue', { schema: { response: { 200: AdminQueueResponse } } }, async () =>
     loadQueue(ctx.db),

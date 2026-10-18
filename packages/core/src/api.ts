@@ -12,7 +12,13 @@ import { Truncation } from './extraction.js';
 
 const Uuid = z.uuid();
 
+// GET /health is shallow on purpose (Render restarts the service when it does not answer within five seconds): no database, so no `db`.
+// The database check is GET /admin/ready.
 export const Health = z.object({
+  status: z.literal('ok'),
+  time: z.iso.datetime(),
+});
+export const Ready = z.object({
   status: z.literal('ok'),
   db: z.literal(true),
   time: z.iso.datetime(),
@@ -658,6 +664,7 @@ export const Problem = z.object({
 export type Problem = z.infer<typeof Problem>;
 
 export type Health = z.infer<typeof Health>;
+export type Ready = z.infer<typeof Ready>;
 export type SubmissionResponse = z.infer<typeof SubmissionResponse>;
 export type SyncResponse = z.infer<typeof SyncResponse>;
 export type CycleTool = z.infer<typeof CycleTool>;

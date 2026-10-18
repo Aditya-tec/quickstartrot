@@ -8,7 +8,8 @@ provider, deployed to Render's free tier (see [DEPLOY.md](../../DEPLOY.md)). The
 
 | Route                                      | Auth       | Purpose                                                                                                                             |
 | ------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /health`                              | none       | `{status, db, time}`; used by Render and by `wakeApi()`                                                                             |
+| `GET /health`                              | none       | `{status, time}`, shallow (no database, no log line); used by Render and by `wakeApi()`                                             |
+| `GET /admin/ready`                         | bearer     | `{status, db, time}`: the database check, for the smoke test and a person                                                           |
 | `POST /submissions`                        | rate limit | a visitor suggests a docs URL (https only, public hosts only, never fetched automatically)                                          |
 | `POST /internal/targets/sync`              | HMAC       | upsert the target files; a removed file disables its tool                                                                           |
 | `POST /internal/cycles`                    | HMAC       | start a cycle, list the enabled tools; idempotent on `(ghRunId, ghRunAttempt)`                                                      |

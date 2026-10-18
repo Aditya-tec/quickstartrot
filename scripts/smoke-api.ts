@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   // 2. health
   try {
     const h = await client.health();
-    report(true, '/health', `status=${h.status} db=${String(h.db)} time=${h.time}`);
+    report(true, '/health', `status=${h.status} time=${h.time} (shallow: no database)`);
   } catch (err) {
     report(false, '/health', String(err));
   }
@@ -105,6 +105,23 @@ async function main(): Promise<void> {
   // 5. a correctly signed but stale request is refused
   const stale = await rawPost(sign(now - 1000, secret as string));
   report(stale === 401, 'stale timestamp', `expected 401, got ${stale}`);
+
+  // 2b. the database, which /health no longer checks: GET /admin/ready with the admin token (skipped when it is not in this shell)
+  const adminToken = process.env['ADMIN_TOKEN'];
+  if (adminToken) {
+    const ready = await fetch(`${base}/admin/ready`, {
+      headers: { authorization: `Bearer ${adminToken}` },
+      signal: AbortSignal.timeout(30_000),
+    });
+    const text = await ready.text();
+    report(
+      ready.status === 200 && text.includes('"db":true'),
+      '/admin/ready',
+      `status ${ready.status}`,
+    );
+  } else {
+    console.log('SKIP  /admin/ready - ADMIN_TOKEN is not set in this shell');
+  }
 
   // 6. the admin API without a token is refused
   const admin = await fetch(`${base}/admin/queue`, { signal: AbortSignal.timeout(30_000) });
