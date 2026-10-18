@@ -35,6 +35,8 @@ export const PAGES: PageSpec[] = [
   { name: 'tool-unknown', path: `/tools/${FIXTURE_SLUGS.unknown}` },
   { name: 'tool-long-name', path: `/tools/${FIXTURE_SLUGS.longName}` },
   { name: 'tool-many-runs', path: `/tools/${FIXTURE_SLUGS.manyRuns}` },
+  { name: 'tool-opted-out', path: `/tools/${FIXTURE_SLUGS.optedOut}` },
+  { name: 'tool-history-hidden', path: `/tools/${FIXTURE_SLUGS.historyHidden}` },
   { name: 'run-failing', path: `/runs/${RUN_IDS.failing}` },
   { name: 'run-verifying', path: `/runs/${RUN_IDS.verifying}` },
   { name: 'run-stale', path: `/runs/${RUN_IDS.stale}` },

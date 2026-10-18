@@ -1,4 +1,4 @@
-import type { PublicStatus } from '@qsr/core/public';
+import { OPT_OUT, type PublicStatus } from '@qsr/core/public';
 
 // The README badge (spec section 13): a self-contained shields-style SVG, "quickstart | passing". It is served
 // to anyone for any slug, so: the slug is validated with a strict pattern, every piece of text is XML-escaped
@@ -39,7 +39,7 @@ export function xmlEscape(text: string): string {
     .replace(/'/g, '&apos;');
 }
 
-export type BadgeStatus = PublicStatus | 'not_tracked';
+export type BadgeStatus = PublicStatus | 'not_tracked' | 'opted_out';
 
 export interface BadgeSpec {
   label: string;
@@ -55,6 +55,7 @@ const BADGE: Record<BadgeStatus, { value: string; color: string }> = {
   unknown: { value: 'unknown', color: '#6e7781' },
   needs_person: { value: 'needs a person', color: '#0969da' },
   not_tracked: { value: 'not tracked', color: '#57606a' },
+  opted_out: { value: OPT_OUT.badgeValue, color: '#57606a' },
 };
 
 export function badgeFor(status: BadgeStatus): BadgeSpec {

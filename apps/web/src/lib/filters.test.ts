@@ -21,6 +21,8 @@ const tool = (slug: string, over: Partial<ToolSummary> = {}): ToolSummary => ({
   decided30d: 10,
   streak: { kind: 'pass', count: 3 },
   strip: [],
+  optedOutAt: null,
+  historyHidden: false,
   openIncidentId: null,
   ...over,
 });

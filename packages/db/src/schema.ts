@@ -48,7 +48,7 @@ export const tools = pgTable(
     configHash: text('config_hash').notNull(),
     enabled: boolean('enabled').notNull().default(true),
     // Why a tool is off: its target file was removed (a re-sync may bring it back) or an admin paused it
-    // (a re-sync must NOT re-enable it: vendor opt-out). Null while enabled.
+    // (a re-sync must NOT re-enable it) or the vendor opted out ('opt_out', see opted_out_at; same rule). Null while enabled.
     disabledReason: text('disabled_reason'),
     // A vendor asked us to stop (disabled_reason = 'opt_out'): when we stopped. The tool's page stays up, labelled as no longer
     // monitored at the vendor's request; its past results stay visible unless the vendor also asked for them to be hidden.

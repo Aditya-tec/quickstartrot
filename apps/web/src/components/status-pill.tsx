@@ -1,4 +1,5 @@
-import type { PublicStatus } from '@qsr/core/public';
+import { Ban } from 'lucide-react';
+import { OPT_OUT, type PublicStatus } from '@qsr/core/public';
 import { STATUS_STYLE } from '@/lib/status-style';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,23 @@ export function StatusPill({ status, className }: { status: PublicStatus; classN
     >
       <Icon className="size-3.5" aria-hidden="true" />
       {style.label}
+    </span>
+  );
+}
+
+/** The label a vendor's page carries after it opted out: icon, words and colour together, like every status. */
+export function OptedOutPill({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium',
+        STATUS_STYLE.unknown.className,
+        className,
+      )}
+      data-status="opted_out"
+    >
+      <Ban className="size-3.5 shrink-0" aria-hidden="true" />
+      {OPT_OUT.pageLabel}
     </span>
   );
 }

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { FIXTURE_SLUGS, PAGES, RUN_IDS } from './pages';
-import { UNREVIEWED_CAUSE } from '../src/lib/data/fixtures';
+import { HIDDEN_HISTORY_MARKER, UNREVIEWED_CAUSE } from '../src/lib/data/fixtures';
 
 // THE SAFETY RULE. The fixtures hold a PENDING_REVIEW incident (tool fastify-node) with a distinctive cause string
 // in its signature, its failing run, its log and its docs diff, and the fixture rows even claim the details are
@@ -8,7 +8,15 @@ import { UNREVIEWED_CAUSE } from '../src/lib/data/fixtures';
 // payload the client receives, not in the badge, not in the sitemap, and not in a log the page links. The public
 // status of that tool must be "verifying".
 
-const NEEDLES = [UNREVIEWED_CAUSE, 'ZZ-UNREVIEWED-CAUSE', 'widget.render() was removed in 9.0'];
+// The fixtures also hold the runs and a confirmed incident of a tool whose vendor asked for its past results to be hidden (hidden-history-node),
+// as if the public views had failed to remove them. That string is held to the same rule: it appears nowhere.
+const NEEDLES = [
+  UNREVIEWED_CAUSE,
+  'ZZ-UNREVIEWED-CAUSE',
+  'widget.render() was removed in 9.0',
+  HIDDEN_HISTORY_MARKER,
+  'ZZ-HIDDEN-HISTORY',
+];
 const expectClean = (what: string, text: string) => {
   for (const needle of NEEDLES)
     expect(text, `${what} must not contain "${needle}"`).not.toContain(needle);

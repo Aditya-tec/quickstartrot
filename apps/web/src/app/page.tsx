@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { OPT_OUT } from '@qsr/core/public';
 import { DotLegend } from '@/components/dot-strip';
 import { FiltersBar } from '@/components/filters-bar';
 import { Headline } from '@/components/headline';
@@ -91,6 +92,29 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           </p>
           <ul className="mt-4 flex flex-wrap gap-2">
             {home.notTested.map((t) => (
+              <li
+                key={t.slug}
+                className="rounded-full border border-border bg-surface px-3 py-1 text-sm"
+              >
+                <Link href={`/tools/${t.slug}`} className="hover:underline">
+                  {t.name}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {home.optedOut.length > 0 ? (
+        <section aria-labelledby="opted-out" className="mt-12">
+          <h2 id="opted-out" className="text-xl font-semibold tracking-tight">
+            {OPT_OUT.pageLabel}
+          </h2>
+          <p className="mt-1 max-w-3xl text-sm text-muted">
+            We stopped probing these quickstarts. They are not counted above.
+          </p>
+          <ul className="mt-4 flex flex-wrap gap-2">
+            {home.optedOut.map((t) => (
               <li
                 key={t.slug}
                 className="rounded-full border border-border bg-surface px-3 py-1 text-sm"

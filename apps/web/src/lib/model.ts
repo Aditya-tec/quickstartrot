@@ -40,6 +40,10 @@ export interface ToolSummary {
   passRate: number | null;
   decided30d: number;
   streak: { kind: 'pass' | 'fail'; count: number };
+  /** A vendor opted out: when probing stopped. The page says so and the tool is not in the headline or the tables. */
+  optedOutAt: string | null;
+  /** The vendor asked for the past results to be hidden: the page shows none. */
+  historyHidden: boolean;
   /** The last runs, oldest first. */
   strip: Dot[];
   openIncidentId: string | null;
@@ -85,8 +89,11 @@ export function buildToolSummaries(
       lastReachedLevel: t.last_reached_level,
       passRate: t.pass_rate_30d,
       decided30d: t.decided_30d,
-      streak: { kind: t.streak_kind, count: t.current_streak },
-      strip,
+      streak: { kind: t.streak_kind ?? 'pass', count: t.current_streak ?? 0 },
+      optedOutAt: t.opted_out_at,
+      historyHidden: t.history_hidden,
+      // a history the vendor asked to hide has no dots, whatever the data layer below still holds
+      strip: t.history_hidden ? [] : strip,
       openIncidentId: open?.id ?? null,
     };
   });
@@ -97,12 +104,16 @@ export interface HomeModel {
   tested: ToolSummary[];
   needsPerson: ToolSummary[];
   notTested: ToolSummary[];
+  /** Vendors that opted out: no longer probed, so in none of the lists above and not in the headline. */
+  optedOut: ToolSummary[];
   headline: Headline;
   /** The newest last_run_at: when the data is from. */
   asOf: string | null;
 }
 
-export function buildHomeModel(tools: readonly ToolSummary[]): HomeModel {
+export function buildHomeModel(all: readonly ToolSummary[]): HomeModel {
+  // a tool nobody monitors any more says nothing about whether quickstarts work today
+  const tools = all.filter((t) => t.optedOutAt === null);
   const asOf = tools.reduce<string | null>(
     (latest, t) =>
       t.lastRunAt !== null && (latest === null || t.lastRunAt > latest) ? t.lastRunAt : latest,
@@ -112,6 +123,7 @@ export function buildHomeModel(tools: readonly ToolSummary[]): HomeModel {
     tested: tools.filter((t) => isTested(t.status)),
     needsPerson: tools.filter((t) => t.status === 'needs_person'),
     notTested: tools.filter((t) => t.status === 'unknown'),
+    optedOut: all.filter((t) => t.optedOutAt !== null),
     headline: computeHeadline(tools),
     asOf,
   };

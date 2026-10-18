@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { optOutSentences } from '@qsr/core/public';
 import { LevelBadge } from '@/components/level-badge';
 import { REPO_URL } from '@/components/site-footer';
 import { ordinal, plural, timesWord, words, type Facts } from '@/lib/facts';
@@ -51,6 +52,8 @@ export function MethodologyContent({
   detection?: React.ReactNode;
 }) {
   const f = facts;
+  // what an opt-out does: one definition, shared with /bot, the vendor form, the docs and the README
+  const optOut = optOutSentences(f.optOutHours);
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Methodology</h1>
@@ -286,8 +289,8 @@ export function MethodologyContent({
         <Link href="/bot#opt-out" className="underline underline-offset-2">
           opt-out form
         </Link>
-        ; probing stops, and the history is hidden, within {f.optOutHours} hours of an opt-out
-        request, and we reply in writing within {words(f.vendorReplyBusinessDays)} business days.
+        . {optOut.probing} {optOut.label} {optOut.history} We reply in writing within{' '}
+        {words(f.vendorReplyBusinessDays)} business days.
       </P>
     </>
   );

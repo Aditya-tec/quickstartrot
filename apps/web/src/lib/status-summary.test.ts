@@ -21,6 +21,8 @@ const tool = (slug: string, level: number, status: PublicStatus): ToolSummary =>
   decided30d: 0,
   streak: { kind: 'pass', count: 1 },
   strip: [],
+  optedOutAt: null,
+  historyHidden: false,
   openIncidentId: null,
 });
 

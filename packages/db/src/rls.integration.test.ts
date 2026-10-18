@@ -168,7 +168,7 @@ describe.skipIf(!enabled)('RLS: anon key against live Supabase', () => {
     expect(rows[0]?.events.map((e) => e.type)).toEqual(['opened', 'confirmed']);
   });
 
-  it('disabled tools disappear from every view (opt-out hides history)', async () => {
+  it('admin-paused tools disappear from every view (an opt-out keeps its page up: apps/api/test/opt-out.test.ts)', async () => {
     await handle.sql.unsafe(
       `update tools set enabled = false where slug = '${SEED_SLUGS.confirmed}'`,
     );

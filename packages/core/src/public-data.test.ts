@@ -138,6 +138,29 @@ describe('row schemas (the boundary with the database)', () => {
     expect(t.last_outcome).toBeNull();
   });
 
+  it('a tool has no opt-out by default, so a database that has not applied migration 0009 still parses', () => {
+    const t = PublicToolRow.parse(toolRow());
+    expect(t.opted_out_at).toBeNull();
+    expect(t.history_hidden).toBe(false);
+  });
+
+  it('an opted-out tool carries the date, and one whose history is hidden has no streak', () => {
+    const kept = PublicToolRow.parse(toolRow({ opted_out_at: NOW }));
+    expect(kept.opted_out_at).toBe(NOW);
+    const hidden = PublicToolRow.parse(
+      toolRow({
+        opted_out_at: NOW,
+        history_hidden: true,
+        status: 'UNKNOWN',
+        current_streak: null,
+        streak_kind: null,
+        decided_30d: '0',
+      }),
+    );
+    expect(hidden).toMatchObject({ history_hidden: true, current_streak: null, streak_kind: null });
+    expect(hidden.decided_30d).toBe(0);
+  });
+
   it('refuse a row that is not what the view promises', () => {
     expect(PublicToolRow.safeParse(toolRow({ status: 'FINE' })).success).toBe(false);
     expect(PublicToolRow.safeParse(toolRow({ slug: 42 })).success).toBe(false);

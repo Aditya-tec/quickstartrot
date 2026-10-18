@@ -78,6 +78,11 @@ describe('OPT_OUT', () => {
     expect(OPT_OUT.pageLabel).toBe("No longer monitored at the vendor's request");
   });
 
+  it('has a short form for the badge, which has room for a few words only', () => {
+    expect(OPT_OUT.badgeValue).toBe('no longer monitored');
+    expect(OPT_OUT.pageLabel.toLowerCase()).toContain(OPT_OUT.badgeValue);
+  });
+
   it('says the three things, in the words every page, form and document uses', () => {
     expect(optOutSentences()).toEqual({
       probing: 'Probing stops within 24 hours of an opt-out request.',

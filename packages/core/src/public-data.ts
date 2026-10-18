@@ -36,13 +36,18 @@ export const PublicToolRow = z.object({
   status_since: Timestamp.nullable(),
   last_run_at: Timestamp.nullable(),
   pass_rate_30d: NumericOrNull,
-  current_streak: z.number().int(),
-  streak_kind: z.enum(['pass', 'fail']),
+  // null when the vendor opted out and asked for its past results to be hidden (the view blanks every result column)
+  current_streak: z.number().int().nullable(),
+  streak_kind: z.enum(['pass', 'fail']).nullable(),
   last_run_id: Uuid.nullable(),
   last_outcome: RunOutcome.nullable(),
   last_reached_level: z.number().int().nullable(),
   last_skip_reason: z.string().nullable(),
   decided_30d: z.coerce.number().int(),
+  // A vendor opt-out (migration 0009): when probing stopped, and whether the vendor also asked for the past results to be hidden.
+  // Defaults, so a database that has not applied 0009 yet still parses.
+  opted_out_at: Timestamp.nullable().default(null),
+  history_hidden: z.boolean().default(false),
 });
 export type PublicToolRow = z.infer<typeof PublicToolRow>;
 

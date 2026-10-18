@@ -1,4 +1,4 @@
-import type { DetectionSummary, PublicStatus } from '@qsr/core/public';
+import { OPT_OUT, type DetectionSummary, type PublicStatus } from '@qsr/core/public';
 import { l2Findings } from './detection';
 import { formatDay } from './format';
 import type { OgData } from './service';
@@ -32,11 +32,12 @@ export function clipText(text: string, max: number): string {
 }
 
 export function ogCard(data: OgData): OgCard {
-  const failing = data.status === 'failing';
+  // a vendor that opted out: the label, and no result of any kind
+  const failing = !data.optedOut && data.status === 'failing';
   return {
     title: clipText(data.name, MAX_TITLE),
     status: data.status,
-    statusLabel: STATUS_STYLE[data.status].label,
+    statusLabel: data.optedOut ? OPT_OUT.pageLabel : STATUS_STYLE[data.status].label,
     since:
       failing && data.failingSince
         ? `Quickstart failing since ${formatDay(data.failingSince)}`

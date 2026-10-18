@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { BotContent } from './bot-content';
+import { optOutSentences } from '@qsr/core/public';
 import { FACTS, words } from '@/lib/facts';
 
 // "About our traffic": which services get a request with an invalid credential, how often, from where, that nothing is created or sent,
@@ -21,6 +22,7 @@ const html = (over: { email?: string | null } = {}): string =>
   )
     .replaceAll(/<[^>]+>/g, ' ')
     .replaceAll('&#x27;', "'")
+    .replaceAll('&quot;', '"')
     .replaceAll(/\s+/g, ' ');
 
 describe('/bot: About our traffic', () => {
@@ -63,6 +65,16 @@ describe('/bot: About our traffic', () => {
     expect(t).toContain(
       `reply in writing within ${words(FACTS.vendorReplyBusinessDays)} business days`,
     );
+  });
+
+  // The owner's decision of 2026-10-19, in the words of optOutSentences() (packages/core): the same sentences as the vendor form and the docs.
+  it('says what an opt-out does, word for word: probing stops, the page is labelled, history is hidden only on request', () => {
+    const t = html();
+    const s = optOutSentences(FACTS.optOutHours);
+    expect(t).toContain(s.probing);
+    expect(t).toContain(s.label);
+    expect(t).toContain(s.history);
+    expect(t).not.toMatch(/and the history is hidden/i);
   });
 
   it('says when the terms were read, that it was a summary and not legal advice, and implies no affiliation or endorsement', () => {

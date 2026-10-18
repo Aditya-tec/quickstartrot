@@ -1,12 +1,14 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { VENDOR_FAILURE_CLASSES } from '@qsr/core/public';
+import { optOutSentences, VENDOR_FAILURE_CLASSES } from '@qsr/core/public';
 import { FACTS, words } from '@/lib/facts';
 import { MethodologyContent } from './methodology-content';
 
 const text = (): string =>
   renderToStaticMarkup(<MethodologyContent facts={FACTS} />)
     .replaceAll(/<[^>]+>/g, ' ')
+    .replaceAll('&#x27;', "'")
+    .replaceAll('&quot;', '"')
     .replaceAll(/&[a-z]+;|&#x?\d+;/gi, ' ')
     .replaceAll(/\s+/g, ' ');
 
@@ -22,12 +24,19 @@ describe('/methodology: before a quickstart is called failing', () => {
 
   it('promises vendors, from the facts, that probing stops within a day of an opt-out request and a written reply follows within three business days', () => {
     const t = text();
+    expect(t).toContain(`Probing stops within ${FACTS.optOutHours} hours of an opt-out request`);
     expect(t).toContain(
-      `probing stops, and the history is hidden, within ${FACTS.optOutHours} hours of an opt-out request`,
+      `We reply in writing within ${words(FACTS.vendorReplyBusinessDays)} business days`,
     );
-    expect(t).toContain(
-      `we reply in writing within ${words(FACTS.vendorReplyBusinessDays)} business days`,
-    );
+  });
+
+  it('says what an opt-out does, word for word, the same as /bot, the vendor form and the docs', () => {
+    const t = text();
+    const s = optOutSentences(FACTS.optOutHours);
+    expect(t).toContain(s.probing);
+    expect(t).toContain(s.label);
+    expect(t).toContain(s.history);
+    expect(t).not.toMatch(/and the history is hidden/i);
   });
 
   it('only the failure classes the vendor owns can ever be published (the list the review screen uses)', () => {

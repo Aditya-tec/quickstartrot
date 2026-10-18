@@ -269,7 +269,7 @@ d('public_run_history: one lightweight row per cycle and tool, newest first', ()
     expect(rows.filter((r) => r['tool_slug'] === 'bolt-node')).toHaveLength(1);
   });
 
-  it('hides a disabled tool (an opt-out hides its history)', async () => {
+  it('hides a tool an admin paused (an opt-out is different: its page stays up)', async () => {
     await addRun({ slug: 'acme-node', cycleId: await addCycle(true, at(1)), startedAt: at(1) });
     await t.handle.db.update(tools).set({ enabled: false }).where(eq(tools.slug, 'acme-node'));
     expect(await anon(dsql`select * from public_run_history`)).toEqual([]);

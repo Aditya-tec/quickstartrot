@@ -31,7 +31,18 @@ export const FIXTURE_SLUGS = {
   unknown: 'brand-new-node',
   longName: 'the-extremely-long-named-developer-toolkit-sdk-for-python',
   manyRuns: 'many-runs-node',
+  /** A vendor opted out; the past results stay visible. */
+  optedOut: 'sunset-node',
+  /** A vendor opted out and asked for the past results to be hidden. */
+  historyHidden: 'hidden-history-node',
 } as const;
+
+/**
+ * POISON: the runs and the confirmed incident of the history-hidden tool are still in the fixture "database", as if the public views had
+ * failed to remove them. No page, badge, image or payload may contain this string.
+ */
+export const HIDDEN_HISTORY_MARKER =
+  'ZZ-HIDDEN-HISTORY-7c2f: the vendor asked for this to be hidden';
 
 const HOUR = 3600_000;
 const iso = (ms: number): string => new Date(ms).toISOString();
@@ -56,6 +67,10 @@ interface ToolSpec {
   staleNewest?: boolean;
   truncated?: boolean;
   docsUrl: string;
+  /** The vendor opted out: when probing stopped. */
+  optedOutAt?: string;
+  /** The vendor asked for the past results to be hidden: the tool row carries none of them. */
+  historyHidden?: boolean;
 }
 
 const specs: ToolSpec[] = [
@@ -180,6 +195,33 @@ const specs: ToolSpec[] = [
     passRate: 0.98,
     kindAt: (i) => (i % 37 === 5 ? 'fail' : 'pass'),
     docsUrl: 'https://example.dev/many-runs',
+  },
+  {
+    slug: FIXTURE_SLUGS.optedOut,
+    name: 'Sunset SDK',
+    language: 'node',
+    level: 3,
+    status: 'HEALTHY',
+    statusSince: iso(NOW - 30 * 24 * HOUR),
+    runs: 24,
+    passRate: 1,
+    kindAt: () => 'pass',
+    docsUrl: 'https://example.dev/sunset',
+    optedOutAt: iso(NOW - 3 * 24 * HOUR),
+  },
+  {
+    slug: FIXTURE_SLUGS.historyHidden,
+    name: 'Hidden History SDK',
+    language: 'node',
+    level: 2,
+    status: 'HEALTHY',
+    statusSince: iso(NOW - 30 * 24 * HOUR),
+    runs: 12,
+    passRate: 1,
+    kindAt: (i) => (i === 2 ? 'fail' : 'pass'),
+    docsUrl: 'https://example.dev/hidden-history',
+    optedOutAt: iso(NOW - 2 * 24 * HOUR),
+    historyHidden: true,
   },
 ];
 
@@ -474,6 +516,8 @@ function build(): Built {
             while (n < spec.runs && spec.kindAt(n) === spec.kindAt(0)) n += 1;
             return n;
           })();
+    // the history-hidden tool's row is what the public_tools view gives for it: no result of any kind
+    const hiddenRow = spec.historyHidden === true;
     tools.push(
       PublicToolRow.parse({
         slug: spec.slug,
@@ -481,20 +525,22 @@ function build(): Built {
         docs_url: spec.docsUrl,
         language: spec.language,
         level: spec.level,
-        status: spec.status,
-        status_since: spec.statusSince,
-        last_run_at: newest?.started_at ?? null,
-        pass_rate_30d: spec.passRate,
-        current_streak: streakCount,
-        streak_kind: failing ? 'fail' : 'pass',
-        last_run_id: newest?.id ?? null,
-        last_outcome: lastKind === null ? null : kindOutcome(lastKind),
-        last_reached_level: newest?.reached_level ?? null,
-        last_skip_reason: lastKind === 'skipped' ? 'manual_step' : null,
+        status: hiddenRow ? 'UNKNOWN' : spec.status,
+        status_since: hiddenRow ? null : spec.statusSince,
+        last_run_at: hiddenRow ? null : (newest?.started_at ?? null),
+        pass_rate_30d: hiddenRow ? null : spec.passRate,
+        current_streak: hiddenRow ? null : streakCount,
+        streak_kind: hiddenRow ? null : failing ? 'fail' : 'pass',
+        last_run_id: hiddenRow ? null : (newest?.id ?? null),
+        last_outcome: hiddenRow || lastKind === null ? null : kindOutcome(lastKind),
+        last_reached_level: hiddenRow ? null : (newest?.reached_level ?? null),
+        last_skip_reason: !hiddenRow && lastKind === 'skipped' ? 'manual_step' : null,
         decided_30d:
-          spec.runs === 0 || spec.passRate === null
+          hiddenRow || spec.runs === 0 || spec.passRate === null
             ? 0
             : Math.min(spec.runs, spec.slug === FIXTURE_SLUGS.manyRuns ? 100 : spec.runs),
+        opted_out_at: spec.optedOutAt ?? null,
+        history_hidden: spec.historyHidden ?? false,
       }),
     );
   });
@@ -502,6 +548,7 @@ function build(): Built {
   const chalkIndex = specs.findIndex((s) => s.slug === FIXTURE_SLUGS.failing);
   const fastifyIndex = specs.findIndex((s) => s.slug === FIXTURE_SLUGS.verifying);
   const resendIndex = specs.findIndex((s) => s.slug === FIXTURE_SLUGS.healthy);
+  const hiddenIndex = specs.findIndex((s) => s.slug === FIXTURE_SLUGS.historyHidden);
   const incident = (over: Record<string, unknown>) =>
     PublicIncidentRow.parse({
       id: uuid(0x1c1d, 1),
@@ -575,6 +622,24 @@ function build(): Built {
         added: [],
         removed: [],
       },
+      events: [],
+    }),
+    // POISON: a confirmed incident of the tool whose history the vendor asked to hide, as if the view had not removed it
+    incident({
+      id: uuid(0x1c1d, 5),
+      tool_slug: FIXTURE_SLUGS.historyHidden,
+      tool_name: 'Hidden History SDK',
+      signature: 'sig-hidden-history',
+      state: 'RESOLVED',
+      first_failing_run_id: runId(hiddenIndex, 2),
+      last_passing_run_id: runId(hiddenIndex, 3),
+      summary: HIDDEN_HISTORY_MARKER,
+      suggested_fix: HIDDEN_HISTORY_MARKER,
+      opened_at: '2026-10-10T06:00:00.000Z',
+      confirmed_at: '2026-10-10T08:00:00.000Z',
+      resolved_at: '2026-10-10T20:00:00.000Z',
+      docs_diff_path: null,
+      version_diff: null,
       events: [],
     }),
     // POISON: a false positive

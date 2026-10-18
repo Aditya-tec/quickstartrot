@@ -8,6 +8,7 @@ import { clipText, methodologyCard, ogCard } from './og';
 describe('ogCard', () => {
   const base = {
     name: 'Chalk',
+    optedOut: false,
     failingSince: '2026-10-12T04:00:00.000Z',
     errorLine: 'TypeError: chalk.red is not a function',
   };
@@ -31,6 +32,7 @@ describe('ogCard', () => {
   it('truncates a long name and a long error line', () => {
     const card = ogCard({
       name: 'N'.repeat(200),
+      optedOut: false,
       status: 'failing',
       failingSince: null,
       errorLine: 'e'.repeat(400),

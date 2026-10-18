@@ -2,11 +2,12 @@ import { ExternalLink } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { OPT_OUT } from '@qsr/core/public';
 import { BadgeSnippets } from '@/components/badge-snippets';
 import { DotLegend, DotStrip } from '@/components/dot-strip';
 import { IncidentCard } from '@/components/incident-card';
 import { LevelBadge } from '@/components/level-badge';
-import { StatusPill } from '@/components/status-pill';
+import { OptedOutPill, StatusPill } from '@/components/status-pill';
 import { StepTimeline } from '@/components/step-timeline';
 import { getKnownSlugs, getToolPage } from '@/lib/cached';
 import { getNow } from '@/lib/data';
@@ -38,9 +39,11 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { tool } = page;
   const title = `${tool.name} quickstart status`;
   const description =
-    tool.status === 'failing'
-      ? `${tool.name} quickstart failing since ${formatDay(tool.failingSince)}.`
-      : `Does the ${tool.name} quickstart work on a fresh machine? Tested every ${words(FACTS.cycleHours)} hours.`;
+    tool.optedOutAt !== null
+      ? `${tool.name}: ${OPT_OUT.pageLabel.toLowerCase()}.`
+      : tool.status === 'failing'
+        ? `${tool.name} quickstart failing since ${formatDay(tool.failingSince)}.`
+        : `Does the ${tool.name} quickstart work on a fresh machine? Tested every ${words(FACTS.cycleHours)} hours.`;
   const og = `${siteUrl()}/api/og/${tool.slug}`;
   return {
     title,
@@ -71,6 +74,7 @@ export default async function ToolPage({ params }: { params: Params }) {
   if (!page) notFound();
   const { tool, strip, openIncident, incidents, latestRun } = page;
   const now = getNow();
+  const optedOut = tool.optedOutAt !== null;
   const streakText =
     tool.streak.count === 0
       ? EM_DASH
@@ -89,19 +93,25 @@ export default async function ToolPage({ params }: { params: Params }) {
           <h1 className="break-words text-3xl font-semibold tracking-tight sm:text-4xl">
             {tool.name}
           </h1>
-          <StatusPill status={tool.status} />
-          <LevelBadge level={tool.level} />
+          {optedOut ? <OptedOutPill /> : <StatusPill status={tool.status} />}
+          {optedOut ? null : <LevelBadge level={tool.level} />}
         </div>
         <p className="mt-2 text-sm text-muted">
-          {tool.status === 'failing'
-            ? `Quickstart failing since ${formatDay(tool.failingSince)}.`
-            : tool.status === 'verifying'
-              ? `A failure was seen${tool.statusSince ? ` on ${formatDay(tool.statusSince)}` : ''} and is being verified. Details are published after a person reviews them.`
-              : tool.status === 'passing'
-                ? 'The quickstart ran to its target level in the latest cycle.'
-                : tool.status === 'needs_person'
-                  ? 'The quickstart stops at a step only a person can do, so a fresh machine cannot finish it. This is not a failure.'
-                  : 'This quickstart has not completed a test run yet.'}
+          {optedOut
+            ? `Probing stopped on ${formatDay(tool.optedOutAt)}. ${
+                tool.historyHidden
+                  ? "At the vendor's request, the past results are not shown."
+                  : 'The results below are from before probing stopped.'
+              }`
+            : tool.status === 'failing'
+              ? `Quickstart failing since ${formatDay(tool.failingSince)}.`
+              : tool.status === 'verifying'
+                ? `A failure was seen${tool.statusSince ? ` on ${formatDay(tool.statusSince)}` : ''} and is being verified. Details are published after a person reviews them.`
+                : tool.status === 'passing'
+                  ? 'The quickstart ran to its target level in the latest cycle.'
+                  : tool.status === 'needs_person'
+                    ? 'The quickstart stops at a step only a person can do, so a fresh machine cannot finish it. This is not a failure.'
+                    : 'This quickstart has not completed a test run yet.'}
         </p>
         <p className="mt-2 text-sm">
           <a
@@ -114,93 +124,103 @@ export default async function ToolPage({ params }: { params: Params }) {
             <span className="sr-only">(opens the vendor site)</span>
           </a>
         </p>
-        <p className="mt-1 max-w-3xl text-xs text-muted">
-          {LEVEL_DESCRIPTION[levelLabel(tool.level)]}.
-        </p>
+        {optedOut ? null : (
+          <p className="mt-1 max-w-3xl text-xs text-muted">
+            {LEVEL_DESCRIPTION[levelLabel(tool.level)]}.
+          </p>
+        )}
 
-        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
-          <Stat label="30-day pass rate">{formatPercent(tool.passRate)}</Stat>
-          <Stat label="Current streak">{streakText}</Stat>
-          <Stat label="Last checked">
-            {tool.lastRunAt ? (
-              <time dateTime={tool.lastRunAt} title={formatDateTime(tool.lastRunAt)}>
-                {relativeTime(tool.lastRunAt, now)}
-              </time>
-            ) : (
-              EM_DASH
-            )}
-          </Stat>
-          <Stat label="Reached level">
-            {tool.lastReachedLevel ? levelLabel(tool.lastReachedLevel) : EM_DASH}
-          </Stat>
-        </dl>
+        {tool.historyHidden ? null : (
+          <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
+            {optedOut ? null : <Stat label="30-day pass rate">{formatPercent(tool.passRate)}</Stat>}
+            {optedOut ? null : <Stat label="Current streak">{streakText}</Stat>}
+            <Stat label={optedOut ? 'Last checked before probing stopped' : 'Last checked'}>
+              {tool.lastRunAt ? (
+                <time dateTime={tool.lastRunAt} title={formatDateTime(tool.lastRunAt)}>
+                  {relativeTime(tool.lastRunAt, now)}
+                </time>
+              ) : (
+                EM_DASH
+              )}
+            </Stat>
+            <Stat label="Reached level">
+              {tool.lastReachedLevel ? levelLabel(tool.lastReachedLevel) : EM_DASH}
+            </Stat>
+          </dl>
+        )}
       </header>
 
-      <section aria-labelledby="history" className="mt-10">
-        <h2 id="history" className="text-xl font-semibold tracking-tight">
-          Last {strip.length || 60} runs
-        </h2>
-        <p className="mt-1 text-sm text-muted">Oldest on the left. Select a run to open it.</p>
-        <div className="mt-3 rounded-lg border border-border bg-surface p-3">
-          <DotStrip dots={strip} interactive />
-        </div>
-        <DotLegend className="mt-3" />
-      </section>
-
-      {openIncident ? (
-        <section aria-label="Open incident" className="mt-10">
-          <IncidentCard incident={openIncident} />
-        </section>
-      ) : null}
-
-      <section aria-labelledby="latest-run" className="mt-10">
-        <h2 id="latest-run" className="text-xl font-semibold tracking-tight">
-          Latest run
-        </h2>
-        {latestRun ? (
-          <>
-            <p className="mt-1 text-sm text-muted">
-              <time dateTime={latestRun.started_at}>{formatDateTime(latestRun.started_at)}</time>
-              {' · '}
-              <span className="tabular">{formatDuration(latestRun.duration_ms)}</span>
-              {' · '}
-              <Link
-                href={`/runs/${latestRun.id}`}
-                className="underline underline-offset-2 hover:text-foreground"
-              >
-                Full run details
-              </Link>
-              {latestRun.plan_stale ? ' · used an older plan (stale)' : ''}
-            </p>
-            <div className="mt-4">
-              <StepTimeline run={latestRun} />
+      {tool.historyHidden ? null : (
+        <>
+          <section aria-labelledby="history" className="mt-10">
+            <h2 id="history" className="text-xl font-semibold tracking-tight">
+              Last {strip.length || 60} runs
+            </h2>
+            <p className="mt-1 text-sm text-muted">Oldest on the left. Select a run to open it.</p>
+            <div className="mt-3 rounded-lg border border-border bg-surface p-3">
+              <DotStrip dots={strip} interactive />
             </div>
-          </>
-        ) : (
-          <p className="mt-1 text-sm text-muted">No run has been recorded yet.</p>
-        )}
-      </section>
+            <DotLegend className="mt-3" />
+          </section>
 
-      {incidents.length > 0 ? (
-        <section aria-labelledby="past" className="mt-10">
-          <h2 id="past" className="text-xl font-semibold tracking-tight">
-            Earlier incidents
-          </h2>
-          <ul className="mt-3 grid gap-2">
-            {incidents.map((i) => (
-              <li key={i.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
-                <span className="font-medium">
-                  {formatDay(i.openedAt)}
-                  {i.resolvedAt ? ` to ${formatDay(i.resolvedAt)}` : ''}
-                </span>
-                <span className="text-muted">: {i.oneLine}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+          {openIncident ? (
+            <section aria-label="Open incident" className="mt-10">
+              <IncidentCard incident={openIncident} />
+            </section>
+          ) : null}
 
-      <BadgeSnippets slug={tool.slug} />
+          <section aria-labelledby="latest-run" className="mt-10">
+            <h2 id="latest-run" className="text-xl font-semibold tracking-tight">
+              Latest run
+            </h2>
+            {latestRun ? (
+              <>
+                <p className="mt-1 text-sm text-muted">
+                  <time dateTime={latestRun.started_at}>
+                    {formatDateTime(latestRun.started_at)}
+                  </time>
+                  {' · '}
+                  <span className="tabular">{formatDuration(latestRun.duration_ms)}</span>
+                  {' · '}
+                  <Link
+                    href={`/runs/${latestRun.id}`}
+                    className="underline underline-offset-2 hover:text-foreground"
+                  >
+                    Full run details
+                  </Link>
+                  {latestRun.plan_stale ? ' · used an older plan (stale)' : ''}
+                </p>
+                <div className="mt-4">
+                  <StepTimeline run={latestRun} />
+                </div>
+              </>
+            ) : (
+              <p className="mt-1 text-sm text-muted">No run has been recorded yet.</p>
+            )}
+          </section>
+
+          {incidents.length > 0 ? (
+            <section aria-labelledby="past" className="mt-10">
+              <h2 id="past" className="text-xl font-semibold tracking-tight">
+                Earlier incidents
+              </h2>
+              <ul className="mt-3 grid gap-2">
+                {incidents.map((i) => (
+                  <li key={i.id} className="rounded-lg border border-border bg-surface p-3 text-sm">
+                    <span className="font-medium">
+                      {formatDay(i.openedAt)}
+                      {i.resolvedAt ? ` to ${formatDay(i.resolvedAt)}` : ''}
+                    </span>
+                    <span className="text-muted">: {i.oneLine}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      )}
+
+      {optedOut ? null : <BadgeSnippets slug={tool.slug} />}
     </>
   );
 }

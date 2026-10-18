@@ -105,6 +105,8 @@ export const TARGET_GOAL = Object.freeze({
  */
 export const OPT_OUT = Object.freeze({
   pageLabel: "No longer monitored at the vendor's request",
+  /** The badge has room for a few words: the same statement, short. */
+  badgeValue: 'no longer monitored',
 });
 
 /** The three sentences. `hours` defaults to the pipeline's; a page passes its own facts so a test can prove it quotes them. */

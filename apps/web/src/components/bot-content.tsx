@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { optOutSentences } from '@qsr/core/public';
 import { REPO_URL } from '@/components/site-footer';
 import { plural, timesWord, words, type Facts } from '@/lib/facts';
 
@@ -36,6 +37,8 @@ export function BotContent({
   email: string | null;
   traffic: BotTraffic;
 }) {
+  // what an opt-out does: one definition, shared with the vendor form, the docs and the README
+  const optOut = optOutSentences(f.optOutHours);
   return (
     <>
       <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">QuickstartRotBot</h1>
@@ -126,8 +129,8 @@ export function BotContent({
               </a>
             </>
           ) : null}
-          . Probing stops within {f.optOutHours} hours of an opt-out request, and we reply in
-          writing within {words(f.vendorReplyBusinessDays)} business days.
+          . {optOut.probing} {optOut.label} {optOut.history} We reply in writing within{' '}
+          {words(f.vendorReplyBusinessDays)} business days.
         </li>
       </ul>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -142,9 +145,9 @@ export function BotContent({
       </h2>
       <p className="mt-2 max-w-3xl text-[15px] leading-7">
         If you maintain a quickstart we track and you want it removed, open an issue with the
-        opt-out form. Probing stops, and the history is hidden, within {f.optOutHours} hours of an
-        opt-out request, and we reply in writing within {words(f.vendorReplyBusinessDays)} business
-        days. You can also block <code className="font-mono text-sm">QuickstartRotBot</code> in your{' '}
+        opt-out form. {optOut.probing} {optOut.label} {optOut.history} We reply in writing within{' '}
+        {words(f.vendorReplyBusinessDays)} business days. You can also block{' '}
+        <code className="font-mono text-sm">QuickstartRotBot</code> in your{' '}
         <code className="font-mono text-sm">robots.txt</code>.
       </p>
       <p className="mt-3">
