@@ -32,7 +32,7 @@ import {
 } from './checks.js';
 import { evaluateExpect } from './expect.js';
 import { isInstallCommand } from './install.js';
-import { parseShadowOutput } from './shadow.js';
+import { clip as clipShadowText, parseShadowOutput } from './shadow.js';
 import { StepOutput } from './sink.js';
 
 export { isInstallCommand };
@@ -488,8 +488,15 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
   const recordShadowExportCheck = async (): Promise<void> => {
     const at = steps.findIndex((s) => s.stepId === CHECK_IDS.imports);
     if (at < 0) return;
+    // Every record is clipped to what the schema allows: an over-long note (an opt-out reason at its limit plus the prefix did this in
+    // production) must never fail the validation of the whole result, which would turn a recording into a HARNESS_ERROR.
     const write = (record: ShadowExportCheck): void => {
-      steps[at] = { ...(steps[at] as StepResult), shadowExportCheck: record };
+      const safe: ShadowExportCheck = {
+        ...record,
+        missing: record.missing.slice(0, 50).map((m) => clipShadowText(m, 200)),
+        note: record.note === null ? null : clipShadowText(record.note, 300),
+      };
+      steps[at] = { ...(steps[at] as StepResult), shadowExportCheck: safe };
     };
     const optOut = target.harness;
     if (optOut?.skipExportCheck === true) {

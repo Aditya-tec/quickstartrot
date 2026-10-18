@@ -279,6 +279,43 @@ describe('shadow mode cannot change what a run says', () => {
     });
   });
 
+  it('REGRESSION (found in production, probe #13): an opt-out reason at the 300-character limit, plus the "skipExportCheck: " prefix, must not crash the run', async () => {
+    // launchdarkly-node's real reason is 286 characters; with the prefix the note was 303 and the result failed validation, which ended
+    // the run as a HARNESS_ERROR: a shadow record must never be able to touch the run.
+    const reason = 'x'.repeat(300);
+    const docker = new FakeDocker(shadowAnswers(SHADOW_FAIL));
+    const r = await go(docker, PLAN(), {
+      shadow: true,
+      target: target({ harness: { skipExportCheck: true, reason } }),
+    });
+    expect(r.outcome).toBe('PASS');
+    const record = r.steps.find((s) => s.stepId === CHECK_IDS.imports)?.shadowExportCheck;
+    expect(record?.outcome).toBe('skipped');
+    expect(record?.note?.startsWith('skipExportCheck: ')).toBe(true);
+    expect(record?.note?.length).toBeLessThanOrEqual(300);
+    expect(RunResult.safeParse(r).success).toBe(true);
+  });
+
+  it('whatever the check says (a huge note, a hundred missing names, a 5000-character name), the record is valid and the run is untouched', async () => {
+    const names = Array.from(
+      { length: 100 },
+      (_, i) => `acme: ${'n'.repeat(i === 0 ? 5000 : 10)}${i}`,
+    );
+    const docker = new FakeDocker(
+      shadowAnswers({
+        exitCode: 1,
+        stderr: `${names.map((n) => `qsr-check-exports: 'acme' does not export '${n}'`).join('\n')}\n`,
+      }),
+    );
+    const r = await go(docker, PLAN(), { shadow: true });
+    expect(r.outcome).toBe('PASS');
+    expect(RunResult.safeParse(r).success).toBe(true);
+    const record = r.steps.find((s) => s.stepId === CHECK_IDS.imports)?.shadowExportCheck;
+    expect(record?.outcome).toBe('fail');
+    expect(record?.missing.length).toBeLessThanOrEqual(50);
+    for (const m of record?.missing ?? []) expect(m.length).toBeLessThanOrEqual(200);
+  });
+
   it('the opt-out also holds for the enforcing experiment: an opted-out target gets no export check step at all (found by qsr mutate --exports-check, which failed launchdarkly-node)', async () => {
     const docker = new FakeDocker();
     const reason = 'the docs snippet is TypeScript and its types have no run-time export';

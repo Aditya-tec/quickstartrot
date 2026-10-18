@@ -14,7 +14,8 @@ export interface ShadowRaw {
 
 const MAX_NAMES = 50;
 const MAX_NOTE = 300;
-const clip = (s: string, n: number): string => (s.length > n ? `${s.slice(0, n - 3)}...` : s);
+export const clip = (s: string, n: number): string =>
+  s.length > n ? `${s.slice(0, n - 3)}...` : s;
 
 const NOT_EXPORTED = /qsr-check-exports: '([^']+)' does not export '([^']+)'/;
 const NO_NAME = /qsr-check-exports: cannot import name '([^']+)' from '([^']+)'/;
