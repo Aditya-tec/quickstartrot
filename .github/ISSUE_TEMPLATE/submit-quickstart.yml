@@ -1,13 +1,15 @@
-name: Submit a quickstart
-description: Suggest a developer quickstart for QuickstartRot to track.
-title: 'Submit: '
+name: Add a quickstart
+description: Suggest a developer quickstart for QuickstartRot to track, or tell us you are sending the target file yourself.
+title: 'Add: '
 labels: ['submission']
 body:
   - type: markdown
     attributes:
       value: |
-        A person reads each submission. The URL is never fetched automatically. Only public https documentation
+        A person reads every request. The URL is never fetched automatically. Only public https documentation
         pages for Node.js or Python quickstarts that run in a terminal can be tracked.
+
+        How to write the target file and what we accept: [CONTRIBUTING.md](https://github.com/Aditya-tec/quickstartrot/blob/main/CONTRIBUTING.md#add-a-quickstart).
   - type: input
     id: docs-url
     attributes:
@@ -24,6 +26,28 @@ body:
         - Python
     validations:
       required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How should it be added?
+      options:
+        - I will open a pull request with the target file
+        - Please add it for me
+    validations:
+      required: true
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Please confirm
+      options:
+        - label: The documentation page is public and its robots.txt allows crawling it.
+          required: true
+        - label: The quickstart can be run without a sign-up, an account or a real API key.
+          required: true
+        - label: I have not seen terms of service that forbid automated access (if I could not tell, I say so below).
+          required: true
+        - label: I understand that a person reviews every addition and may decline it.
+          required: true
   - type: textarea
     id: note
     attributes:

@@ -298,7 +298,7 @@ Newly detected: 16 (ably-python:renamed_symbol, click-python:deep_import, drizzl
 
 ## Recommendation
 
-Written by hand after reading the numbers above. Nothing below is enabled in production except what is said to be: harness version 3 (the two fixes of version 2 and the rule that an L3 claim needs evidence), the export check in **shadow** mode, and the L3 step of three targets in **shadow** mode (recorded, never counted).
+Written by hand after reading the numbers above. Nothing below is enabled in production except what is said to be: harness version 3 (the two fixes of version 2 and the rule that an L3 claim needs evidence), the export check in **shadow** mode, and the L3 step of every target marked `l3.mode: shadow` in **shadow** mode (recorded, never counted): `cerebras-python`, `openrouter-node`, `resend-python` and `slack-node` at the time of writing. A test keeps the list the website shows equal to the target files.
 
 ### What changed since the first measurement (harness version 1)
 
@@ -309,6 +309,7 @@ Same mutants, same seed, same targets on both sides of the table above (a target
   - **L3 rests on 2 targets** (`anthropic-node`, `resend-node`) in this measurement, until the shadow-L3 targets are promoted. A target whose snippet runs a vendor client for real counts; one that exits 0 without anything showing a vendor does not. **No L3 detection percentage is quoted anywhere** until then, here or on the site: the L3 rows above show counts only, and 9 code-level mutants over two targets is not a rate.
   - **Three targets execute locally, with no vendor** (`chalk-node`, `dotenv-python`, `loguru-python`, libraries with no API). They used to count as L3. Their results are kept and reported apart, as their own category beside L1, L2 and L3: **6 of 6 install-level and 8 of 8 code-level mutants detected**, over 3 targets. They say the harness checks work on a snippet that runs; they say nothing about reaching a vendor.
 - **Four targets are not measured in this run** (`anthropic-python`, `openrouter-node`, `cerebras-python`, `resend-python`): they now have an L3 step that makes a request to a vendor with a dummy key, and `qsr mutate` makes no vendor request unless given `--allow-vendor-calls`. Their mutants are recorded as not run (24 of them), and the results measured on their old plans (which had no such step) were replaced.
+- **`slack-node` gained its shadow L3 step after this measurement.** Its results here are those of its earlier level 2 plan, and it is counted at L2. It is not one of the targets L3 rests on, and its request, like the others', is not made by `qsr mutate`. A new measurement with `--allow-vendor-calls` would replace them.
 
 ### What the survivors say
 

@@ -1,13 +1,27 @@
-name: Opt out of QuickstartRot
-description: Ask us to stop testing a quickstart and hide its history. We act within 24 hours.
-title: 'Opt-out: '
-labels: ['opt-out']
+name: 'Vendor: question or opt-out'
+description: Ask about a result, or ask us to stop testing a quickstart and hide its history. We reply within 24 hours.
+title: 'Vendor: '
+labels: ['vendor']
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for telling us. We disable the tool and hide its history within 24 hours of this issue.
+        Thank you for telling us. We reply within 24 hours of this issue. If you ask us to stop, we disable the tool and hide its history within 24 hours.
         You can also block `QuickstartRotBot` in your `robots.txt`; the crawler obeys it.
+
+        What our requests look like: [docs/ABOUT-OUR-TRAFFIC.md](https://github.com/Aditya-tec/quickstartrot/blob/main/docs/ABOUT-OUR-TRAFFIC.md).
+        How we tell a vendor about a failure, and what is never made public: [docs/DISCLOSURE.md](https://github.com/Aditya-tec/quickstartrot/blob/main/docs/DISCLOSURE.md).
+  - type: dropdown
+    id: need
+    attributes:
+      label: What do you need?
+      options:
+        - A question about a result
+        - Opt out - stop testing and hide the history
+        - A correction - a result is wrong
+        - Something else
+    validations:
+      required: true
   - type: input
     id: docs-url
     attributes:
