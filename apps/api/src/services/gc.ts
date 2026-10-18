@@ -4,6 +4,7 @@ import { incidents, runs, stepResults } from '@qsr/db';
 import type { Ctx } from '../deps.js';
 import { HttpError } from '../problem.js';
 import { PRIVATE_BUCKET, PUBLIC_BUCKET } from '../storage.js';
+import { retainStepTails } from './retention.js';
 
 // POST /admin/gc (spec section 5, "Storage"), called by the nightly workflow:
 //   public-artifacts:  redacted step logs and docs diffs live 30 days, except those an incident links (kept);
@@ -150,11 +151,15 @@ export async function collectGarbage(ctx: Ctx, log: Logger): Promise<GcResponse>
     oldTraces.reduce((sum, o) => sum + o.size, 0),
   );
 
+  // ---- the database half: the tails of old passing steps (the same cutoff as the logs above)
+  const tails = await retainStepTails(ctx, { dryRun: false }, log);
+
   const result = {
     freedBytes: freed,
     deletedLogs: logPaths.length,
     deletedDiffs: falsePositives.length,
     deletedTraces: traces.length,
+    nulledTails: tails.steps,
   };
   log.info(result, 'storage cleanup finished');
   return result;

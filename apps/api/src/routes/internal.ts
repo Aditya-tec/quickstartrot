@@ -8,6 +8,8 @@ import {
   CycleResponse,
   FinishResponse,
   GcResponse,
+  RetentionBody,
+  RetentionResponse,
   RunBody,
   RunResponse,
   SyncBody,
@@ -21,6 +23,7 @@ import { createCycle } from '../services/cycles.js';
 import { syncTargets } from '../services/targets.js';
 import { finishCycle } from '../services/finish.js';
 import { collectGarbage } from '../services/gc.js';
+import { retainStepTails } from '../services/retention.js';
 import { ingestRun } from '../services/runs.js';
 import { createUploads } from '../services/uploads.js';
 
@@ -71,5 +74,12 @@ export function registerInternalRoutes(app: FastifyInstance, ctx: Ctx): void {
   // Nightly storage retention. HMAC like the other machine-to-machine calls, though it lives under /admin.
   r.post('/admin/gc', { schema: { response: { 200: GcResponse } } }, async (request) =>
     collectGarbage(ctx, request.log),
+  );
+
+  // The database half: clears the tails of old passing steps. A dry run unless the body says dryRun: false (`qsr retention --apply`).
+  r.post(
+    '/admin/retention',
+    { schema: { body: RetentionBody, response: { 200: RetentionResponse } } },
+    async (request) => retainStepTails(ctx, { dryRun: request.body.dryRun }, request.log),
   );
 }

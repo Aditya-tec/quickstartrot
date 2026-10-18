@@ -5,6 +5,7 @@ import { compileCommand, ConfigError, crawlCommand, loadDotEnv, USAGE } from './
 import { executeCommand } from './probe/execute-command.js';
 import {
   gcCommand,
+  retentionCommand,
   planCommand,
   reportCommand,
   validateCommand,
@@ -41,6 +42,8 @@ async function main(argv: string[]): Promise<number> {
       return reportCommand(rest, log);
     case 'gc':
       return gcCommand(rest, log);
+    case 'retention':
+      return retentionCommand(rest, log);
     case 'calibration-report':
       return calibrationCommand(rest, log);
     case 'export':

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { CliIo } from '../commands.js';
 import {
   gcCommand,
+  retentionCommand,
   planCommand,
   reportCommand,
   validateCommand,
@@ -225,6 +226,53 @@ describe('qsr report', () => {
     );
     expect(code).toBe(1);
     expect(c.err()).toMatch(/plan manifest/);
+  });
+});
+
+describe('qsr retention', () => {
+  const api = (calls: { p: string; body: unknown }[]) => ({
+    wakeApi: async () => ({ attempts: 1, waitedMs: 0 }),
+    post: (async (p: string, body: unknown) => {
+      calls.push({ p, body });
+      return {
+        dryRun: (body as { dryRun: boolean }).dryRun,
+        cutoff: '2026-09-18T00:00:00.000Z',
+        steps: 12,
+        bytes: 3400,
+      };
+    }) as never,
+  });
+
+  it('is a DRY RUN by default: it posts dryRun true and says what it would clear, never "cleared"', async () => {
+    const calls: { p: string; body: unknown }[] = [];
+    const c = io();
+    expect(await retentionCommand([], silent, c.handle, baseEnv(), { api: api(calls) })).toBe(0);
+    expect(calls).toEqual([{ p: '/admin/retention', body: { dryRun: true } }]);
+    expect(c.out()).toMatch(/dry run: would clear the tails of 12 passing steps/);
+    expect(c.out()).toContain('3400 bytes');
+    expect(c.out()).toMatch(/--apply/);
+    expect(c.out()).not.toMatch(/\bcleared the tails/);
+  });
+
+  it('--apply posts dryRun false and says what it cleared', async () => {
+    const calls: { p: string; body: unknown }[] = [];
+    const c = io();
+    expect(
+      await retentionCommand(['--apply'], silent, c.handle, baseEnv(), { api: api(calls) }),
+    ).toBe(0);
+    expect(calls).toEqual([{ p: '/admin/retention', body: { dryRun: false } }]);
+    expect(c.out()).toMatch(/cleared the tails of 12 passing steps/);
+  });
+
+  it('needs the API settings, and a failing call is a failure', async () => {
+    expect(await retentionCommand([], silent, io().handle, {})).toBe(2);
+    const failing = {
+      wakeApi: async () => ({ attempts: 1, waitedMs: 0 }),
+      post: (async () => {
+        throw new Error('503');
+      }) as never,
+    };
+    expect(await retentionCommand([], silent, io().handle, baseEnv(), { api: failing })).toBe(1);
   });
 });
 

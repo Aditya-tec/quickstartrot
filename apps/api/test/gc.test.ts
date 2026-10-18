@@ -85,6 +85,7 @@ d('POST /admin/gc', () => {
       deletedLogs: 1,
       deletedDiffs: 0,
       deletedTraces: 0,
+      nulledTails: 0,
     });
     expect(t.storage.removed).toEqual([
       { bucket: PUBLIC_BUCKET, paths: ['logs/old/00-s1.log.gz'] },
@@ -161,6 +162,7 @@ d('POST /admin/gc', () => {
       deletedLogs: 0,
       deletedDiffs: 0,
       deletedTraces: 0,
+      nulledTails: 0,
     });
     const { toolId, cycleId } = await world();
     await runWithLog('old', 45, toolId, cycleId);
@@ -204,6 +206,7 @@ d('POST /admin/gc', () => {
           deletedLogs: 1,
           deletedDiffs: 0,
           deletedTraces: 1,
+          nulledTails: 0,
         });
       });
     });

@@ -626,7 +626,24 @@ export const GcResponse = z.object({
   deletedLogs: z.number().int(),
   deletedDiffs: z.number().int(),
   deletedTraces: z.number().int(),
+  /** Step rows whose tails (stdout/stderr) of a PASSING step older than the log retention were set to null (see RetentionResponse). */
+  nulledTails: z.number().int().default(0),
 });
+
+// ---- POST /admin/retention: the database half of retention. The tails of passing steps older than the log retention are not evidence of
+// anything and are cleared; a failing step's tails and everything an incident links stay. A DRY RUN unless dryRun is false.
+export const RetentionBody = z.object({ dryRun: z.boolean().default(true) });
+export type RetentionBody = z.infer<typeof RetentionBody>;
+export const RetentionResponse = z.object({
+  dryRun: z.boolean(),
+  /** Runs that finished before this were in scope. */
+  cutoff: z.iso.datetime(),
+  /** Step rows whose tails were (or, in a dry run, would be) cleared. */
+  steps: z.number().int(),
+  /** The bytes of tail text that was (or would be) freed. */
+  bytes: z.number().int(),
+});
+export type RetentionResponse = z.infer<typeof RetentionResponse>;
 
 /** RFC 9457 problem details, `application/problem+json`. No stack traces, ever. */
 export const Problem = z.object({

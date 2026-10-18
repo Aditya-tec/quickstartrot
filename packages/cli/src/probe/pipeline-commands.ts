@@ -351,6 +351,55 @@ export async function gcCommand(
   }
 }
 
+// ---- qsr retention
+
+/**
+ * `qsr retention [--apply]`: the database half of retention. Clears the stdout/stderr tails of PASSING steps older than the log
+ * retention (30 days). A DRY RUN unless --apply is given: it says what it would clear and changes nothing. The nightly gc does it for real.
+ */
+export async function retentionCommand(
+  argv: string[],
+  _log: Logger,
+  io: CliIo = processIo,
+  env: Env = process.env,
+  overrides: { api?: ApiLike } = {},
+): Promise<number> {
+  const { values } = parseArgs({
+    args: argv,
+    allowPositionals: false,
+    options: { apply: { type: 'boolean', default: false } },
+  });
+  const settings = apiSettings(env);
+  if ('missing' in settings && !overrides.api) {
+    io.stderr(missingMessage(settings.missing));
+    return 2;
+  }
+  const api: ApiLike =
+    overrides.api ??
+    createApiClient({
+      baseUrl: (settings as { baseUrl: string }).baseUrl,
+      secret: (settings as { secret: string }).secret,
+    });
+  try {
+    await api.wakeApi();
+    const r = (await api.post('/admin/retention', { dryRun: !values.apply })) as {
+      dryRun: boolean;
+      cutoff: string;
+      steps: number;
+      bytes: number;
+    };
+    io.stdout(
+      r.dryRun
+        ? `dry run: would clear the tails of ${r.steps} passing steps finished before ${r.cutoff.slice(0, 10)} (${r.bytes} bytes). Nothing was changed; pass --apply to do it.\n`
+        : `cleared the tails of ${r.steps} passing steps finished before ${r.cutoff.slice(0, 10)} (${r.bytes} bytes)\n`,
+    );
+    return 0;
+  } catch (err) {
+    io.stderr(`retention failed: ${err instanceof Error ? err.message : String(err)}\n`);
+    return 1;
+  }
+}
+
 // ---- qsr validate
 
 export async function validateCommand(

@@ -27,6 +27,7 @@ Usage:
   qsr report   --cycle <id> [--results results] [--plans plans]
   qsr gc
   qsr calibration-report [--days 7]
+  qsr retention [--apply]
   qsr shadow-report [--days 7]
   qsr l3-shadow-report [--days 7]
   qsr export --launch [--site <url>] [--json | --md]
@@ -43,7 +44,7 @@ Commands (phase that implements them):
   plan      Probe pipeline: sync, crawl, compile, shard (plan job)             (P7)
   execute   Probe pipeline: run one shard in Docker (execute job, no secrets)  (P7)
   report    Probe pipeline: upload logs, post runs, finish the cycle           (P7)
-  gc        Ask the API to delete expired logs, diffs and traces               (P7)
+  gc        Ask the API to delete expired logs, diffs and traces (and clear old passing tails)               (P7)
   validate  Check every target file; --crawl does a dry-run crawl              (P7)
   plans     push: send locally compiled plans to the API plan cache (admin)     (P9a)
   calibration-report  Markdown report of the last N days from GET /admin/stats   (P9a)
