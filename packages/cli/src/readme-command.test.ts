@@ -197,6 +197,33 @@ describe('qsr readme', () => {
     expect(await readmeCommand(args(dir, '--check'), log, r, { fetch: fetchOf(later) })).toBe(0);
   });
 
+  // The repository formats every markdown file with prettier, which pads table cells to a common width. The check must read that as the
+  // same table, and still see a changed number.
+  it('--check passes after prettier has aligned the table, and still fails when a number differs', async () => {
+    const dir = await scratch();
+    await readmeCommand(args(dir), log, io(), { fetch: fetchOf(status()) });
+    const file = path.join(dir, 'README.md');
+    const aligned = (await readFile(file, 'utf8'))
+      .replace('| Tested up to | Passing |', '| Tested up to                           | Passing |')
+      .replace('| --- | ---: |', '| -------------------------------------- | ------: |')
+      .replace(
+        "| L3 (reached the vendor's API) | 3 |",
+        "| L3 (reached the vendor's API)          |       3 |",
+      );
+    expect(aligned).not.toBe(await readFile(file, 'utf8'));
+    await writeFile(file, aligned);
+    expect(await readmeCommand(args(dir, '--check'), log, io(), { fetch: fetchOf(status()) })).toBe(
+      0,
+    );
+    const moved = io();
+    expect(
+      await readmeCommand(args(dir, '--check'), log, moved, {
+        fetch: fetchOf(status({ passing: 39 })),
+      }),
+    ).toBe(1);
+    expect(moved.err.join('')).toMatch(/status block is out of date/);
+  });
+
   it('--check fails, naming the block, when a count on the site moved', async () => {
     const dir = await scratch();
     await readmeCommand(args(dir), log, io(), { fetch: fetchOf(status()) });

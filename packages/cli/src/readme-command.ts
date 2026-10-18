@@ -101,11 +101,20 @@ export function renderDetectionBlock(d: DetectionSummary): string {
   ].join('\n');
 }
 
-// The "As of" line is when the data was taken; two runs of the same counts differ only there.
+// What two renderings of the same data share. The "As of" line is when the data was taken, so two runs of the same counts differ only
+// there. And the repository formats markdown with prettier, which pads table cells to a common width and lengthens the dashes of the
+// header rule: that is the same table, so spacing around cells and the length of a dash run do not count. A number or a word does.
 const withoutAsOf = (block: string): string =>
   block
     .split('\n')
     .filter((l) => !l.startsWith('As of '))
+    .map((l) =>
+      l
+        .replaceAll(/\s*\|\s*/g, '|')
+        .replaceAll(/-{2,}/g, '---')
+        .replaceAll(/[ \t]+/g, ' ')
+        .trim(),
+    )
     .join('\n')
     .replaceAll(/\n{3,}/g, '\n\n')
     .trim();
