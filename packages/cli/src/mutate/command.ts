@@ -17,7 +17,7 @@ import {
   type DetectionResults,
 } from './report.js';
 import { createRng } from './rng.js';
-import { compareHarnessRuns, KINDS, summarize } from './stats.js';
+import { compareHarnessRuns, compareRuns, KINDS, summarize } from './stats.js';
 import { survivorReason } from './survivors.js';
 import {
   pairKey,
@@ -132,6 +132,27 @@ async function renderFromFiles(
   io: CliIo,
 ): Promise<number> {
   const base = JSON.parse(await readFile(path.resolve(file), 'utf8')) as DetectionResults;
+  // A target that declares no vendor is involved (expect.localOnly) is a category of its own. Results saved before that existed (they
+  // had it at L3) are marked from the target files, so nothing is discarded and nothing is counted as an L3 result.
+  const markLocal = async (r: Pick<DetectionResults, 'controls' | 'mutants'>): Promise<void> => {
+    const local = new Map<string, boolean>();
+    for (const slug of new Set([
+      ...r.controls.map((x) => x.slug),
+      ...r.mutants.map((x) => x.slug),
+    ])) {
+      try {
+        local.set(slug, (await loadTarget(targetsDir, slug)).expect.localOnly === true);
+      } catch {
+        local.set(slug, false); // the target file is gone: keep what the record says
+      }
+    }
+    for (const rec of [...r.controls, ...r.mutants]) {
+      if (local.get(rec.slug) === true) rec.local = true;
+      else if (local.has(rec.slug) && rec.local === true && local.get(rec.slug) === false)
+        delete rec.local;
+    }
+  };
+  await markLocal(base);
   // The summary is derived from the records too, so results saved by an older build get the figures of the current one.
   base.summary = summarize(base.controls, base.mutants);
   // Reasons are derived from stored facts, so a refinement of the wording applies to results that already exist.
@@ -154,10 +175,13 @@ async function renderFromFiles(
   }
   if (compare !== undefined) {
     const other = JSON.parse(await readFile(path.resolve(compare), 'utf8')) as DetectionResults;
-    base.comparison = other.comparison;
+    await markLocal(other);
+    // Recomputed from the records (not copied), so a comparison saved before the local category existed gets it too.
+    base.comparison = compareRuns(base, other);
   }
   if (v1 !== undefined) {
     const before = JSON.parse(await readFile(path.resolve(v1), 'utf8')) as DetectionResults;
+    await markLocal(before);
     base.harnessComparison = compareHarnessRuns(before, base);
   }
   const repoRoot = path.resolve(targetsDir, '..');

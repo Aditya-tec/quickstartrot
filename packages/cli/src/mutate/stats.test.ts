@@ -100,7 +100,7 @@ describe('summarize: install-level and code-level are reported apart, by level',
     expect(s.byKind.code.L2.notApplicable).toBe(1);
     expect(s.byKind.code.L1.notApplicable).toBe(2);
     expect(s.noSite).toEqual({ install: 0, code: 3 });
-    expect(s.levelTargets).toEqual({ L1: 1, L2: 2, L3: 1 });
+    expect(s.levelTargets).toEqual({ L1: 1, L2: 2, L3: 1, local: 0 });
   });
 
   it('has no blended overall rate at all, and leaves the experiment out of both kinds', () => {
@@ -139,9 +139,76 @@ describe('compareHarnessRuns: the same mutants under two harness versions', () =
     expect(c.before.install.L2.tested).toBe(0);
   });
 
+  it('compares only the targets that are in the newer results: a target left out of it (not run, say) is left out of the older side too', () => {
+    const before = [
+      ...v1,
+      mutant('gone', 'syntax_error', 2, 'detected'),
+      mutant('gone', 'deep_import', 2, 'survived'),
+    ];
+    const withGone = compareHarnessRuns(
+      { controls: [...controls, control('gone', 2)], mutants: before },
+      { controls, mutants: v2 },
+    );
+    expect(withGone.before.code.L2).toMatchObject({ detected: 1, tested: 4 }); // the same four mutants as the newer side
+    expect(withGone.newlyDetected.sort()).toEqual(['a:syntax_error', 'b:deep_import']);
+  });
+
   it('says a mutant that was detected before and survives now is newly missed', () => {
     const worse = compareHarnessRuns({ controls, mutants: v2 }, { controls, mutants: v1 });
     expect(worse.newlyMissed.sort()).toEqual(['a:syntax_error', 'b:deep_import']);
     expect(worse.newlyDetected).toEqual([]);
+  });
+});
+
+describe('summarize: targets that run locally (no vendor) are a category of their own, beside L1, L2 and L3', () => {
+  const withLocal = <T extends { slug: string }>(rows: T[], ...slugs: string[]): T[] =>
+    rows.map((r) => (slugs.includes(r.slug) ? { ...r, local: true } : r));
+  const controls = withLocal(
+    [control('a', 3), control('b', 3), control('lib', 3), control('c', 2)],
+    'lib',
+  );
+  const mutants = withLocal(
+    [
+      mutant('a', 'renamed_symbol', 3, 'detected'),
+      mutant('b', 'renamed_symbol', 3, 'survived'),
+      mutant('lib', 'renamed_symbol', 3, 'detected'),
+      mutant('lib', 'syntax_error', 3, 'detected'),
+      mutant('lib', 'pkg_typo', 3, 'detected'),
+      mutant('c', 'renamed_symbol', 2, 'survived'),
+    ],
+    'lib',
+  );
+  const s = summarize(controls, mutants);
+
+  it('keeps their mutants OUT of L3 (a library that never reaches a vendor is not evidence about L3) and counts them apart, with targets', () => {
+    expect(s.byKind.code.L3).toMatchObject({ detected: 1, survived: 1, tested: 2, targets: 2 });
+    expect(s.byKind.code.local).toMatchObject({ detected: 2, survived: 0, tested: 2, targets: 1 });
+    expect(s.byKind.install.local).toMatchObject({ detected: 1, tested: 1, targets: 1 });
+    expect(s.byKind.install.L3.tested).toBe(0);
+  });
+
+  it('counts the targets in each category, and says exactly which targets L3 rests on', () => {
+    expect(s.levelTargets).toEqual({ L1: 0, L2: 1, L3: 2, local: 1 });
+    expect(s.l3Targets).toEqual(['a', 'b']);
+  });
+
+  it('the by-level numbers agree: L3 has two targets, "local" has one', () => {
+    expect(s.byLevel['L3']).toMatchObject({ detected: 1, survived: 1, targets: 2 });
+    expect(s.byLevel['local']).toMatchObject({ detected: 3, targets: 1 });
+    expect(s.byOperatorLevel['renamed_symbol']?.['local']).toMatchObject({
+      detected: 1,
+      tested: 1,
+    });
+    expect(s.byOperatorLevel['renamed_symbol']?.['L3']).toMatchObject({ detected: 1, tested: 2 });
+  });
+
+  it('nothing is lost: every mutant that gave a verdict is in exactly one category', () => {
+    const cells = (['install', 'code'] as const).flatMap((k) => [
+      s.byKind[k].L1,
+      s.byKind[k].L2,
+      s.byKind[k].L3,
+      s.byKind[k].local,
+    ]);
+    expect(cells.reduce((n, c) => n + c.tested, 0)).toBe(6);
   });
 });

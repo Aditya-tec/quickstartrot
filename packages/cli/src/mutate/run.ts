@@ -88,6 +88,8 @@ export interface ControlRecord {
   resolved: Record<string, string>;
   hasRunStep: boolean;
   writesSource: boolean;
+  /** The target declares that no vendor is involved (expect.localOnly): its results are a category of their own, not an L3 claim. */
+  local?: boolean;
 }
 
 const writesSource = (ir: StepIR): boolean =>
@@ -108,6 +110,7 @@ export async function runControl(
     targetLevel: input.target.level,
     hasRunStep: input.ir.steps.some((s) => s.kind === 'run'),
     writesSource: writesSource(input.ir),
+    ...(input.target.expect.localOnly === true ? { local: true } : {}),
   };
   const grounding = groundingReport({ extraction: input.extraction, ir: input.ir }, input.target);
   if (!grounding.ok)
@@ -173,6 +176,8 @@ export interface MutantRecord {
   note: string | null;
   durationMs: number | null;
   exportsCheck: boolean;
+  /** Set when the target declares that no vendor is involved (see ControlRecord.local). */
+  local?: boolean;
   /** The mutant was run a second time because the first failure was the environment's or of an unexpected class. */
   retried?: boolean;
 }
@@ -232,6 +237,7 @@ export function notRunControl(input: MutationInput): ControlRecord {
     resolved: {},
     hasRunStep: input.ir.steps.some((s) => s.kind === 'run'),
     writesSource: writesSource(input.ir),
+    ...(input.target.expect.localOnly === true ? { local: true } : {}),
   };
 }
 
@@ -268,7 +274,10 @@ export function prepareMutant(
   exportsCheck: boolean,
 ): MutantJob {
   const level = control.reachedLevel ?? 0;
-  const record = blank(input.target.slug, operator, level, exportsCheck);
+  const record: MutantRecord = {
+    ...blank(input.target.slug, operator, level, exportsCheck),
+    ...(input.target.expect.localOnly === true ? { local: true } : {}),
+  };
   const pair: Pair = { extraction: input.extraction, ir: input.ir };
 
   if (operator === 'previous_major') {

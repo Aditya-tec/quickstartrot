@@ -12,6 +12,7 @@ import {
   cjsInput,
   esmInput,
   installOnlyInput,
+  localInput,
   pythonInput,
   vendorInput,
 } from './fixtures.test-utils.js';
@@ -102,7 +103,13 @@ async function seed(
     `  image: ${t.runtime.image}`,
     'extract:',
     '  root: main',
-    ...(t.expect.authErrorIsPass ? ['expect:', '  authErrorIsPass: true'] : []),
+    ...(t.expect.authErrorIsPass || t.expect.localOnly
+      ? [
+          'expect:',
+          ...(t.expect.authErrorIsPass ? ['  authErrorIsPass: true'] : []),
+          ...(t.expect.localOnly ? ['  localOnly: true'] : []),
+        ]
+      : []),
     'placeholders:',
     ...Object.entries(t.placeholders).map(([k, v]) => `  ${k}: ${v}`),
   ].join('\n');
@@ -492,6 +499,12 @@ describe('qsr mutate --render with results saved by an older build', () => {
     delete saved.summary.byKind;
     delete saved.summary.noSite;
     delete saved.summary.levelTargets;
+    saved.rerunTargets = [
+      {
+        slug: 'esm-node',
+        reason: 'its level changed under harness v3; the whole target was run again',
+      },
+    ];
     saved.reruns = [
       {
         slug: 'esm-node',
@@ -511,6 +524,73 @@ describe('qsr mutate --render with results saved by an older build', () => {
     expect(await readFile(path.join(docs, 'DETECTION-POWER.md'), 'utf8')).toMatch(
       /esm-node `pkg_typo`: .*run again alone/,
     );
+    expect(await readFile(path.join(docs, 'DETECTION-POWER.md'), 'utf8')).toMatch(
+      /Targets run again: esm-node: its level changed under harness v3/,
+    );
+  });
+});
+
+describe('qsr mutate --render: local targets and what L3 rests on', () => {
+  const countingRunner = (): PlanRunner => async (a) => pass(a);
+  interface Rendered {
+    md: string;
+    json: {
+      summary: {
+        levelTargets: { local: number };
+        l3Targets: string[];
+        byKind: { code: { local: { targets: number } } };
+      };
+      controls: { slug: string; local?: boolean }[];
+    };
+  }
+  async function renderBoth(): Promise<Rendered> {
+    await seed(esmInput());
+    await seed(localInput());
+    await seed(vendorInput());
+    await mutateCommand(
+      [
+        '--all',
+        '--allow-vendor-calls',
+        '--targets',
+        targetsDir,
+        '--cache-dir',
+        cacheDir,
+        '--work-dir',
+        workDir,
+      ],
+      recordingLogger(),
+      out().io,
+      { runner: countingRunner() },
+    );
+    await mutateCommand(
+      ['--render', path.join(workDir, 'results.json'), '--targets', targetsDir],
+      recordingLogger(),
+      out().io,
+    );
+    return {
+      md: await readFile(path.join(dir, 'docs', 'DETECTION-POWER.md'), 'utf8'),
+      json: JSON.parse(
+        await readFile(path.join(dir, 'docs', 'detection-power.json'), 'utf8'),
+      ) as Rendered['json'],
+    };
+  }
+
+  it('reads the "local" flag from the target files: their results are not discarded and not in L3, they have their own row', async () => {
+    const { md, json } = await renderBoth();
+    expect(md).toContain('Executed locally (no vendor)');
+    expect(json.summary.levelTargets.local).toBe(1);
+    expect(json.summary.byKind.code.local.targets).toBe(1);
+    expect(json.controls.find((c) => c.slug === 'local-node')?.local).toBe(true);
+    expect(json.summary.l3Targets).toEqual(['vendor-node']);
+  });
+
+  it('states plainly which targets L3 rests on, and quotes no L3 detection percentage', async () => {
+    const { md } = await renderBoth();
+    expect(md).toMatch(/L3 rests on 1 target \(vendor-node\)/);
+    expect(md).toMatch(/until the shadow-L3 targets are promoted/i);
+    const l3Rows = md.split('\n').filter((l) => /^\| L3 \|/.test(l));
+    expect(l3Rows.length).toBeGreaterThan(0);
+    for (const row of l3Rows) expect(row, row).not.toMatch(/\d+%/);
   });
 });
 

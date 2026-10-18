@@ -69,9 +69,17 @@ export const OPERATOR_KIND: Record<OperatorId, Kind | null> = {
 
 /** One cell of the install/code by level table: the rate, the mutants left out, and how many targets stand behind it. */
 export type Cell = Rate & Counts & { targets: number };
-export type KindLevel = Record<Kind, Record<'L1' | 'L2' | 'L3', Cell>>;
+/**
+ * L1, L2 and L3 are what the control reached; "local" is a category of its own for targets that declare no vendor is involved (a library
+ * whose snippet runs on the runner): they cannot show evidence of reaching a vendor, so they are never an L3 result, and their results are
+ * reported apart instead of discarded.
+ */
+export type LevelKey = 'L1' | 'L2' | 'L3' | 'local';
+export type KindLevel = Record<Kind, Record<LevelKey, Cell>>;
 
-const LEVEL_KEYS = ['L1', 'L2', 'L3'] as const;
+export const LEVEL_KEYS: readonly LevelKey[] = ['L1', 'L2', 'L3', 'local'];
+const levelKeyOf = (r: { level: number; local?: boolean }): LevelKey =>
+  r.local === true ? 'local' : (`L${r.level}` as LevelKey);
 
 export function cellOf(rows: readonly MutantRecord[]): Cell {
   const rate = rateOf(rows);
@@ -86,19 +94,20 @@ export function cellOf(rows: readonly MutantRecord[]): Cell {
 
 export function kindLevelOf(mutants: readonly MutantRecord[]): KindLevel {
   const mutation = only(mutants, 'mutation');
-  const cells = (kind: Kind): Record<'L1' | 'L2' | 'L3', Cell> =>
+  const cells = (kind: Kind): Record<LevelKey, Cell> =>
     Object.fromEntries(
-      LEVELS.map((level) => [
-        `L${level}`,
-        cellOf(mutation.filter((m) => OPERATOR_KIND[m.operator] === kind && m.level === level)),
+      LEVEL_KEYS.map((key) => [
+        key,
+        cellOf(mutation.filter((m) => OPERATOR_KIND[m.operator] === kind && levelKeyOf(m) === key)),
       ]),
-    ) as Record<'L1' | 'L2' | 'L3', Cell>;
+    ) as Record<LevelKey, Cell>;
   return { install: cells('install'), code: cells('code') };
 }
 
 export interface SurvivorPattern {
   operator: OperatorId;
   level: number;
+  local?: boolean;
   reason: string;
   count: number;
   targets: string[];
@@ -110,8 +119,10 @@ export interface Summary {
   byKind: KindLevel;
   /** Mutants with no site, per kind: the plan had nothing for that operator to change. */
   noSite: Record<Kind, number>;
-  /** Included targets by the level their control reached. */
-  levelTargets: Record<'L1' | 'L2' | 'L3', number>;
+  /** Included targets by the level their control reached ("local": targets that declare no vendor is involved). */
+  levelTargets: Record<LevelKey, number>;
+  /** The targets L3 rests on: included, not local, and their control reached L3. */
+  l3Targets: string[];
   byOperator: Record<string, Rate & Counts>;
   byLevel: Record<string, Rate & Counts & { targets: number }>;
   byOperatorLevel: Record<string, Record<string, Rate>>;
@@ -135,31 +146,34 @@ export function summarize(
     const rows = mutation.filter((m) => m.operator === id);
     byOperator[id] = { ...rateOf(rows), ...countsOf(rows) };
   }
+  const controlKey = (c: ControlRecord): LevelKey =>
+    levelKeyOf({ level: c.reachedLevel ?? 0, ...(c.local === true ? { local: true } : {}) });
   const byLevel: Summary['byLevel'] = {};
-  for (const level of LEVELS) {
-    const rows = mutation.filter((m) => m.level === level);
-    byLevel[`L${level}`] = {
+  for (const key of LEVEL_KEYS) {
+    const rows = mutation.filter((m) => levelKeyOf(m) === key);
+    byLevel[key] = {
       ...rateOf(rows),
       ...countsOf(rows),
-      targets: controls.filter((c) => c.included && c.reachedLevel === level).length,
+      targets: controls.filter((c) => c.included && controlKey(c) === key).length,
     };
   }
   const byOperatorLevel: Summary['byOperatorLevel'] = {};
   for (const id of OPERATOR_IDS) {
     if (OPERATOR_INFO[id].group !== 'mutation') continue;
     byOperatorLevel[id] = {};
-    for (const level of LEVELS)
-      byOperatorLevel[id][`L${level}`] = rateOf(
-        mutation.filter((m) => m.operator === id && m.level === level),
+    for (const key of LEVEL_KEYS)
+      byOperatorLevel[id][key] = rateOf(
+        mutation.filter((m) => m.operator === id && levelKeyOf(m) === key),
       );
   }
 
   const patterns = new Map<string, SurvivorPattern>();
   for (const m of mutation.filter((x) => x.status === 'survived')) {
-    const key = `${m.operator}|${m.level}|${m.survivorReason}`;
+    const key = `${m.operator}|${m.level}|${m.local === true}|${m.survivorReason}`;
     const p = patterns.get(key) ?? {
       operator: m.operator,
       level: m.level,
+      ...(m.local === true ? { local: true } : {}),
       reason: m.survivorReason ?? '',
       count: 0,
       targets: [],
@@ -186,11 +200,15 @@ export function summarize(
       ).length,
     },
     levelTargets: Object.fromEntries(
-      LEVEL_KEYS.map((l) => [
-        l,
-        controls.filter((c) => c.included && `L${c.reachedLevel}` === l).length,
+      LEVEL_KEYS.map((key) => [
+        key,
+        controls.filter((c) => c.included && controlKey(c) === key).length,
       ]),
-    ) as Record<'L1' | 'L2' | 'L3', number>,
+    ) as Record<LevelKey, number>,
+    l3Targets: controls
+      .filter((c) => c.included && controlKey(c) === 'L3')
+      .map((c) => c.slug)
+      .sort(),
     byOperator,
     byLevel,
     byOperatorLevel,
@@ -282,6 +300,11 @@ export function compareHarnessRuns(
   after: { controls: readonly ControlRecord[]; mutants: readonly MutantRecord[] },
 ): HarnessComparison {
   const key = (m: MutantRecord): string => `${m.slug}:${m.operator}`;
+  // Only the targets that are in the newer results: one that was left out of them (not run, say) is left out of the older side too, so
+  // both sides are the same mutants.
+  const inNewer = new Set(after.controls.filter((c) => c.included).map((c) => c.slug));
+  const sameTargets = (m: MutantRecord): boolean => inNewer.has(m.slug);
+  before = { controls: before.controls, mutants: before.mutants.filter(sameTargets) };
   const was = new Map(before.mutants.map((m) => [key(m), m.status]));
   const now = new Map(after.mutants.map((m) => [key(m), m.status]));
   const keys = [...new Set([...was.keys(), ...now.keys()])].sort();

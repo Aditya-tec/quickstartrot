@@ -156,6 +156,18 @@ export function vendorInput(): MutationInput {
   };
 }
 
+/** Like cjsInput, but the target declares that no vendor is involved (a library): its run step is local. */
+export function localInput(): MutationInput {
+  const base = cjsInput();
+  return {
+    ...base,
+    target: targetFor('local-node', 'node', {
+      level: 2,
+      expect: { authErrorIsPass: false, timeoutSec: 300, localOnly: true },
+    }),
+  };
+}
+
 const PY_CODE = [
   'from acme import Client',
   '',

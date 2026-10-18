@@ -9,6 +9,92 @@ Nothing is carried forward from P8 that P9a left open. The P9 request to choose 
 below): `chalk-node`, `loguru-python` and `dotenv-python` are calibration targets only, and the L3 share is small on purpose
 (most vendor quickstarts need an account).
 
+## Findings from the P9d follow-up (L3 evidence, shadow-L3, six L3 candidates, request budget, traffic note, retention)
+
+Done on 2026-10-18, one commit per item (`8d4e3cd`, `fe70881`, `4bdaad0`, `619683c`, `4a8ee0f`, `bd40bad`, `140be34` and the last one), CI green on each. P9b and P10 are not started.
+
+### 1. Harness version 3: an L3 claim needs evidence that a vendor was reached
+
+A run step that merely exits 0 proves the snippet ran, not that a vendor was reached (`resend-node`'s L3 passed on exit code 0 because its snippet catches the
+error; the 401 was in the output but nothing required it). L3 now needs an auth pattern in the run step's output: a spec pattern (`AUTH_PATTERNS`) or a
+registered vendor pattern (`VENDOR_AUTH_PATTERNS`, each with a fixture of real output in `packages/core/fixtures/vendor-output/`; Resend's `API key is invalid` is
+the first). The evidence is recorded whatever the exit code and a drift error beside it takes it away. A run step that passes without evidence passes the run
+but is capped at L2, with `runner_env.l3` saying `no_evidence` or `local`.
+
+**Audit of the five targets that were L3** (stored production output, last 10 to 12 runs each): `anthropic-node` evidence in 10 of 10 (`http_401_403`);
+`resend-node` evidence in 12 of 12 (`http_401_403`, exit 0); `chalk-node`, `dotenv-python` and `loguru-python` no evidence in 12 of 12 (libraries with no
+vendor), so they dropped to L2. The owner chose to apply the rule literally: those three declare `expect.localOnly: true`, are level 2, and their run page
+says "Snippet executed locally (no vendor involved)". A level drop alone changes no status, opens no incident and queues nothing (`apps/api/test/level-drop.test.ts`).
+
+**Gotchas.** (a) The level is part of the plan cache key, so a level change means re-registering the plan; the API refuses a plan import until the targets were
+synced, and it recomputes the harness-owned fields (`maxLevelReachable` is `min(plan, target level)`), so the cached plan had to be re-finalized first (the
+steps are untouched). (b) The LOCAL plan cache key has no config hash: a plan cached under another level or other placeholders is returned as it is, a REJECTED
+plan is cached too, and `qsr compile --refresh` (or deleting the cached file) is needed after changing a target. (c) A placeholder must be the exact docs text
+(`your-api-key-here`, not `your-api-key`), else `env.not_grounded`.
+
+**First production cycle under version 3** (cron 11:20 UTC, cycle `9f041aab`): valid, all runs version 3, `scripts/verify-version-bump.mjs`: no target changed
+status, no incident; `anthropic-node`, `anthropic-python` and `resend-node` PASS at L3 with evidence; the three local targets PASS at L2 with `l3: local`.
+
+### 2. Shadow-L3
+
+`l3: { mode: shadow, reason }` in a target file (Zod, reason required). The plan is compiled at the target's level (so it has the run step) but the API stores and
+shows level 2. The executor holds the run step back and runs it ONCE, last, only when the run passed; what it said (verdict, pattern, exit code, observed line,
+redacted and clipped) is recorded on the last step as `shadowL3` (`step_results.shadow_l3`, migration 0008) and read only by `GET /admin/l3-shadow` and
+`qsr l3-shadow-report --days N`. It changes no level, status, incident, badge or public page (executor and API tests, as for the export check). The observed text is
+the first error line and the first evidence line captured while the output streams, so a long stack trace cannot push them out of the 4 KB tail. Promotion is
+removing `l3:` from the file, a decision for the owner: the report says "ready" at 8 cycles with a record, all with the same evidence and none without. It does
+not promote anything. First cycle: `openrouter-node`, `cerebras-python`, `resend-python` recorded evidence once each.
+
+### 3. The L3 targets
+
+Approved: `anthropic-python` (counts at L3), and in shadow `openrouter-node`, `cerebras-python`, `resend-python`. Each snippet was compiled at level 3 from its docs and
+run once locally in Docker with a dummy key; the real answers are fixtures (`packages/executor/fixtures/l3-observed`): Anthropic 401 `authentication_error`
+("invalid x-api-key"), OpenRouter 401 (`UnauthorizedResponseError`, "Missing Authentication header"), Cerebras 401 ("Wrong API Key"), Resend prints only `API key is
+invalid` and exits 0.
+
+**Stopped, as instructed:** `slack-node`: the docs show no step that sets a token, so the request goes out unauthenticated and Slack answers `not_authed`, not
+`invalid_auth`; evidence that Slack was reached, but not an auth pattern, and the token path is untested. Options: register `not_authed` from that output, or map
+the docs' `process.env.SLACK_TOKEN` to a dummy with a placeholder to observe `invalid_auth`. Its target file is unchanged. `svix-node` is not a tracked target (excluded in
+P9a: its page shows alternative snippets that the plan appends into one file, and the syntax check fails); it was listed by mistake.
+
+### 4. Request budget and the public note
+
+At most one vendor request per L3 or shadow target per cycle: the probe never retries a failure at a run step; `qsr mutate` makes no vendor request unless
+`--allow-vendor-calls` (their controls are recorded as not run and their mutants as "not run", a new status counted apart; the Docker runner also refuses such a
+plan). `/bot` has an "About our traffic" section (docs/ABOUT-OUR-TRAFFIC.md has the same text): which services, how often, from where, that nothing is created or
+sent, how to ask us to stop, and that the terms were read on 18 October 2026 as a summary, not legal advice. The figures come from `TRAFFIC` in
+`pipeline-facts.ts`; the list of services is pinned to the target files by a test. Terms: Mailgun (its terms bar testing authentication measures without written
+consent) and Loops (its acceptable-use text bans any automatic device) were left out; Upstash and Turso could not be read; E2B and Slack were borderline.
+
+### 5. loops-node's empty output (probe #13)
+
+Its install step failed with exit 1 after 596 ms and stored empty tails; the stored log in Storage is empty too, so the step really wrote nothing and the original
+failure is NOT recoverable (the capture waits for the process's `close` event, so no output was lost). A failed step that wrote nothing now says so in its stderr tail
+and log (exit code; a program writing straight to the terminal is not captured). The classifier has nothing to write a rule from: the only text ever seen was
+"Failed to download checksums from https://github.com/..." on my machine.
+
+### 6. DB retention
+
+`POST /admin/retention` (HMAC) and `qsr retention [--apply]`: the stdout/stderr tails of PASSING steps older than 30 days are set to null (no row is deleted; a
+failing step's tails and everything an incident links stay). A dry run unless `dryRun: false` / `--apply`; the nightly `POST /admin/gc` does it for real and
+reports `nulledTails`. Nothing is older than 30 days yet.
+
+### 7. The disabled targets, re-checked under harness version 3
+
+13 of the 18 disabled targets were run again with `qsr run` in real Docker (cached plans, no model calls); the result was the same as on 2026-10-17 for every one,
+so none is re-enabled: `arrow-python` and `huggingface-hub-python` (the first snippet is a REPL transcript, syntax check fails), `chroma-python` (install killed at
+180 s), `firebase-admin-node`, `ngrok-node`, `prettier-node` and `voyageai-python` (a manual step), `kysely-node` (HARNESS_ERROR: tsc refuses files on the command
+line when a tsconfig.json is present, a harness limit worth fixing), `prisma-node` and `vercel-ai-node` (bun and pnpm are not in the image), `twilio-node`,
+`twilio-python` and `upstash-ratelimit-node` (the plan input is alternatives or a fragment). Not run: `replicate-python`, `sendgrid-node` and `together-node` (L3 vendor
+targets: running them would send a request to vendors not approved) and the drafts `groq-node` and `replicate-node` (never run).
+
+### 8. Detection power
+
+`docs/DETECTION-POWER.md` and the JSON: targets that declare no vendor are a fourth category, "executed locally (no vendor)", beside L1, L2 and L3 (their results are
+kept: 6 of 6 install-level and 8 of 8 code-level detected, 3 targets); L3 rests on 2 targets (`anthropic-node`, `resend-node`) until the shadow targets are promoted and
+no L3 percentage is quoted anywhere; the three targets whose level changed were run again under version 3, and the four targets that now have a vendor-facing step are
+recorded as not run. The older "L3 rests on 5 targets" below is superseded.
+
 ## Findings from P9d (harness fixes, harness versioning, the export check in shadow mode)
 
 Nothing was posted to the API by the mutation tooling, no vendor page was crawled again, no model was asked, no vendor was contacted. P9b and P10 are not
@@ -75,7 +161,7 @@ Reported apart, never blended (`docs/DETECTION-POWER.md`, `docs/detection-power.
 | Code-level, L2 (39 targets) | 61 of 137 (45%)                                                 | 71 of 137 (52%) | 90 of 137 (66%)                |
 | Code-level, L3 (5 targets)  | 15 of 17 (88%)                                                  | 15 of 17 (88%)  | 15 of 17 (88%)                 |
 
-L3 rests on 5 targets; 97 mutants had no site (95 code-level, 2 install-level) and are in no rate; L1 has no code-level mutant at all (30 had no site). v2 newly
+L3 rested on 5 targets then (now 2, see the follow-up above); 97 mutants had no site (95 code-level, 2 install-level) and are in no rate; L1 has no code-level mutant at all (30 had no site). v2 newly
 detects 10 (8 Python `deep_import`, the `mocha-node` and `vitest-node` syntax mutants) and misses none that v1 detected. The export check adds 19 more, all
 classified as expected, with 0 false positives on the 50 controls (`launchdarkly-node` is opted out).
 

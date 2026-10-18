@@ -9,6 +9,7 @@ import {
   type HarnessComparison,
   type Kind,
   type KindLevel,
+  type LevelKey,
   type Rate,
   type Summary,
 } from './stats.js';
@@ -40,6 +41,8 @@ export interface DetectionResults {
   comparison: Comparison | null;
   /** Mutants whose verdict comes from a later run of the target alone, because the network failed twice in the full run. */
   reruns?: { slug: string; operator: OperatorId; reason: string }[];
+  /** Whole targets whose controls and mutants were replaced by a later run of the target alone (its level changed, say). */
+  rerunTargets?: { slug: string; reason: string }[];
   /** Present when an earlier harness version's results were given (`--render --v1`): the same mutants, one by one. */
   harnessComparison: HarnessComparison | null;
 }
@@ -119,7 +122,7 @@ export function renderSampleTable(mutants: readonly MutantRecord[]): string {
     lines.push(
       row([
         m.slug,
-        `L${m.level}`,
+        levelOf(m),
         m.operator,
         result,
         m.reachedLevel === null ? '-' : `L${m.reachedLevel}`,
@@ -136,13 +139,23 @@ export function renderSampleTable(mutants: readonly MutantRecord[]): string {
   return lines.join('\n');
 }
 
-/** "12 of 40 (30%)" for a cell, with the targets behind it: the figure and its denominator travel together. */
-const cellText = (c: Cell): string =>
+const LEVEL_KEYS: readonly LevelKey[] = ['L1', 'L2', 'L3', 'local'];
+const LOCAL_LABEL = 'Executed locally (no vendor)';
+const keyLabel = (k: LevelKey): string => (k === 'local' ? LOCAL_LABEL : k);
+/** The level a mutant is shown at: a local target is its own category, never an L3 result. */
+const levelOf = (m: { level: number; local?: boolean }): string =>
+  m.local === true ? 'local' : `L${m.level}`;
+
+/**
+ * "12 of 40 (30%)" for a cell, with the targets behind it: the figure and its denominator travel together. L3 is shown as a count only: it
+ * rests on too few targets, and until the shadow-L3 targets are promoted no L3 detection percentage is quoted anywhere.
+ */
+const cellText = (c: Cell, key: LevelKey = 'L2'): string =>
   c.tested === 0
     ? 'none tested'
-    : `${c.detected} of ${c.tested} (${pct(c.detection)}), ${c.targets} targets`;
-
-const LEVEL_KEYS = ['L1', 'L2', 'L3'] as const;
+    : key === 'L3'
+      ? `${c.detected} of ${c.tested} (rate not quoted), ${c.targets} targets`
+      : `${c.detected} of ${c.tested} (${pct(c.detection)}), ${c.targets} targets`;
 
 function kindTable(
   title: string,
@@ -172,11 +185,11 @@ function kindTable(
     ...LEVEL_KEYS.map((l) => {
       const c = cells[l];
       return row([
-        l,
+        keyLabel(l),
         levelTargets[l],
         c.tested,
         c.detected,
-        pct(c.detection),
+        l === 'L3' ? 'not quoted' : pct(c.detection),
         c.targets,
         c.classified === 0 ? 'n/a' : `${c.classCorrect} of ${c.classified}`,
         c.notApplicable,
@@ -220,11 +233,11 @@ function harnessSection(results: DetectionResults): string[] {
     '',
     row(['Level', ...columns.map((c) => c.label)]),
     row(['---', ...columns.map(() => '---')]),
-    ...LEVEL_KEYS.map((l) => row([l, ...columns.map((c) => cellText(c.code[l]))])),
+    ...LEVEL_KEYS.map((l) => row([keyLabel(l), ...columns.map((c) => cellText(c.code[l], l))])),
     '',
     row(['Install-level', ...columns.map((c) => c.label)]),
     row(['---', ...columns.map(() => '---')]),
-    ...LEVEL_KEYS.map((l) => row([l, ...columns.map((c) => cellText(c.install[l]))])),
+    ...LEVEL_KEYS.map((l) => row([keyLabel(l), ...columns.map((c) => cellText(c.install[l], l))])),
     '',
   );
   if (h) {
@@ -300,6 +313,13 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     '',
   );
 
+  if (results.rerunTargets && results.rerunTargets.length > 0)
+    add(
+      '### Targets run again as a whole',
+      '',
+      ...results.rerunTargets.map((x) => `Targets run again: ${x.slug}: ${x.reason}`),
+      '',
+    );
   if (results.reruns && results.reruns.length > 0)
     add(
       '### Mutants run again after an environment failure',
@@ -313,9 +333,9 @@ export function renderDocument(results: DetectionResults, existing?: string): st
   add(
     '## Results',
     '',
-    `Targets at each level (the level its control reached): L1 ${s.levelTargets.L1}, L2 ${s.levelTargets.L2}, L3 ${s.levelTargets.L3}. A cell below says how many mutants were tested, how many of those targets had at least one, and how many mutants were left out because the plan had no site for the operator (\`no site\`), the real validator refused the pair (\`invalid\`) or the harness itself failed.`,
+    `Targets at each level (the level its control reached): L1 ${s.levelTargets.L1}, L2 ${s.levelTargets.L2}, L3 ${s.levelTargets.L3}. A fourth category, **${LOCAL_LABEL.toLowerCase()}**, holds the ${s.levelTargets.local} target${s.levelTargets.local === 1 ? '' : 's'} that declare no vendor is involved (a library whose snippet runs on the runner): their results are reported here, apart, and are not an L3 result. A cell below says how many mutants were tested, how many of those targets had at least one, and how many mutants were left out because the plan had no site for the operator (\`no site\`), the real validator refused the pair (\`invalid\`) or the harness itself failed.`,
     '',
-    `**Limits that apply to every rate here:** L3 rests on ${s.levelTargets.L3} targets. ${s.noSite.code + s.noSite.install} mutants had no site to change (${s.noSite.code} code-level, ${s.noSite.install} install-level) and are in no rate. A rate over a handful of targets is an order of magnitude, not a percentage.`,
+    `**Limits that apply to every rate here:** L3 rests on ${s.levelTargets.L3} target${s.levelTargets.L3 === 1 ? '' : 's'}${s.l3Targets.length > 0 ? ` (${s.l3Targets.join(', ')})` : ''} until the shadow-L3 targets are promoted, so no L3 detection percentage is quoted. ${s.noSite.code + s.noSite.install} mutants had no site to change (${s.noSite.code} code-level, ${s.noSite.install} install-level) and are in no rate. A rate over a handful of targets is an order of magnitude, not a percentage.`,
     '',
     ...kindTable(
       'Install-level mutants',
@@ -332,15 +352,20 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     ...harnessSection(results),
     '### By operator',
     '',
-    row(['Operator', 'Detected', 'Rate', 'Correct class', 'Invalid', 'Not applicable']),
-    row(['---', '---', '---', '---', '---', '---']),
+    row([
+      'Operator',
+      'Detected (all levels together)',
+      'Correct class',
+      'Invalid',
+      'Not applicable',
+    ]),
+    row(['---', '---', '---', '---', '---']),
     ...ops.map((id) => {
       const r = s.byOperator[id];
       return r
         ? row([
             `\`${id}\``,
             frac(r),
-            pct(r.detection),
             r.classified === 0 ? 'n/a' : `${r.classCorrect} of ${r.classified}`,
             r.invalid,
             r.notApplicable,
@@ -350,12 +375,12 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     '',
     '### By operator and level (detected of tested)',
     '',
-    row(['Operator', 'L1', 'L2', 'L3']),
-    row(['---', '---', '---', '---']),
+    row(['Operator', 'L1', 'L2', 'L3', LOCAL_LABEL]),
+    row(['---', '---', '---', '---', '---']),
     ...ops.map((id) =>
       row([
         `\`${id}\``,
-        ...(['L1', 'L2', 'L3'] as const).map((l) => {
+        ...LEVEL_KEYS.map((l) => {
           const r = s.byOperatorLevel[id]?.[l];
           return r && r.tested > 0 ? `${r.detected}/${r.tested}` : '-';
         }),
@@ -402,7 +427,7 @@ export function renderDocument(results: DetectionResults, existing?: string): st
       row([
         i + 1,
         `\`${p.operator}\``,
-        `L${p.level}`,
+        levelOf(p),
         p.count,
         clip(p.reason, 400),
         p.targets.slice(0, 6).join(', ') +
@@ -416,7 +441,7 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     '',
     row(['Target', 'Level', 'Operator', 'Change']),
     row(['---', '---', '---', '---']),
-    ...survivors.map((m) => row([m.slug, `L${m.level}`, `\`${m.operator}\``, clip(m.change, 140)])),
+    ...survivors.map((m) => row([m.slug, levelOf(m), `\`${m.operator}\``, clip(m.change, 140)])),
     '',
   );
 
@@ -447,7 +472,7 @@ export function renderDocument(results: DetectionResults, existing?: string): st
         .map((m) =>
           row([
             m.slug,
-            `L${m.level}`,
+            levelOf(m),
             clip(m.change, 60),
             m.status,
             m.failureClass ?? '',
@@ -467,8 +492,8 @@ export function renderDocument(results: DetectionResults, existing?: string): st
       '',
       row(['Code-level mutants', 'Without the check', 'With the check']),
       row(['---', '---', '---']),
-      ...(['L1', 'L2', 'L3'] as const).map((l) =>
-        row([l, cellText(c.byKindBefore.code[l]), cellText(c.byKindAfter.code[l])]),
+      ...LEVEL_KEYS.map((l) =>
+        row([keyLabel(l), cellText(c.byKindBefore.code[l], l), cellText(c.byKindAfter.code[l], l)]),
       ),
       '',
       row(['By operator', 'Without the check', 'With the check']),
