@@ -7,17 +7,18 @@ PUBLIC anon key, on the server, and parses every row with the Zod schemas from `
 
 ## Routes
 
-| Route                                 | What it is                                                                                          |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/`                                   | "X of Y quickstarts work", a level-aware breakdown, filters and sort in the URL, "Needs a person"   |
-| `/tools/[slug]`                       | status, last 60 runs, the confirmed incident (reviewed text, docs diff, version diff), latest steps |
-| `/runs/[id]`                          | plan, grounding report, truncation record, every step, environment                                  |
-| `/incidents`, `/methodology`, `/bot`  | confirmed incidents; how it works and its limits; the crawler and how to opt out                    |
-| `/submit`                             | the submit form (`POST /api/submit` forwards to the API with retries while it wakes)                |
-| `/admin`, `/admin/login`              | the review queue; token login, signed httpOnly cookie, middleware, server actions                   |
-| `/api/badge/[slug]`, `/api/og/[slug]` | the README badge (SVG) and the social images (`/api/og/home` for the home page)                     |
-| `/api/revalidate`                     | `POST` with `x-revalidate-secret`: the API calls it when a cycle finishes                           |
-| `/api/fixtures/*`                     | test only: serves fixture logs and diffs when `QSR_DATA=fixtures`; 404 otherwise                    |
+| Route                                 | What it is                                                                                                                                                     |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                   | "X of Y quickstarts work", a level-aware breakdown, filters and sort in the URL, "Needs a person"                                                              |
+| `/tools/[slug]`                       | status, last 60 runs, the confirmed incident (reviewed text, docs diff, version diff), latest steps                                                            |
+| `/runs/[id]`                          | plan, grounding report, truncation record, every step, environment                                                                                             |
+| `/incidents`, `/methodology`, `/bot`  | confirmed incidents; how it works, its limits and how well the monitor sees a broken quickstart (`#detection`); the crawler and how to opt out                 |
+| `/submit`                             | the submit form (`POST /api/submit` forwards to the API with retries while it wakes; opening the page sends `POST /api/warm`, which wakes the API)             |
+| `/admin`, `/admin/login`              | the review queue; token login, signed httpOnly cookie, middleware, server actions                                                                              |
+| `/api/badge/[slug]`, `/api/og/[slug]` | the README badge (SVG) and the social images (`/api/og/home` and `/api/og/methodology` for those pages); a slug nobody tracks is answered from one cached list |
+| `/api/status`                         | the counts behind the home headline as JSON (strict schema: counts and a time only); the README table is generated from it (`pnpm qsr readme`)                 |
+| `/api/revalidate`                     | `POST` with `x-revalidate-secret`: the API calls it when a cycle finishes                                                                                      |
+| `/api/fixtures/*`                     | test only: serves fixture logs and diffs when `QSR_DATA=fixtures`; 404 otherwise                                                                               |
 
 ## The rule that matters most
 
@@ -34,6 +35,10 @@ import { getDataSource } from '@/lib/data'; // SupabaseDataSource, or FixtureDat
 import { loadHome, loadToolPage, loadRunPage } from '@/lib/service'; // view models; no raw rows, no unconfirmed incident
 import { renderBadge, badgeFor } from '@/lib/badge'; // XML-escaped SVG, no external reference
 ```
+
+`src/data/detection-power.json` is what `/methodology` quotes about detection power. It is written by `pnpm qsr detection-summary` from `docs/detection-power.json` and the target files, and a test fails when it is stale. The wording built from it lives in `@qsr/core`.
+
+Public pages never read the API address (`src/lib/no-api-at-render.test.ts` lists the only files that may), because the API sleeps on a free tier and takes about a minute to wake.
 
 Pages never import `@supabase/supabase-js`; only `src/lib/data/supabase.ts` does. No file uses `dangerouslySetInnerHTML` (a lint rule and a test).
 
@@ -64,7 +69,4 @@ proves a page keeps its cached state until the endpoint is called with the secre
 
 ## Deploying
 
-`vercel.json` has an ignored build step: Vercel skips a commit whose diff does not touch `apps/web`, `packages/core`, the lockfile or the
-workspace files ("The deployment was canceled because the Ignored Build Step command returned exit code 0"). That is intended, but it
-also skips the very first deploy when the newest commit only changed docs. If that happens, push any change under `apps/web`, or run
-`vercel --prod` from the repository root. `DEPLOY.md` has the full checklist.
+`vercel.json` has an ignored build step: Vercel skips a deployment whose changes since the **last deployed commit** (`VERCEL_GIT_PREVIOUS_SHA`, else the parent commit) do not touch `apps/web`, `packages/core`, the lockfile or the workspace files ("The deployment was canceled because the Ignored Build Step command returned exit code 0"). A push of several commits is judged as a whole, so a last commit that only changes docs no longer hides the web changes before it, and a missing or unreachable previous commit builds. `src/lib/vercel-config.test.ts` runs the command in a scratch repository. If a first deploy is still skipped, push any change under `apps/web`, or run `vercel --prod` from the repository root. `DEPLOY.md` has the full checklist.
