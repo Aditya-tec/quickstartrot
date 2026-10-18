@@ -112,7 +112,9 @@ export function renderSampleTable(mutants: readonly MutantRecord[]): string {
             ? 'invalid'
             : m.status === 'not_applicable'
               ? 'n/a'
-              : 'harness error';
+              : m.status === 'not_run'
+                ? 'not run'
+                : 'harness error';
     const expected = m.expected === null ? 'no expectation' : m.expected.join(' or ');
     lines.push(
       row([
@@ -164,8 +166,9 @@ function kindTable(
       'No site',
       'Invalid',
       'Harness errors',
+      'Not run (vendor calls off)',
     ]),
-    row(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---']),
+    row(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---', '---']),
     ...LEVEL_KEYS.map((l) => {
       const c = cells[l];
       return row([
@@ -179,6 +182,7 @@ function kindTable(
         c.notApplicable,
         c.invalid,
         c.harnessError,
+        c.notRun,
       ]);
     }),
     '',

@@ -6,10 +6,17 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COMPILER_VERSION, createFileCache } from '@qsr/compiler';
 import { contentHash, HARNESS_VERSION, type RunResult } from '@qsr/core';
+import type { DockerClient } from '@qsr/executor';
 import { recordingLogger } from '../probe/probe.test-utils.js';
-import { cjsInput, esmInput, installOnlyInput, pythonInput } from './fixtures.test-utils.js';
+import {
+  cjsInput,
+  esmInput,
+  installOnlyInput,
+  pythonInput,
+  vendorInput,
+} from './fixtures.test-utils.js';
 import { extractionFile, type MutationInput } from './inputs.js';
-import { mutateCommand } from './command.js';
+import { dockerRunner, mutateCommand } from './command.js';
 import type { PlanRunner, RunnerArgs, RunnerOutput } from './run.js';
 import { sampleSpread } from './command.js';
 
@@ -95,6 +102,7 @@ async function seed(
     `  image: ${t.runtime.image}`,
     'extract:',
     '  root: main',
+    ...(t.expect.authErrorIsPass ? ['expect:', '  authErrorIsPass: true'] : []),
     'placeholders:',
     ...Object.entries(t.placeholders).map(([k, v]) => `  ${k}: ${v}`),
   ].join('\n');
@@ -332,6 +340,141 @@ describe('qsr mutate <slug>', () => {
       );
       expect(o.err().length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('the request budget: qsr mutate makes NO vendor request unless asked (--allow-vendor-calls)', () => {
+  const countingRunner =
+    (calls: string[]): PlanRunner =>
+    async (a) => {
+      calls.push(`${a.input.target.slug}:${a.label}`);
+      return pass(a);
+    };
+  const args = (...extra: string[]) => [
+    ...extra,
+    '--targets',
+    targetsDir,
+    '--cache-dir',
+    cacheDir,
+    '--work-dir',
+    workDir,
+  ];
+
+  it('by default a vendor-facing target is not run at all: no control, no mutant, and its mutants are recorded as "not run"', async () => {
+    await seed(esmInput());
+    await seed(vendorInput());
+    const calls: string[] = [];
+    const o = out();
+    const code = await mutateCommand(args('--all'), recordingLogger(), o.io, {
+      runner: countingRunner(calls),
+    });
+    expect(code).toBe(0);
+    expect(calls.filter((c) => c.startsWith('vendor-node'))).toEqual([]); // the budget
+    expect(calls.filter((c) => c.startsWith('esm-node')).length).toBeGreaterThan(0); // the others still run
+    const json = JSON.parse(await readFile(path.join(workDir, 'results.json'), 'utf8'));
+    const control = json.controls.find((c: { slug: string }) => c.slug === 'vendor-node');
+    expect(control).toMatchObject({ included: false, outcome: null });
+    expect(control.excludedReason).toMatch(/vendor calls are off.*--allow-vendor-calls/);
+    const mine = json.mutants.filter((m: { slug: string }) => m.slug === 'vendor-node');
+    expect(mine.length).toBeGreaterThan(0);
+    expect(mine.filter((m: { status: string }) => m.status === 'not_run').length).toBeGreaterThan(
+      0,
+    );
+    expect(mine.every((m: { outcome: unknown }) => m.outcome === null)).toBe(true);
+    expect(o.out()).toMatch(/vendor calls are off.*vendor-node/);
+  });
+
+  it('the Docker runner itself refuses a vendor-facing run step unless allowed (a second line of defence), and never touches Docker', async () => {
+    const touched: string[] = [];
+    const docker = new Proxy(
+      {},
+      {
+        get: (_t, p) => () => {
+          touched.push(String(p));
+          throw new Error('docker must not be touched');
+        },
+      },
+    ) as unknown as DockerClient;
+    const input = vendorInput();
+    const args = { input, ir: input.ir, label: 'control', exportsCheck: false };
+    await expect(dockerRunner(docker, workDir, recordingLogger())(args)).rejects.toThrow(
+      /vendor calls are off/,
+    );
+    expect(touched).toEqual([]);
+    // a plan with no run step (nothing is sent to a vendor) is not refused by the guard: it goes on to Docker (which here fails, and
+    // the executor turns that into a HARNESS_ERROR result)
+    const noRun = {
+      ...args,
+      ir: { ...input.ir, steps: input.ir.steps.filter((s) => s.kind !== 'run') },
+    };
+    const out2 = await dockerRunner(docker, workDir, recordingLogger())(noRun);
+    expect(out2.result.outcome).toBe('HARNESS_ERROR');
+    expect(touched.length).toBeGreaterThan(0);
+    // and with the flag the vendor-facing plan is let through to Docker as well
+    touched.length = 0;
+    const allowed = await dockerRunner(docker, workDir, recordingLogger(), true, true)(args);
+    expect(allowed.result.outcome).toBe('HARNESS_ERROR');
+    expect(touched.length).toBeGreaterThan(0);
+  });
+
+  it('the table and the document say "not run" (not "harness error"), keep those mutants out of every rate, and list the target as left out with the reason', async () => {
+    await seed(esmInput());
+    await seed(vendorInput());
+    const o = out();
+    await mutateCommand(args('--all'), recordingLogger(), o.io, { runner: countingRunner([]) });
+    expect(o.out()).toMatch(/\| vendor-node \| L3 \| [a-z_]+ \| not run \|/);
+    expect(o.out()).not.toMatch(/\| vendor-node .*harness error/);
+    await mutateCommand(
+      ['--render', path.join(workDir, 'results.json'), '--targets', targetsDir],
+      recordingLogger(),
+      out().io,
+    );
+    const md = await readFile(path.join(dir, 'docs', 'DETECTION-POWER.md'), 'utf8');
+    expect(md).toMatch(/\| vendor-node \| vendor calls are off/);
+    expect(md).toMatch(/Not run/);
+    const json = JSON.parse(await readFile(path.join(dir, 'docs', 'detection-power.json'), 'utf8'));
+    expect(json.summary.byKind.code.L3.tested).toBe(0);
+    expect(
+      json.summary.byKind.code.L3.notRun + json.summary.byKind.install.L3.notRun,
+    ).toBeGreaterThan(0);
+  });
+
+  it('a single <slug> is held to the same default', async () => {
+    await seed(vendorInput());
+    const calls: string[] = [];
+    await mutateCommand(args('vendor-node'), recordingLogger(), out().io, {
+      runner: countingRunner(calls),
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it('--controls-only holds to it too', async () => {
+    await seed(vendorInput());
+    const calls: string[] = [];
+    await mutateCommand(args('--all', '--controls-only'), recordingLogger(), out().io, {
+      runner: countingRunner(calls),
+    });
+    expect(calls).toEqual([]);
+  });
+
+  it('--allow-vendor-calls turns it on: the vendor target is then run like any other', async () => {
+    await seed(vendorInput());
+    const calls: string[] = [];
+    await mutateCommand(args('--all', '--allow-vendor-calls'), recordingLogger(), out().io, {
+      runner: countingRunner(calls),
+    });
+    expect(calls.some((c) => c === 'vendor-node:control')).toBe(true);
+    const json = JSON.parse(await readFile(path.join(workDir, 'results.json'), 'utf8'));
+    expect(json.mutants.some((m: { status: string }) => m.status === 'not_run')).toBe(false);
+  });
+
+  it('a target that only runs locally (level 3 without auth-error-as-pass, or declared local) is not a vendor call and is run', async () => {
+    await seed(cjsInput()); // level 3, no authErrorIsPass: the run step involves no vendor
+    const calls: string[] = [];
+    await mutateCommand(args('--all'), recordingLogger(), out().io, {
+      runner: countingRunner(calls),
+    });
+    expect(calls.some((c) => c === 'cjs-node:control')).toBe(true);
   });
 });
 

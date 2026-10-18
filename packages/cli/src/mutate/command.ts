@@ -22,9 +22,14 @@ import { survivorReason } from './survivors.js';
 import {
   pairKey,
   planMutants,
+  isVendorFacing,
+  notRunControl,
+  notRunRecord,
   runControl,
   runMutation,
+  VENDOR_CALLS_OFF,
   type ControlRecord,
+  type MutantRecord,
   type PlanRunner,
 } from './run.js';
 
@@ -70,8 +75,13 @@ export function dockerRunner(
   workDir: string,
   log: Logger,
   exportsCheckAvailable = true,
+  allowVendorCalls = false,
 ): PlanRunner {
   return async ({ input, ir, label, exportsCheck }) => {
+    // A second line of defence behind the filtering in mutateCommand: a plan whose run step would send a request to a vendor never
+    // reaches Docker unless the person asked for it.
+    if (!allowVendorCalls && isVendorFacing(input.target) && ir.steps.some((s) => s.kind === 'run'))
+      throw new Error(`${input.target.slug}: ${VENDOR_CALLS_OFF}`);
     const outDir = path.resolve(workDir, 'runs', input.target.slug, label);
     const result = await executePlan(
       {
@@ -195,6 +205,7 @@ export async function mutateCommand(
       'plan-only': { type: 'boolean', default: false },
       'exports-check': { type: 'boolean', default: false },
       'controls-only': { type: 'boolean', default: false },
+      'allow-vendor-calls': { type: 'boolean', default: false },
       baseline: { type: 'string' },
       'seconds-per-run': { type: 'string' },
       render: { type: 'string' },
@@ -254,6 +265,23 @@ export async function mutateCommand(
     else skipped.push({ slug: t.slug, reason: loaded.reason });
   }
   if (sample !== null) inputs = sampleSpread(inputs, sample, values.seed);
+
+  // The request budget: a target whose run step makes a request to a vendor is NOT run unless --allow-vendor-calls. It is recorded
+  // (a control that was not run, its mutants as "not run"), so the results say what is missing instead of silently leaving it out.
+  const allowVendorCalls = values['allow-vendor-calls'];
+  const vendorOff = allowVendorCalls ? [] : inputs.filter((i) => isVendorFacing(i.target));
+  if (vendorOff.length > 0) inputs = inputs.filter((i) => !isVendorFacing(i.target));
+  const offControls: ControlRecord[] = vendorOff.map(notRunControl);
+  const offMutants: MutantRecord[] = vendorOff.flatMap((i) =>
+    operators.flatMap((op) => {
+      const rec = notRunRecord(i, notRunControl(i), op, values.seed);
+      return rec === null ? [] : [rec];
+    }),
+  );
+  const vendorNote =
+    vendorOff.length === 0
+      ? ''
+      : `${VENDOR_CALLS_OFF}: ${vendorOff.map((i) => i.target.slug).join(', ')} (${offMutants.filter((m) => m.status === 'not_run').length} mutants recorded as not run)\n`;
 
   const baseline = values.baseline
     ? (JSON.parse(await readFile(path.resolve(values.baseline), 'utf8')) as DetectionResults)
@@ -327,7 +355,8 @@ export async function mutateCommand(
     );
     return 4;
   }
-  const runner = overrides.runner ?? dockerRunner(docker, workDir, log);
+  const runner = overrides.runner ?? dockerRunner(docker, workDir, log, true, allowVendorCalls);
+  if (vendorNote !== '') io.stdout(vendorNote);
   const now = overrides.now ?? (() => new Date());
 
   if (values['controls-only']) {
@@ -344,6 +373,7 @@ export async function mutateCommand(
         }),
       ),
     );
+    controls.push(...offControls);
     const outFile = path.resolve(values['out-json'] ?? path.join(workDir, 'controls.json'));
     await mkdir(path.dirname(outFile), { recursive: true });
     await writeFile(
@@ -386,8 +416,8 @@ export async function mutateCommand(
       targetsRequested: targets.length,
     },
     skipped,
-    controls: run.controls,
-    mutants: run.mutants,
+    controls: [...run.controls, ...offControls],
+    mutants: [...run.mutants, ...offMutants],
     baseline: baseline ? { controls: baseline.controls, mutants: baseline.mutants } : undefined,
   });
   const wallSeconds = Math.round((Date.now() - started) / 1000);

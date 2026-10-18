@@ -39,11 +39,14 @@ export interface Counts {
   invalid: number;
   notApplicable: number;
   harnessError: number;
+  /** Mutants that would have run but were not (vendor calls off). Never tested, never detected, in no rate. */
+  notRun: number;
 }
 export const countsOf = (rows: readonly MutantRecord[]): Counts => ({
   invalid: rows.filter((r) => r.status === 'invalid').length,
   notApplicable: rows.filter((r) => r.status === 'not_applicable').length,
   harnessError: rows.filter((r) => r.status === 'harness_error').length,
+  notRun: rows.filter((r) => r.status === 'not_run').length,
 });
 
 /**

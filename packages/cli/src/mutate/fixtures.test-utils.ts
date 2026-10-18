@@ -144,6 +144,18 @@ export function cjsInput(): MutationInput {
   };
 }
 
+/** Like cjsInput, but the target asks for auth-error-as-pass at level 3: its run step makes a request to a VENDOR (a dummy key). */
+export function vendorInput(): MutationInput {
+  const base = cjsInput();
+  return {
+    ...base,
+    target: targetFor('vendor-node', 'node', {
+      level: 3,
+      expect: { authErrorIsPass: true, timeoutSec: 300 },
+    }),
+  };
+}
+
 const PY_CODE = [
   'from acme import Client',
   '',

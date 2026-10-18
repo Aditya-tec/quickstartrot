@@ -32,7 +32,7 @@ Usage:
   qsr export --launch [--site <url>] [--json | --md]
   qsr plans push <slug> | --all [--dry-run] [--include-disabled] [--targets <dir>] [--cache-dir <dir>]
   qsr validate [--targets <dir>] [--only a,b] [--crawl]
-  qsr mutate <slug> | --all [--sample N] [--seed S] [--operators a,b] [--concurrency 2] [--plan-only] [--controls-only] [--baseline <json> --exports-check] [--write-docs]
+  qsr mutate <slug> | --all [--sample N] [--seed S] [--operators a,b] [--concurrency 2] [--plan-only] [--controls-only] [--allow-vendor-calls] [--baseline <json> --exports-check] [--write-docs]
   qsr mutate --render <json> [--compare <json>] [--v1 <json>]
 
 Commands (phase that implements them):

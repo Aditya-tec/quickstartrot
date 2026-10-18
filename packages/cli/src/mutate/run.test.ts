@@ -5,6 +5,7 @@ import { cjsInput, esmInput, installOnlyInput, pythonInput } from './fixtures.te
 import type { MutationInput } from './inputs.js';
 import { OPERATOR_IDS, type OperatorId } from './operators.js';
 import {
+  notRunRecord,
   prepareMutant,
   runControl,
   runMutation,
@@ -444,6 +445,29 @@ describe('mutants', () => {
     });
     expect(max).toBeLessThanOrEqual(2);
     expect(max).toBe(2);
+  });
+});
+
+describe('mutants that were not run (vendor calls off)', () => {
+  it('are counted apart: never tested, never detected, never in a rate', async () => {
+    const input = esmInput();
+    const control = await runControl(monitor(), input, false);
+    const jobs = OPERATOR_IDS.map((op) => notRunRecord(input, control, op, 's'));
+    const records = jobs.filter((r): r is NonNullable<typeof r> => r !== null);
+    expect(records.length).toBeGreaterThan(0);
+    for (const r of records) {
+      expect(r.status).toBe('not_run');
+      expect(r.outcome).toBeNull();
+      expect(r.note).toMatch(/vendor calls are off/);
+    }
+    const s = summarize([{ ...control, included: false }], records);
+    const all = (['install', 'code'] as const).flatMap((k) => [
+      s.byKind[k].L1,
+      s.byKind[k].L2,
+      s.byKind[k].L3,
+    ]);
+    expect(all.reduce((n, c) => n + c.tested, 0)).toBe(0);
+    expect(all.reduce((n, c) => n + c.notRun, 0)).toBeGreaterThan(0);
   });
 });
 

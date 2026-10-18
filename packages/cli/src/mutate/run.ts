@@ -1,5 +1,11 @@
 import { classify, inputFromRunResult, unknownClassification } from '@qsr/classifier';
-import { parseResolved, type FailureClass, type RunResult, type StepIR } from '@qsr/core';
+import {
+  parseResolved,
+  type FailureClass,
+  type RunResult,
+  type StepIR,
+  type Target,
+} from '@qsr/core';
 import { createLimiter } from '../probe/crawl-pool.js';
 import { groundingReport, type MutationInput } from './inputs.js';
 import {
@@ -141,7 +147,8 @@ export async function runControl(
   };
 }
 
-export type MutantStatus = 'detected' | 'survived' | 'invalid' | 'not_applicable' | 'harness_error';
+export type MutantStatus =
+  'detected' | 'survived' | 'invalid' | 'not_applicable' | 'harness_error' | 'not_run';
 
 export interface MutantRecord {
   slug: string;
@@ -201,6 +208,55 @@ export interface MutantJob {
   record: MutantRecord;
   /** Present when the mutant is ready to run. */
   run: { ir: StepIR } | null;
+}
+
+// ---- the request budget. A target whose run step makes a request to a VENDOR (a dummy key, auth-error-as-pass at level 3) is never run
+// by `qsr mutate` unless the person asks (--allow-vendor-calls): a mutation suite sends dozens of runs, and a vendor is entitled to a
+// bounded amount of traffic from us (at most the one request per cycle of the probe). Targets that only run locally are not affected.
+export const VENDOR_CALLS_OFF =
+  'vendor calls are off for this target (pass --allow-vendor-calls to run it)';
+export const isVendorFacing = (t: Pick<Target, 'level' | 'expect'>): boolean =>
+  t.expect.authErrorIsPass && t.level >= 3 && t.expect.localOnly !== true;
+
+/** The control of a target that was not run because vendor calls are off: out of every statistic, with the reason. */
+export function notRunControl(input: MutationInput): ControlRecord {
+  return {
+    slug: input.target.slug,
+    included: false,
+    excludedReason: VENDOR_CALLS_OFF,
+    outcome: null,
+    reachedLevel: null,
+    targetLevel: input.target.level,
+    retried: false,
+    durationMs: null,
+    resolved: {},
+    hasRunStep: input.ir.steps.some((s) => s.kind === 'run'),
+    writesSource: writesSource(input.ir),
+  };
+}
+
+/**
+ * The record of a mutant that WOULD have run (it has a site and the real validator accepts it) but was not, because vendor calls are
+ * off. A mutant with no site or an invalid one is recorded as it always is. `previous_major` needs a resolved version and is left out.
+ */
+export function notRunRecord(
+  input: MutationInput,
+  control: ControlRecord,
+  operator: OperatorId,
+  seed: string,
+): MutantRecord | null {
+  if (operator === 'previous_major') return null;
+  const level = input.ir.maxLevelReachable;
+  const job = prepareMutant(
+    input,
+    { ...control, included: true, reachedLevel: level },
+    operator,
+    seed,
+    false,
+  );
+  return job.run === null
+    ? job.record
+    : { ...job.record, status: 'not_run', note: VENDOR_CALLS_OFF };
 }
 
 /** Builds (and validates) the mutant of one operator for one target. The real grounding validator decides `invalid`. */
