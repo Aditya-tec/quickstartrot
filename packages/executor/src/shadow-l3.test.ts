@@ -188,6 +188,26 @@ describe('shadow-L3: what the run step says is recorded and changes nothing', ()
     expect(recordOf(r)?.note).toMatch(/docker exec exploded/);
   });
 
+  it('observed carries the error line AND the evidence line even when a long stack trace follows (they are not in the 4 KB tail)', async () => {
+    const noise = Array.from(
+      { length: 300 },
+      (_, i) => `    at frame ${i} (file:///work/node_modules/x.js:${i}:1)\n`,
+    ).join('');
+    const r = await go(
+      new FakeDocker(
+        answers({
+          exitCode: 1,
+          stderr: `UnauthorizedResponseError: Missing Authentication header\n  statusCode: 401,\n${noise}`,
+        }),
+      ),
+      WITH_RUN(),
+    );
+    expect(recordOf(r)).toMatchObject({ verdict: 'evidence', pattern: 'http_401_403' });
+    expect(recordOf(r)?.observed).toBe(
+      'UnauthorizedResponseError: Missing Authentication header | statusCode: 401,',
+    );
+  });
+
   it('is not run at all when an earlier step failed: no vendor request, and nothing recorded', async () => {
     const docker = new FakeDocker((c) =>
       c.kind === 'step' && c.command === 'npm install acme'

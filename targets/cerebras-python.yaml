@@ -2,11 +2,19 @@ slug: cerebras-python
 name: Cerebras Inference (Python)
 docsUrl: https://inference-docs.cerebras.ai/quickstart
 language: python
-level: 2
+level: 3
 runtime:
   image: ghcr.io/aditya-tec/qsr-python:3.12
   pythonVersion: '3.12'
 extract:
   root: '#content'
   tab: Python
-notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 19.0 s of steps. Plan: set_env CEREBRAS_API_KEY=... > shell pip install --upgrade cerebras_cloud_sdk > write main.py, then the harness syntax and import checks (2 passed). Resolved: annotated-types@0.8.0, anyio@4.15.1, cerebras_cloud_sdk@1.91.0, certifi@2026.7.22, distro@1.9.0, h11@0.16.0, h2@4.4.1, hpack@4.2.0, httpcore@1.0.9, httpx@0.28.1, hyperframe@6.1.0, idna@3.20, pydantic@2.14.1, pydantic_core@2.50.1, sniffio@1.3.1, typing-inspection@0.4.4, typing_extensions@4.16.0. Crawl: root '#content', tab 'Python', 10 blocks on the page."
+placeholders:
+  'your-api-key-here': 'qsr_dummy_key'
+expect:
+  authErrorIsPass: true
+  timeoutSec: 300
+l3:
+  mode: shadow
+  reason: 'New L3 step (2026-10-18): runs once per cycle with a dummy key and is only recorded until a week of clean evidence and the owner approves it counting.'
+notes: "Run 2026-10-17 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 19.0 s of steps. Plan: set_env CEREBRAS_API_KEY=... > shell pip install --upgrade cerebras_cloud_sdk > write main.py, then the harness syntax and import checks (2 passed). Resolved: annotated-types@0.8.0, anyio@4.15.1, cerebras_cloud_sdk@1.91.0, certifi@2026.7.22, distro@1.9.0, h11@0.16.0, h2@4.4.1, hpack@4.2.0, httpcore@1.0.9, httpx@0.28.1, hyperframe@6.1.0, idna@3.20, pydantic@2.14.1, pydantic_core@2.50.1, sniffio@1.3.1, typing-inspection@0.4.4, typing_extensions@4.16.0. Crawl: root '#content', tab 'Python', 10 blocks on the page. L3 in SHADOW (2026-10-18, harness v3): the snippet calls client.chat.completions.create; with a dummy key the vendor answers 401 (AuthenticationError, message: Wrong API Key): evidence http_401_403, run once locally in Docker. One request per cycle, recorded and not counted until promoted."

@@ -1,4 +1,5 @@
 import { type ShadowL3, type StepResult } from '@qsr/core';
+import type { OutputEvidence } from './sink.js';
 import { matchAuthPattern } from './expect.js';
 import { clip } from './shadow.js';
 
@@ -34,8 +35,20 @@ const timedOut = (r: StepResult): boolean =>
   r.outcome === 'FAIL' &&
   (r.exitCode === 124 || r.exitCode === null || /\[qsr\] step timed out/.test(r.stderrTail ?? ''));
 
+/**
+ * What was observed, in at most 300 characters: the first error line and the first line that matched an auth pattern (both captured
+ * while the output streamed, so a long stack trace cannot push them out), else the last line the step printed.
+ */
+function observedText(r: StepResult, evidence: OutputEvidence | null): string | null {
+  const lines = [evidence?.errorLine ?? null, evidence?.authLine ?? null].filter(
+    (l, i, all): l is string => l !== null && all.indexOf(l) === i,
+  );
+  if (lines.length > 0) return clip(lines.join(' | '), MAX_TEXT);
+  return observedLine(r, r.matchedAuthPattern !== null);
+}
+
 /** The record of a shadow L3 step that ran. `r` is its step result, which is NOT part of the run. */
-export function shadowL3FromStep(r: StepResult): ShadowL3 {
+export function shadowL3FromStep(r: StepResult, evidence: OutputEvidence | null = null): ShadowL3 {
   const pattern = r.matchedAuthPattern;
   const verdict: ShadowL3['verdict'] = timedOut(r)
     ? 'timeout'
@@ -50,7 +63,7 @@ export function shadowL3FromStep(r: StepResult): ShadowL3 {
     verdict,
     pattern,
     exitCode: r.exitCode,
-    observed: observedLine(r, pattern !== null),
+    observed: observedText(r, evidence),
     durationMs: r.durationMs,
     note: null,
   };

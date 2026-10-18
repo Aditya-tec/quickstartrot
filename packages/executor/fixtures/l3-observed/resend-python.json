@@ -1,0 +1,11 @@
+{
+  "slug": "resend-python",
+  "capturedWith": "qsr run <slug> in Docker, ghcr sandbox image, dummy key (qsr_dummy_key), 2026-10-18; one request to the vendor",
+  "vendor": "Resend API",
+  "exitCode": 0,
+  "expect": {
+    "pass": true,
+    "matchedAuthPattern": "resend:api_key_is_invalid"
+  },
+  "log": "API key is invalid\n[qsr] exit code matched; evidence of reaching the vendor: resend:api_key_is_invalid\n"
+}

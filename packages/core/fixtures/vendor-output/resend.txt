@@ -16,3 +16,7 @@
     statusCode: 401
   }
 }
+
+# Real output of resend-python's run step (qsr run in Docker, dummy key, 2026-10-18). The snippet catches the error and prints only its
+# message, exits 0, and the message is the ONLY evidence: this is why the vendor pattern exists.
+API key is invalid

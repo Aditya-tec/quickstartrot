@@ -35,7 +35,7 @@ import { evaluateExpect } from './expect.js';
 import { isInstallCommand } from './install.js';
 import { clip as clipShadowText, parseShadowOutput } from './shadow.js';
 import { shadowL3FromStep, shadowL3Skipped } from './shadow-l3.js';
-import { StepOutput } from './sink.js';
+import { StepOutput, type OutputEvidence } from './sink.js';
 
 export { isInstallCommand };
 
@@ -328,6 +328,8 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
   });
 
   /** Executes a shell or run step and decides pass or fail from the evidence. */
+  /** The evidence lines of the last command step (shadow-L3 reads them; nothing else does). */
+  let lastCommandEvidence: OutputEvidence | null = null;
   const runCommand = async (
     step: Extract<Step, { kind: 'shell' | 'run' }>,
     ordinal: number,
@@ -379,6 +381,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     // Only auth-error decisions get a log line: they are the one case where the exit code alone would mislead.
     if (verdict.matchedAuthPattern !== null) out.note(`[qsr] ${verdict.reason}`);
     const o = out.finish();
+    lastCommandEvidence = o.evidence;
     // `docker exec` itself exits 125 when the daemon rejects the request (container gone, daemon
     // down). That is the harness failing, not the quickstart.
     if (exec.exitCode === 125 && /Error response from daemon/.test(o.stderrTail)) {
@@ -569,7 +572,9 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     };
     const began = clock();
     try {
-      write(shadowL3FromStep(await runCommand(step, steps.length)));
+      lastCommandEvidence = null;
+      const stepResult = await runCommand(step, steps.length);
+      write(shadowL3FromStep(stepResult, lastCommandEvidence));
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       write(

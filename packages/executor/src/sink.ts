@@ -11,6 +11,9 @@ export const TAIL_BYTES = 4096; // stdoutTail / stderrTail
 export const MAX_LINE_CHARS = 16 * 1024; // longer lines are cut, so one line cannot exhaust memory
 
 const TRUNCATED_LINE = ' [line truncated]';
+const EVIDENCE_LINE_MAX = 300;
+/** A line that starts with an exception or error class and a colon: `Error: x`, `anthropic.AuthenticationError: x`, `TypeError: x`. Stack frames start with `at` or `File`. */
+const ERROR_LINE = /^\s*(?:[A-Za-z_][\w.$]*\.)?(?:[A-Za-z_$][\w$]*)?(?:Error|Exception)\s*:\s*\S/;
 const LOG_TRUNCATED = '[qsr] output truncated: the log of this step is capped at 256 KB\n';
 
 export interface StepOutputOptions {
@@ -25,6 +28,10 @@ export interface StepOutputOptions {
 
 export interface OutputEvidence {
   authPattern: string | null;
+  /** The first line (redacted, at most 300 characters) that matched an auth pattern. */
+  authLine: string | null;
+  /** The first line that looks like an exception or error message (redacted, at most 300 characters). */
+  errorLine: string | null;
   driftPattern: string | null;
   stdoutIncludesFound: Set<string>;
 }
@@ -75,6 +82,8 @@ export class StepOutput {
   private logTruncated = false;
   private readonly evidence: OutputEvidence = {
     authPattern: null,
+    authLine: null,
+    errorLine: null,
     driftPattern: null,
     stdoutIncludesFound: new Set(),
   };
@@ -158,7 +167,10 @@ export class StepOutput {
 
   private scan(stream: Stream, line: string): void {
     const e = this.evidence;
-    e.authPattern ??= matchAuthPattern(line);
+    const auth = matchAuthPattern(line);
+    e.authPattern ??= auth;
+    if (auth !== null) e.authLine ??= line.trim().slice(0, EVIDENCE_LINE_MAX);
+    if (ERROR_LINE.test(line)) e.errorLine ??= line.trim().slice(0, EVIDENCE_LINE_MAX);
     e.driftPattern ??= matchDriftPattern(line);
     if (stream === 'out') {
       for (const needle of this.options.stdoutIncludes) {

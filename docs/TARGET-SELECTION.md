@@ -116,7 +116,7 @@ runs, which are validated by the canaries and reviewed by a person before anythi
 
 ## Candidates and results
 
-Looked at: **167** candidates. **51 enabled**, 16 written and run but disabled with a reason, 70 excluded before or after a probe, 30 passed the probe but were not run in P9a (the 50-target goal was met). Status as of 2026-10-17.
+Looked at: **167** candidates. **51 enabled**, 16 written and run but disabled with a reason, 70 excluded before or after a probe, 30 passed the probe but were not run in P9a (the 50-target goal was met). Status as of 2026-10-18.
 
 Mix of the 51 enabled: 20 libraries and frameworks, 28 vendor SDKs and API clients, 3 calibration targets. Without the calibration targets the sample is 42% libraries and 58% vendors (goal: 40 and 60). Levels: 5 at L3 (the vendor's API is reached), 46 at L2 (installed and built; many docs pages show only an install command, so those runs reach L1 and the public page says so). Most vendor quickstarts need an account to go beyond that, and the harness never signs up for one.
 
@@ -149,8 +149,8 @@ Each row is the result of `qsr run <slug>` on this machine (real Docker, the pin
 | socketio-node           | library     | L2           | PASS reached L1 of L2, 3.5 s                       | 3630         |
 | vitest-node             | library     | L2           | PASS reached L2 of L2, 19.9 s                      | cached plan  |
 | zod-node                | library     | L2           | PASS reached L2 of L2, 1.9 s                       | cached plan  |
-| ably-node               | vendor      | L2           | PASS reached L2 of L2, 12.4 s                      | 4232         |
-| ably-python             | vendor      | L2           | PASS reached L2 of L2, 15.1 s                      | 4260         |
+| ably-node               | vendor      | L2           | PASS reached L2 of L2, 7.5 s                       | cached plan  |
+| ably-python             | vendor      | L2           | PASS reached L2 of L2, 14.3 s                      | cached plan  |
 | anthropic-node          | vendor      | L3           | PASS reached L3 of L3, 8.2 s                       | 2881         |
 | anthropic-python        | vendor      | L2           | PASS reached L2 of L2, 22.8 s                      | 2718         |
 | cerebras-python         | vendor      | L2           | PASS reached L2 of L2, 19.0 s                      | 2171         |

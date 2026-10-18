@@ -1,0 +1,11 @@
+{
+  "slug": "anthropic-python",
+  "capturedWith": "qsr run <slug> in Docker, ghcr sandbox image, dummy key (qsr_dummy_key), 2026-10-18; one request to the vendor",
+  "vendor": "Anthropic API",
+  "exitCode": 1,
+  "expect": {
+    "pass": true,
+    "matchedAuthPattern": "http_401_403"
+  },
+  "log": "Traceback (most recent call last):\n  File \"/work/quickstart.py\", line 5, in <module>\n    message = client.messages.create(\n              ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/.venv/lib/python3.12/site-packages/anthropic/_utils/_utils.py\", line 294, in wrapper\n    return func(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/.venv/lib/python3.12/site-packages/anthropic/resources/messages/messages.py\", line 1073, in create\n    return self._post(\n           ^^^^^^^^^^^\n  File \"/work/.venv/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1676, in post\n    return cast(ResponseT, self.request(cast_to, opts, stream=stream, stream_cls=stream_cls))\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/.venv/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1227, in request\n    return self._request(cast_to, options, stream=stream, stream_cls=stream_cls)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/work/.venv/lib/python3.12/site-packages/anthropic/_base_client.py\", line 1330, in _request\n    raise self._make_status_error_from_response(response) from None\nanthropic.AuthenticationError: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011Cg9YjjZ198oc9fyP81exv'}\n[qsr] auth error treated as pass (http_401_403)\n"
+}

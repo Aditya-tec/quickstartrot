@@ -148,6 +148,52 @@ describe('StepOutput: the log is capped at 256 KB', () => {
   });
 });
 
+describe('StepOutput: the lines that are the evidence (shadow-L3 records them)', () => {
+  const NOISE = Array.from(
+    { length: 300 },
+    (_, i) => `    at frame ${i} (file:///work/node_modules/x.js:${i}:1)\n`,
+  ).join('');
+
+  it('keeps the first line that matched an auth pattern and the first error line, even when 10 KB of output follows and pushes them out of the tail', () => {
+    const out = make();
+    out.stderr('UnauthorizedResponseError: Missing Authentication header\n');
+    out.stderr('  statusCode: 401,\n');
+    out.stderr(NOISE);
+    const r = out.finish();
+    expect(r.stderrTail).not.toContain('Missing Authentication header');
+    expect(r.evidence.errorLine).toBe('UnauthorizedResponseError: Missing Authentication header');
+    expect(r.evidence.authLine).toBe('statusCode: 401,');
+  });
+
+  it('recognises a Python exception line and an "Error:" line as the error line, and ignores stack frames', () => {
+    const py = make();
+    py.stderr(
+      'Traceback (most recent call last):\n  File "/work/q.py", line 5, in <module>\nanthropic.AuthenticationError: Error code: 401 - {}\n',
+    );
+    expect(py.finish().evidence.errorLine).toBe(
+      'anthropic.AuthenticationError: Error code: 401 - {}',
+    );
+    const js = make();
+    js.stderr(
+      '    at Object.<anonymous> (file.js:1:1)\nError: connect ECONNREFUSED 127.0.0.1:443\n',
+    );
+    // an IP address is redacted like everywhere else in the output
+    expect(js.finish().evidence.errorLine).toBe('Error: connect ECONNREFUSED [REDACTED]:443');
+    const none = make();
+    none.stdout('Hello world!\n');
+    expect(none.finish().evidence).toMatchObject({ errorLine: null, authLine: null });
+  });
+
+  it('redacts the secret in both lines and clips each to 300 characters', () => {
+    const out = make();
+    out.stderr(`AuthenticationError: bad key qsr_dummy_key ${'x'.repeat(600)}\n`);
+    const r = out.finish();
+    expect(r.evidence.errorLine).not.toContain('qsr_dummy_key');
+    expect(r.evidence.errorLine?.length).toBeLessThanOrEqual(300);
+    expect(r.evidence.authLine).toBeNull();
+  });
+});
+
 describe('StepOutput: evidence for the pass/fail decision', () => {
   it('records the first auth pattern and the first drift pattern from either stream', () => {
     const out = make();
@@ -164,6 +210,8 @@ describe('StepOutput: evidence for the pass/fail decision', () => {
     out.stdout('all good\n');
     expect(out.finish().evidence).toEqual({
       authPattern: null,
+      authLine: null,
+      errorLine: null,
       driftPattern: null,
       stdoutIncludesFound: new Set(),
     });
