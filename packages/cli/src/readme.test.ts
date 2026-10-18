@@ -168,3 +168,30 @@ describe('README: license', () => {
     expect(section).not.toMatch(/no licen[cs]e has been chosen/i);
   });
 });
+
+// The owner's decision of 2026-10-18: the MIT License, copyright Aditya Kalambe, in the year the repository went public.
+describe('the LICENSE file', () => {
+  it('is the MIT License with the owner’s name and the year', () => {
+    expect(exists('LICENSE')).toBe(true);
+    const text = readFileSync(path.join(ROOT, 'LICENSE'), 'utf8');
+    expect(text.split('\n')[0]).toBe('MIT License');
+    expect(text).toMatch(/^Copyright \(c\) 2026 Aditya Kalambe$/m);
+    // the standard grant and the standard disclaimer, both present
+    expect(text).toContain(
+      'Permission is hereby granted, free of charge, to any person obtaining a copy',
+    );
+    expect(text).toContain('THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND');
+  });
+
+  it('is declared in the root package.json too', () => {
+    const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
+      license?: string;
+    };
+    expect(pkg.license).toBe('MIT');
+  });
+
+  it('is linked from the README, which names it', () => {
+    const section = /## License\n([\s\S]*)$/.exec(readme)?.[1] ?? '';
+    expect(section).toContain('[MIT License](LICENSE)');
+  });
+});

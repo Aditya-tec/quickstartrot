@@ -134,4 +134,4 @@ The website runs without any credentials on seeded data: `QSR_DATA=fixtures pnpm
 
 ## License
 
-No licence has been chosen yet, so by default all rights are reserved: you may read the code, but you may not reuse it. This will change when the owner adds a LICENSE file.
+Released under the [MIT License](LICENSE). Copyright (c) Aditya Kalambe.

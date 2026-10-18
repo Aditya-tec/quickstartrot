@@ -35,7 +35,7 @@ The check sends nothing to a vendor, posts nothing, opens nothing on any other r
 | `secrets-history`           | The gitleaks job of CI passed                             | Automated | The whole-history scan job succeeded for the head.                                                                                                                                                               |
 | `secrets-staged`            | The local secret gate works                               | Automated | `scripts/secrets-check.mjs` runs and finds nothing staged it refuses.                                                                                                                                            |
 | `actionlint`                | The workflows lint clean                                  | Automated | The pinned actionlint image CI uses finds nothing.                                                                                                                                                               |
-| `license`                   | The licence is chosen                                     | Automated | A `LICENSE` file exists and the README names it. This is the owner's decision; it fails until it is made.                                                                                                        |
+| `license`                   | The licence is chosen                                     | Automated | A `LICENSE` file exists and the README names it (MIT, a decision of the owner).                                                                                                                                  |
 | `cold-start-pages`          | A first visit does not hang                               | Automated | The first request to each public page, badge, share image and the status counts answers 200 in under the limit.                                                                                                  |
 | `cold-start-api`            | How long the sleeping API takes to wake                   | Automated | It answers. A slow first answer is a WARN: only /submit, the admin area and the revalidate hook use the API, and /submit wakes it when the page opens.                                                           |
 | `pages-independent-of-api`  | No public page waits for the API                          | Automated | The guard test finds no page, layout or public component reading the API address.                                                                                                                                |
@@ -49,7 +49,7 @@ The check sends nothing to a vendor, posts nothing, opens nothing on any other r
 ## What a failure of each kind means
 
 - A FAIL in `cycle-valid`, `no-unreviewed-public` or `ci-green` is never worked around: the launch waits.
-- `license` is a decision, not a bug: choose a licence, add the `LICENSE` file, and name it in the README (a test fails if the two disagree).
+- `license` fails if the `LICENSE` file, the README's License section or `package.json` stop agreeing (a test fails too).
 - Anything that depends on the cache is checked again after a cycle finishes, because a finished cycle refreshes the data at once.
 
 Related: [Disclosure policy](DISCLOSURE.md), [the walkthrough](WALKTHROUGH.md), [About our traffic](ABOUT-OUR-TRAFFIC.md).
