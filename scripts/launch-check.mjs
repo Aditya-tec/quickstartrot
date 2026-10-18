@@ -202,6 +202,19 @@ const CHECKS = [
     },
   },
   {
+    id: 'claims-current',
+    title: 'docs/CLAIMS.md equals the site, the measurement, the target files and the admin API',
+    async run() {
+      if (TOKEN === '' || API === '') return needAdmin();
+      const r = sh('node', ['packages/cli/dist/main.js', 'claims', '--check', '--site', SITE]);
+      const out = clip(`${r.stdout}${r.stderr}`.replaceAll(/\{"level".*\n?/g, ''));
+      if (r.status === 0) return { status: 'PASS', evidence: out };
+      return r.status === 2
+        ? { status: 'SKIP', evidence: out }
+        : { status: 'FAIL', evidence: out || `exit ${r.status}` };
+    },
+  },
+  {
     id: 'detection-summary-current',
     title: 'The file /methodology reads equals docs/detection-power.json',
     async run() {

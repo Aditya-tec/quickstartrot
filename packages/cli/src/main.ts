@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import pino from 'pino';
 import { classifyCommand } from './classify.js';
+import { claimsCommand } from './claims.js';
 import { compileCommand, ConfigError, crawlCommand, loadDotEnv, USAGE } from './commands.js';
 import { executeCommand } from './probe/execute-command.js';
 import {
@@ -62,6 +63,8 @@ async function main(argv: string[]): Promise<number> {
       return detectionSummaryCommand(rest, log);
     case 'readme':
       return readmeCommand(rest, log);
+    case 'claims':
+      return claimsCommand(rest, log);
     case 'validate':
       return validateCommand(rest, log);
     default:

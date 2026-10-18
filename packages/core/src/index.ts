@@ -20,3 +20,4 @@ export * from './pipeline-facts.js';
 export * from './detection-summary.js';
 export * from './detection-wording.js';
 export * from './status-summary.js';
+export * from './numbers-in.js';

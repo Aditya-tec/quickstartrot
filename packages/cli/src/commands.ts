@@ -32,6 +32,7 @@ Usage:
   qsr l3-shadow-report [--days 7]
   qsr detection-summary [--check]
   qsr readme [--check] [--site <url>]
+  qsr claims [--check] [--no-admin] [--site <url>]
   qsr export --launch [--site <url>] [--json | --md]
   qsr plans push <slug> | --all [--dry-run] [--include-disabled] [--targets <dir>] [--cache-dir <dir>]
   qsr validate [--targets <dir>] [--only a,b] [--crawl]
@@ -54,6 +55,7 @@ Commands (phase that implements them):
   l3-shadow-report  What the L3 step of shadow-L3 targets said, per target        (P9d)
   detection-summary  The file /methodology reads, from docs/detection-power.json  (P10a)
   readme    Keep the live counts and the level wording of README.md true       (P10a)
+  claims    docs/CLAIMS.md: every figure a public post could use, with safe wording (P10a)
   export    --launch: the numbers for a launch post, confirmed incidents only    (P9a)
   mutate    Local only: mutation-test the monitor with cached pages and plans    (P9c)
 
