@@ -90,6 +90,15 @@ describe('auth patterns', () => {
   });
 });
 
+describe('vendor patterns count as auth evidence', () => {
+  it('matchAuthPattern knows the registered vendor patterns, after the spec ones', () => {
+    expect(matchAuthPattern("message: 'API key is invalid',")).toBe('resend:api_key_is_invalid');
+    expect(matchAuthPattern('Request failed with status code 401: API key is invalid')).toBe(
+      'http_401_403',
+    );
+  });
+});
+
 describe('drift patterns', () => {
   it.each(Object.entries(DRIFT_LINES))('recognises %s', (id, line) => {
     expect(matchDriftPattern(line)).toBe(id);
@@ -180,8 +189,32 @@ describe('evaluateExpect: auth-error-as-pass', () => {
     expect(v.reason).toMatch(/exit code 1, expected 0/);
   });
 
-  it('exit 0 passes normally even if the output mentions an auth word; no auth credit is claimed', () => {
+  it('exit 0 passes as before, and the auth pattern in the output is now RECORDED as the evidence an L3 claim needs', () => {
     const v = evaluateExpect(asAuth, evidence({ exitCode: 0, authPattern: 'forbidden' }));
+    expect(v).toMatchObject({ pass: true, matchedAuthPattern: 'forbidden' });
+  });
+
+  it('the evidence is recorded whether or not the step allows auth errors as a pass', () => {
+    expect(
+      evaluateExpect(base, evidence({ exitCode: 0, authPattern: 'unauthorized' })),
+    ).toMatchObject({
+      pass: true,
+      matchedAuthPattern: 'unauthorized',
+    });
+  });
+
+  it('exit 0 with no auth pattern records no evidence (the pass stands, but it proves no vendor was reached)', () => {
+    expect(evaluateExpect(asAuth, evidence({ exitCode: 0 }))).toMatchObject({
+      pass: true,
+      matchedAuthPattern: null,
+    });
+  });
+
+  it('a drift pattern vetoes the evidence on exit 0 too: the step passes by exit code but claims no auth evidence', () => {
+    const v = evaluateExpect(
+      asAuth,
+      evidence({ exitCode: 0, authPattern: 'http_401_403', driftPattern: 'is not a function' }),
+    );
     expect(v).toMatchObject({ pass: true, matchedAuthPattern: null });
   });
 

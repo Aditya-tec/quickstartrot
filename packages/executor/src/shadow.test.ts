@@ -182,7 +182,7 @@ describe('shadow mode cannot change what a run says', () => {
     const on = await go(new FakeDocker(), PLAN(), { shadow: true });
     expect(off.harnessVersion).toBe(HARNESS_VERSION);
     expect(on.harnessVersion).toBe(HARNESS_VERSION);
-    expect(HARNESS_VERSION).toBe(2);
+    expect(HARNESS_VERSION).toBe(3);
   });
 
   it('a shadow FAIL leaves outcome, level, failed step, step ids, outcomes, kinds and exit codes exactly as without shadow', async () => {
@@ -217,7 +217,7 @@ describe('shadow mode cannot change what a run says', () => {
     ]);
     const r = await go(docker, withRun, { shadow: true });
     expect(r.outcome).toBe('PASS');
-    expect(r.reachedLevel).toBe(3);
+    expect(r.reachedLevel).toBe(2); // the run step printed nothing that shows a vendor was reached (harness v3)
     const order = docker.calls
       .filter((c) => c.kind === 'check' || c.kind === 'step')
       .map((c) => (isShadowCall(c) ? 'shadow' : c.kind));

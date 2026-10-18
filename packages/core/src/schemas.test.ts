@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  compileConfigHash,
   Extraction,
   FAILURE_CLASSES,
   INITIAL_TOOL_STATE,
@@ -32,6 +33,25 @@ const validTarget: TargetInput = {
   owners: { x: '@vendor', github: 'vendor/docs-repo' },
   notes: 'Quickstart sends one email via the SDK.',
 };
+
+describe('Target: expect.localOnly (harness v3)', () => {
+  it('is optional, stays absent when absent, and only the value true is allowed (false is just "absent")', () => {
+    expect('localOnly' in Target.parse(validTarget).expect).toBe(false);
+    expect(Target.parse({ ...validTarget, expect: { localOnly: true } }).expect).toEqual({
+      authErrorIsPass: false,
+      timeoutSec: 300,
+      localOnly: true,
+    });
+    expect(Target.safeParse({ ...validTarget, expect: { localOnly: false } }).success).toBe(false);
+    expect(Target.safeParse({ ...validTarget, expect: { localOnly: 'yes' } }).success).toBe(false);
+  });
+
+  it('is not part of the plan cache key: declaring it recompiles nothing', () => {
+    const before = compileConfigHash(Target.parse(validTarget));
+    const after = compileConfigHash(Target.parse({ ...validTarget, expect: { localOnly: true } }));
+    expect(after).toBe(before);
+  });
+});
 
 describe('Target', () => {
   it('parses the spec example and applies defaults', () => {

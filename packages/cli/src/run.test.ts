@@ -243,7 +243,8 @@ describe('qsr run (wiring, with a scripted Docker)', () => {
     );
     const { code, out } = await run(['canary-pass-node', '--image', 'qsr-node:local'], docker);
     expect(code).toBe(0);
-    expect(out).toMatch(/outcome:\s+PASS\s+reached level L3 of the target's L3/);
+    // a canary prints no vendor answer, so under harness v3 its run passes at L2 (a canary is judged on its outcome and class)
+    expect(out).toMatch(/outcome:\s+PASS\s+reached level L2 of the target's L3/);
     expect(out).toContain('canary:    OK - expected PASS and got it');
     expect(docker.commands).toEqual(['npm install is-number@7.0.0', 'node index.js']);
     expect(docker.removed).toHaveLength(1);

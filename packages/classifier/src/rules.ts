@@ -1,4 +1,4 @@
-import { AUTH_PATTERNS, type FailureClass } from '@qsr/core';
+import { ALL_AUTH_PATTERNS, type FailureClass } from '@qsr/core';
 import type { ClassifyInput } from './types.js';
 
 // Spec section 10: "rules run first, first match wins, each rule has an id stored on the run".
@@ -374,6 +374,6 @@ export function firstLine(step: ClassifyInput['step'], re: RegExp): string | nul
 
 function firstAuthLine(text: string): string | null {
   for (const line of text.split(/\r?\n/))
-    if (AUTH_PATTERNS.some((p) => p.re.test(line))) return line.trim().slice(0, EVIDENCE_MAX);
+    if (ALL_AUTH_PATTERNS.some((p) => p.re.test(line))) return line.trim().slice(0, EVIDENCE_MAX);
   return null;
 }

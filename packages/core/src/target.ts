@@ -129,6 +129,11 @@ export const Target = z.object({
     .object({
       authErrorIsPass: z.boolean().default(false),
       timeoutSec: z.number().int().positive().max(600).default(300),
+      /**
+       * The snippet runs on the runner and no vendor is involved (a library, not an API client). It can never show evidence of reaching a
+       * vendor, so it never counts as L3; the run page says it was executed locally. Absent for every other target.
+       */
+      localOnly: z.literal(true).optional(),
     })
     .default({ authErrorIsPass: false, timeoutSec: 300 }),
   owners: z

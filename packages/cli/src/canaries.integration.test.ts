@@ -58,19 +58,19 @@ async function qsrRun(
 }
 
 describe.skipIf(!available)('canaries (real Docker, real registries)', () => {
-  it('canary-pass-node PASSES at L3 and records the pinned dependency it resolved', async () => {
+  it('canary-pass-node PASSES (L2: its run prints no vendor answer, harness v3) and records the pinned dependency it resolved', async () => {
     const r = await qsrRun('canary-pass-node');
     expect(r.code).toBe(0);
-    expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 3, failedStepId: null });
+    expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 2, failedStepId: null });
     expect(classOf(r.result, 'node')).toBeNull(); // a PASS has nothing to classify
     expect(JSON.parse(r.result.runnerEnv['resolved'] ?? '{}')).toEqual({ 'is-number': '7.0.0' });
     expect(r.result.imageDigest).toMatch(/^sha256:[0-9a-f]{64}$/);
   }, 600_000);
 
-  it('canary-pass-python PASSES at L3 and records the pinned dependency it resolved', async () => {
+  it('canary-pass-python PASSES (L2: its run prints no vendor answer, harness v3) and records the pinned dependency it resolved', async () => {
     const r = await qsrRun('canary-pass-python');
     expect(r.code).toBe(0);
-    expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    expect(r.result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
     expect(classOf(r.result, 'python')).toBeNull();
     expect(JSON.parse(r.result.runnerEnv['resolved'] ?? '{}')).toEqual({ six: '1.16.0' });
     expect(r.result.runnerEnv['python']).toMatch(/^Python 3\.12\./);

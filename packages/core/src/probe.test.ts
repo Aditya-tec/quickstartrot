@@ -245,6 +245,10 @@ describe('cycle tools and runner env keys', () => {
     expect(RUNNER_ENV_KEYS.planStale).toBe('plan_stale');
     expect(RUNNER_ENV_KEYS.shard).toBe('shard');
   });
+
+  it('the runner env says why a passing run step did not make L3 under the key "l3" (harness v3)', () => {
+    expect(RUNNER_ENV_KEYS.l3).toBe('l3');
+  });
 });
 
 describe('compile request and response additions (P7 tidy-up)', () => {

@@ -5,6 +5,7 @@ import { LevelBadge } from '@/components/level-badge';
 import { StepTimeline } from '@/components/step-timeline';
 import { getRunPage } from '@/lib/cached';
 import { formatDateTime, formatDuration, shortId } from '@/lib/format';
+import { l3Note } from '@/lib/l3-note';
 import { splitRunnerEnv } from '@/lib/run-env';
 import { levelLabel } from '@/lib/status-style';
 
@@ -58,6 +59,7 @@ export default async function RunPage({ params }: { params: Params }) {
   const plan = run.plan_ir;
   const truncation = run.plan_truncation;
   const env = splitRunnerEnv(run.runner_env);
+  const l3Line = l3Note(run.runner_env, run.outcome);
   // An unreviewed failure is shown as "being verified": the outcome word must not say more than that.
   const outcomeWord = run.causeVisible
     ? (OUTCOME_WORD[run.outcome] ?? run.outcome)
@@ -110,6 +112,11 @@ export default async function RunPage({ params }: { params: Params }) {
           Harness v{run.harness_version}. The version of the checks that ran this plan; a change of
           version never counts as a failure by itself.
         </p>
+        {l3Line ? (
+          <p data-testid="l3-note" className="mt-2 text-xs text-muted">
+            {l3Line}.
+          </p>
+        ) : null}
         {run.plan_stale ? (
           <p
             role="note"

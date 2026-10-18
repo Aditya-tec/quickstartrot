@@ -27,6 +27,24 @@ export const AUTH_PATTERNS: readonly OutputPattern[] = [
 ];
 
 /**
+ * A vendor-specific way of saying "this credential is not valid", registered ONLY from output a real run produced (each one has a
+ * fixture of it in packages/core/fixtures/vendor-output/<vendor>.txt, and a test fails without one). The spec patterns above stay
+ * exactly as the spec has them; these are looked at after them. An L3 claim needs one of either kind in the step output.
+ */
+export interface VendorPattern extends OutputPattern {
+  vendor: string;
+}
+export const VENDOR_AUTH_PATTERNS: readonly VendorPattern[] = [
+  { id: 'resend:api_key_is_invalid', vendor: 'resend', re: /API key is invalid/i },
+];
+
+/** The spec patterns, then the registered vendor ones: what counts as evidence of reaching a vendor. */
+export const ALL_AUTH_PATTERNS: readonly OutputPattern[] = [
+  ...AUTH_PATTERNS,
+  ...VENDOR_AUTH_PATTERNS,
+];
+
+/**
  * Output that means the quickstart itself is broken. If any of these appears, an auth error does not
  * rescue the step: "an import error printed after a 401 is still a broken quickstart".
  */

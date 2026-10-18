@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 // Splits a run's runner_env for display: the resolved packages (the executor stores them as a JSON string under
-// "resolved") and every other key. "plan_stale" is shown as a marker on its own, so it is left out here.
+// "resolved") and every other key. "plan_stale" and "l3" are shown as a line of their own, so they are left out here.
 
 const Resolved = z.record(z.string(), z.string());
-const HIDDEN = new Set(['resolved', 'plan_stale']);
+const HIDDEN = new Set(['resolved', 'plan_stale', 'l3']);
 
 export interface SplitEnv {
   packages: [string, string][];

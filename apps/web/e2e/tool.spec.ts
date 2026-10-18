@@ -153,6 +153,17 @@ test.describe('run page', () => {
     await expect(page.getByTestId('harness-version')).toContainText('Harness v1');
   });
 
+  test('a run of a local-only snippet says it was executed locally and that no vendor was involved', async ({
+    page,
+  }) => {
+    await page.goto(`/runs/${RUN_IDS.stale}`);
+    await expect(page.getByTestId('l3-note')).toHaveText(
+      'Snippet executed locally (no vendor involved).',
+    );
+    await page.goto(`/runs/${RUN_IDS.healthy}`);
+    await expect(page.getByTestId('l3-note')).toHaveCount(0);
+  });
+
   test('a run of an unreviewed failure shows no outcome detail', async ({ page }) => {
     await page.goto(`/runs/${RUN_IDS.verifying}`);
     await expect(page.getByText('A failure was seen and is being verified.')).toBeVisible();

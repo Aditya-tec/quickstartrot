@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COMPILER_VERSION, createFileCache } from '@qsr/compiler';
-import { contentHash, type RunResult } from '@qsr/core';
+import { contentHash, HARNESS_VERSION, type RunResult } from '@qsr/core';
 import { recordingLogger } from '../probe/probe.test-utils.js';
 import { cjsInput, esmInput, installOnlyInput, pythonInput } from './fixtures.test-utils.js';
 import { extractionFile, type MutationInput } from './inputs.js';
@@ -249,7 +249,7 @@ describe('qsr mutate <slug>', () => {
     expect(code).toBe(0);
     expect(seen).toEqual(['control', 'control']);
     const json = JSON.parse(await readFile(path.join(workDir, 'controls.json'), 'utf8'));
-    expect(json.harnessVersion).toBe(2);
+    expect(json.harnessVersion).toBe(HARNESS_VERSION);
     expect(json.controls.map((c: { slug: string }) => c.slug).sort()).toEqual([
       'cjs-node',
       'esm-node',

@@ -1,0 +1,18 @@
+# Real output of resend-node's run step in production (probe, 2026-10-18), dummy key, stderr tail. Source of the vendor pattern
+# resend:api_key_is_invalid. A vendor pattern is only ever added from output like this.
+[Resend API Error]: {
+  status: 401,
+  error: {
+    message: 'API key is invalid',
+    name: 'validation_error',
+    statusCode: 401
+  },
+  path: '/emails'
+}
+{
+  error: {
+    message: 'API key is invalid',
+    name: 'validation_error',
+    statusCode: 401
+  }
+}

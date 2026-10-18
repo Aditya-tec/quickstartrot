@@ -45,7 +45,9 @@ export { isInstallCommand };
 //   L1  every install step of the plan exited 0
 //   L2  L1 + the harness-owned checks passed (the snippet's syntax is valid and every static import
 //       resolves; see checks.ts). Writing a file is NOT level 2.
-//   L3  L1 + the run step met its Expect (including auth-error-as-pass); no check failed
+//   L3  L1 + the run step met its Expect (including auth-error-as-pass) AND its output shows evidence that a vendor was reached
+//       (an auth pattern, harness v3); no check failed. A run step that passes without that evidence is capped at the level the checks
+//       proved, and runner_env.l3 says why.
 
 export interface ExecuteInput {
   target: Pick<Target, 'slug' | 'language' | 'level' | 'placeholders' | 'expect' | 'harness'>;
@@ -170,7 +172,7 @@ export function reachedLevel(
   if (!l1) return 0;
   const checks = steps.filter((s) => s.kind === HARNESS_CHECK_KIND);
   if (checks.some((s) => s.outcome !== 'PASS')) return 1;
-  if (passed.some((s) => s.kind === 'run')) return 3;
+  if (passed.some((s) => s.kind === 'run' && s.matchedAuthPattern !== null)) return 3;
   return checks.length > 0 ? 2 : 1;
 }
 
@@ -681,6 +683,11 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     }
   }
 
+  const level = reachedLevel(steps, installIds);
+  // A run step passed but L3 was not claimed: say why (never a failure; the status engine does not read it).
+  if (level < 3 && steps.some((s) => s.kind === 'run' && s.outcome === 'PASS'))
+    runnerEnv[RUNNER_ENV_KEYS.l3] = target.expect.localOnly === true ? 'local' : 'no_evidence';
+
   return RunResult.parse({
     toolSlug: target.slug,
     cycleId: input.cycleId,
@@ -689,7 +696,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     snapshotHash: input.snapshotHash,
     harnessVersion: HARNESS_VERSION,
     outcome,
-    reachedLevel: reachedLevel(steps, installIds),
+    reachedLevel: level,
     failedStepId,
     steps,
     imageDigest,

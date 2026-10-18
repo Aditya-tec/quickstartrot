@@ -77,6 +77,15 @@ describe('the fixture data', () => {
     expect(run.plan_stale).toBe(true);
   });
 
+  it('the stale-plan tool (loguru, a library) has a passing run that carries the local-only note, and the vendor tool does not', async () => {
+    const history = await source.listHistory(60);
+    const staleRun = history.find((h) => h.stale) as PublicRunHistoryRow;
+    const run = (await source.getRun(staleRun.run_id)) as PublicRunRow;
+    expect(run.runner_env['l3']).toBe('local');
+    const vendor = history.find((h) => h.tool_slug === 'resend-node') as PublicRunHistoryRow;
+    expect(((await source.getRun(vendor.run_id)) as PublicRunRow).runner_env['l3']).toBeUndefined();
+  });
+
   it('has runs of both harness versions: the stale-plan run is an older v1 run, the rest are v2', async () => {
     const history = await source.listHistory(60);
     const staleRun = history.find((h) => h.stale) as PublicRunHistoryRow;

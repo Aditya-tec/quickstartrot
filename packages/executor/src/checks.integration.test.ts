@@ -175,13 +175,13 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
       expect(failure(r)).toMatch(/Cannot find module '[^']*node_modules\/ms\/dist\/gone\.js'/);
     }, 240_000);
 
-    it('an installed package resolves; the run then reaches level 3', async () => {
+    it('an installed package resolves; the run passes, and with no sign of a vendor in its output it stays at level 2', async () => {
       const r = await execute('node', [
         shell('s1', 'npm install ms'),
         write('s2', 'index.js', "const ms = require('ms');\nconsole.log('ms ok', ms('2 days'));"),
         runStep('s3', 'node index.js'),
       ]);
-      expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+      expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
       expect(r.steps.map((s) => s.stepId)).toEqual([
         's1',
         's2',
@@ -285,7 +285,7 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
         });
         expect(failure(r)).toContain('SyntaxError');
         expect(failure(r)).toContain('test/example.test.js');
-        expect(r.harnessVersion).toBe(2);
+        expect(r.harnessVersion).toBeGreaterThanOrEqual(2);
       }, 240_000);
 
       it('the same file, correct, passes the syntax check and the plan reaches level 2', async () => {
@@ -350,7 +350,7 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
       expect(failure(r)).toContain("No module named 'never_installed_mod'");
     }, 240_000);
 
-    it('an installed package, the stdlib and a written local module pass; the run reaches level 3', async () => {
+    it('an installed package, the stdlib and a written local module pass; the run passes and stays at level 2 (no vendor evidence)', async () => {
       const r = await execute('python', [
         shell('s1', 'pip install six'),
         write('s2', 'helper.py', 'VALUE = 41\n'),
@@ -361,7 +361,7 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
         ),
         runStep('s4', 'python main.py'),
       ]);
-      expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+      expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
     }, 240_000);
 
     it('an import guarded by except ImportError is optional; a dynamic import is not checked', async () => {
@@ -395,7 +395,7 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
             reachedLevel: 1,
           });
           expect(failure(r)).toContain("No module named 'idna.qsr_missing'");
-          expect(r.harnessVersion).toBe(2);
+          expect(r.harnessVersion).toBeGreaterThanOrEqual(2);
         }
       }, 480_000);
 

@@ -107,8 +107,13 @@ const names = (r: Awaited<ReturnType<typeof go>>['result']) =>
 
 describe('executePlan: the happy path', () => {
   it('runs shell and run steps through `bash -lc` with a timeout and returns a valid RunResult', async () => {
+    // the run step prints the vendor's answer to a dummy key (evidence of reaching it), so the run is a real L3 claim
     const docker = new FakeDocker((c) =>
-      c.kind === 'step' ? { stdout: `ran ${c.command}\n` } : undefined,
+      c.kind === 'step'
+        ? {
+            stdout: `ran ${c.command}\n${c.command === 'node index.js' ? 'status code 401\n' : ''}`,
+          }
+        : undefined,
     );
     const { result } = await go(
       docker,
@@ -286,6 +291,94 @@ describe('executePlan: auth-error-as-pass', () => {
     const { result } = await go(docker, plan([run('s1', 'node index.js')]));
     expect(result.outcome).toBe('FAIL');
     expect(result.steps[0]?.matchedAuthPattern).toBeNull();
+  });
+});
+
+describe('executePlan: an L3 claim needs evidence that a vendor was reached (harness v3)', () => {
+  const planWithRun = (authErrorIsPass = false): StepIR =>
+    plan([
+      shell('s1', 'npm install acme-sdk'),
+      write('s2', 'index.js', "console.log('hi')"),
+      run('s3', 'node index.js', { authErrorIsPass }),
+    ]);
+  const reply = (out: FakeExec) =>
+    new FakeDocker((c) => (c.kind === 'step' && c.command === 'node index.js' ? out : undefined));
+
+  it('exit 1 with a 401 in the output (the auth-error-as-pass path) is L3, as before', async () => {
+    const { result } = await go(
+      reply({ stderr: 'Error: Request failed with status code 401\n', exitCode: 1 }),
+      planWithRun(true),
+      { target: target({ expect: { authErrorIsPass: true, timeoutSec: 300 } }) },
+    );
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    expect(result.runnerEnv['l3']).toBeUndefined();
+  });
+
+  it('exit 0 whose output shows a vendor rejecting the key (a snippet that catches the error) is L3 and records the pattern', async () => {
+    const { result } = await go(
+      reply({
+        stderr: "{ error: { message: 'API key is invalid', statusCode: 401 } }\n",
+        exitCode: 0,
+      }),
+      planWithRun(),
+    );
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    expect(result.steps.find((s) => s.stepId === 's3')?.matchedAuthPattern).toBe('http_401_403');
+  });
+
+  it('a registered vendor pattern alone is evidence', async () => {
+    const { result } = await go(
+      reply({ stdout: "message: 'API key is invalid'\n", exitCode: 0 }),
+      planWithRun(),
+    );
+    expect(result.reachedLevel).toBe(3);
+    expect(result.steps.find((s) => s.stepId === 's3')?.matchedAuthPattern).toBe(
+      'resend:api_key_is_invalid',
+    );
+  });
+
+  it('exit 0 with NO evidence passes the run but is capped at L2, and says why in runner_env', async () => {
+    const { result } = await go(reply({ stdout: 'Hello world!\n', exitCode: 0 }), planWithRun());
+    expect(result).toMatchObject({ outcome: 'PASS', failedStepId: null, reachedLevel: 2 });
+    expect(result.runnerEnv['l3']).toBe('no_evidence');
+  });
+
+  it('a target that declares itself local (no vendor API) is capped the same way, with the reason "local"', async () => {
+    const { result } = await go(reply({ stdout: 'Hello world!\n', exitCode: 0 }), planWithRun(), {
+      target: target({ expect: { authErrorIsPass: false, timeoutSec: 300, localOnly: true } }),
+    });
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+    expect(result.runnerEnv['l3']).toBe('local');
+  });
+
+  it('a drift error printed beside the evidence takes the evidence away (the step passes by exit code, L3 is not claimed)', async () => {
+    const { result } = await go(
+      reply({
+        stderr: 'status code 401\nTypeError: client.send is not a function\n',
+        exitCode: 0,
+      }),
+      planWithRun(),
+    );
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+    expect(result.runnerEnv['l3']).toBe('no_evidence');
+  });
+
+  it('a run that never reached its run step has no l3 note', async () => {
+    const { result } = await go(
+      new FakeDocker((c) =>
+        c.kind === 'step' && c.command?.startsWith('npm install')
+          ? { exitCode: 1, stderr: 'E404' }
+          : undefined,
+      ),
+      planWithRun(),
+    );
+    expect(result.outcome).toBe('FAIL');
+    expect(result.runnerEnv['l3']).toBeUndefined();
+  });
+
+  it('a plan with no run step has no l3 note', async () => {
+    const { result } = await go(new FakeDocker(), plan([shell('s1', 'npm install acme-sdk')]));
+    expect(result.runnerEnv['l3']).toBeUndefined();
   });
 });
 
@@ -683,7 +776,8 @@ describe('executePlan: harness checks (what level 2 means)', () => {
       'run',
     ]);
     expect(result.steps.map((x) => x.ordinal)).toEqual([0, 1, 2, 3, 4]);
-    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 3 });
+    // the run step printed nothing that shows a vendor was reached: the run passes, the level stays at what the checks proved
+    expect(result).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
     expect(checkCalls(docker)).toHaveLength(2);
   });
 
@@ -1037,7 +1131,12 @@ describe('executePlan: runner_env', () => {
 });
 
 describe('pure helpers', () => {
-  const step = (stepId: string, kind: string, outcome: 'PASS' | 'FAIL' | 'SKIPPED' = 'PASS') => ({
+  const step = (
+    stepId: string,
+    kind: string,
+    outcome: 'PASS' | 'FAIL' | 'SKIPPED' = 'PASS',
+    evidence: string | null = null,
+  ) => ({
     stepId,
     ordinal: 0,
     kind,
@@ -1047,7 +1146,7 @@ describe('pure helpers', () => {
     stdoutTail: null,
     stderrTail: null,
     logFile: null,
-    matchedAuthPattern: null,
+    matchedAuthPattern: evidence,
     skipReason: null,
     shadowExportCheck: null,
   });
@@ -1089,19 +1188,36 @@ describe('pure helpers', () => {
     expect(reachedLevel(steps, ids('i'))).toBe(1);
   });
 
-  it('reachedLevel: L3 is a passed run step and no failed check; it does not need a check to exist', () => {
+  it('reachedLevel: L3 is a passed run step WITH auth evidence and no failed check; it does not need a check to exist', () => {
     const base = [step('i', 'shell'), step('w', 'write_file')];
-    expect(reachedLevel([...base, step('c', 'harness_check'), step('r', 'run')], ids('i'))).toBe(3);
-    expect(reachedLevel([...base, step('r', 'run')], ids('i'))).toBe(3);
-    expect(reachedLevel([step('i', 'shell'), step('r', 'run')], ids('i'))).toBe(3);
+    const E = 'http_401_403';
     expect(
-      reachedLevel([...base, step('c', 'harness_check'), step('r', 'run', 'FAIL')], ids('i')),
+      reachedLevel([...base, step('c', 'harness_check'), step('r', 'run', 'PASS', E)], ids('i')),
+    ).toBe(3);
+    expect(reachedLevel([...base, step('r', 'run', 'PASS', E)], ids('i'))).toBe(3);
+    expect(reachedLevel([step('i', 'shell'), step('r', 'run', 'PASS', E)], ids('i'))).toBe(3);
+    expect(
+      reachedLevel([...base, step('c', 'harness_check'), step('r', 'run', 'FAIL', E)], ids('i')),
     ).toBe(2);
     expect(reachedLevel([...base, step('c', 'harness_check', 'FAIL')], ids('i'))).toBe(1);
   });
 
+  it('reachedLevel: a run step that passed WITHOUT evidence of reaching a vendor does not make L3 (harness v3): the level stays what the checks proved', () => {
+    const base = [step('i', 'shell'), step('w', 'write_file')];
+    expect(
+      reachedLevel([...base, step('c', 'harness_check'), step('r', 'run', 'PASS', null)], ids('i')),
+    ).toBe(2);
+    expect(reachedLevel([...base, step('r', 'run', 'PASS', null)], ids('i'))).toBe(1);
+    expect(reachedLevel([step('i', 'shell'), step('r', 'run', 'PASS', null)], ids('i'))).toBe(1);
+  });
+
   it('reachedLevel: a run with a failed install is not L3 even if a later run step somehow passed', () => {
-    expect(reachedLevel([step('i', 'shell', 'FAIL'), step('r', 'run')], ids('i'))).toBe(0);
+    expect(
+      reachedLevel(
+        [step('i', 'shell', 'FAIL'), step('r', 'run', 'PASS', 'http_401_403')],
+        ids('i'),
+      ),
+    ).toBe(0);
   });
 
   it('isInstallCommand recognises the common package managers', () => {

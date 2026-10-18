@@ -377,6 +377,8 @@ function runRow(spec: ToolSpec, toolIndex: number, i: number, kind: RunKind): Pu
       'left-pad-ish': '1.3.0',
     }),
     ...(stale ? { plan_stale: 'true' } : {}),
+    // loguru is a library: its snippet runs on the runner and no vendor is involved (harness v3 records that on a passing run)
+    ...(spec.slug === FIXTURE_SLUGS.stale && kind === 'pass' ? { l3: 'local' } : {}),
   };
   return PublicRunRow.parse({
     id: runId(toolIndex, i),

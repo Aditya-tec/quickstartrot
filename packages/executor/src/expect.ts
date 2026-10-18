@@ -1,4 +1,10 @@
-import { AUTH_PATTERNS, DRIFT_PATTERNS, type Expect, type OutputPattern } from '@qsr/core';
+import {
+  ALL_AUTH_PATTERNS,
+  AUTH_PATTERNS,
+  DRIFT_PATTERNS,
+  type Expect,
+  type OutputPattern,
+} from '@qsr/core';
 
 export { AUTH_PATTERNS, DRIFT_PATTERNS };
 
@@ -8,7 +14,8 @@ export { AUTH_PATTERNS, DRIFT_PATTERNS };
 const firstMatch = (patterns: readonly OutputPattern[], line: string): string | null =>
   patterns.find((p) => p.re.test(line))?.id ?? null;
 
-export const matchAuthPattern = (line: string): string | null => firstMatch(AUTH_PATTERNS, line);
+export const matchAuthPattern = (line: string): string | null =>
+  firstMatch(ALL_AUTH_PATTERNS, line);
 export const matchDriftPattern = (line: string): string | null => firstMatch(DRIFT_PATTERNS, line);
 
 /** What the executor observed while the step ran. */
@@ -50,9 +57,18 @@ export function evaluateExpect(expect: Expect, evidence: StepEvidence): Verdict 
 
   if (exitCode === expect.exitCode) {
     const missing = expect.stdoutIncludes.filter((s) => !evidence.stdoutIncludesFound.has(s));
-    return missing.length === 0
-      ? pass('exit code matched')
-      : fail(`missing from stdout: ${missing.map((s) => JSON.stringify(s)).join(', ')}`);
+    // Harness v3: the auth pattern in the output is recorded as EVIDENCE that a vendor was reached, whatever the exit code (a snippet
+    // that catches the vendor's error exits 0). A drift pattern takes the evidence away: an import error is not a vendor answer.
+    if (missing.length === 0) {
+      const proof = driftPattern === null ? authPattern : null;
+      return pass(
+        proof === null
+          ? 'exit code matched'
+          : `exit code matched; evidence of reaching the vendor: ${proof}`,
+        proof,
+      );
+    }
+    return fail(`missing from stdout: ${missing.map((s) => JSON.stringify(s)).join(', ')}`);
   }
 
   const mismatch = `exit code ${exitCode}, expected ${expect.exitCode}`;

@@ -16,6 +16,11 @@ export const RUNNER_ENV_KEYS = {
   planStale: 'plan_stale',
   /** The probe shard (a number as a string) whose runner executed the plan. */
   shard: 'shard',
+  /**
+   * Present when the run step passed but L3 was NOT claimed (harness v3): 'no_evidence' (nothing in its output showed a vendor was
+   * reached) or 'local' (the target declares that no vendor is involved). Never a failure, never read by the status engine.
+   */
+  l3: 'l3',
 } as const;
 
 /** Reads `runnerEnv.resolved` back into a map; an absent or malformed value is an empty map. */
@@ -41,7 +46,7 @@ export type SkipReason = z.infer<typeof SkipReason>;
  * version 2 fixes both. Bump it whenever a harness-owned check changes what it can fail: the status engine never counts failures
  * under different versions as consecutive, so a stricter check cannot turn one old failure plus one new one into an incident.
  */
-export const HARNESS_VERSION = 2;
+export const HARNESS_VERSION = 3;
 
 /** The experimental export check run in SHADOW mode: recorded, never acted on (see docs/DETECTION-POWER.md). */
 export const SHADOW_OUTCOMES = ['pass', 'fail', 'skipped'] as const;
