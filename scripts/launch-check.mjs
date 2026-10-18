@@ -6,6 +6,8 @@
 //   --api <url>      the API (default API_BASE_URL from the environment)
 //   --only a,b       run only these checks          --list   print the ids and stop
 //   --max-ms <n>     the limit for a first request to a public page (default 5000)
+//   --pause-ms <n>   the pause between checks, so the check never hammers a service (default 1500; longer before the burst)
+//   --no-burst       skip the deliberate burst of the rate-limit check (the limiter is still read from its headers)
 //   --json           machine-readable output
 //
 // It reads ADMIN_TOKEN from the environment for the admin checks and never prints it. It sends nothing to a vendor, posts nothing, opens
@@ -17,14 +19,19 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import {
+  burstPlan,
   findLeaks,
   judgeCi,
   judgeColdStart,
   judgeEdgeCache,
   judgeLicense,
   judgeRateLimit,
+  judgeRateLimitHeaders,
   judgeUnfurl,
   parseMeta,
+  parseRateHeaders,
+  pauseBefore,
+  shallowHealth,
   slugsFromSitemap,
   summarise,
 } from './launch-check-lib.mjs';
@@ -37,6 +44,8 @@ const { values } = parseArgs({
     only: { type: 'string', default: '' },
     list: { type: 'boolean', default: false },
     'max-ms': { type: 'string', default: '5000' },
+    'pause-ms': { type: 'string', default: '1500' },
+    'no-burst': { type: 'boolean', default: false },
     json: { type: 'boolean', default: false },
   },
 });
@@ -44,8 +53,10 @@ const SITE = values.site.replace(/\/+$/, '');
 const API = values.api.replace(/\/+$/, '');
 const SITE_HOST = new URL(SITE).host;
 const MAX_MS = Number(values['max-ms']);
+const PAUSE_MS = Number(values['pause-ms']);
 const TOKEN = process.env.ADMIN_TOKEN ?? '';
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const sh = (cmd, args, opts = {}) =>
   spawnSync(cmd, args, {
     cwd: ROOT,
@@ -506,24 +517,6 @@ const CHECKS = [
     },
   },
   {
-    id: 'rate-limit-api',
-    title: 'The API limits a burst from one address',
-    async run() {
-      if (API === '') return needAdmin();
-      const statuses = [];
-      const cap = 400;
-      for (let i = 0; i < cap && !statuses.includes(429); i += 20) {
-        const batch = await Promise.all(
-          Array.from({ length: 20 }, () =>
-            timed(`${API}/health`, { signal: AbortSignal.timeout(70_000) }),
-          ),
-        );
-        statuses.push(...batch.map((r) => r.status));
-      }
-      return judgeRateLimit(statuses, { allowedBeforeLimit: cap });
-    },
-  },
-  {
     id: 'vendor-issues-answered',
     title: 'No vendor question or opt-out issue is waiting for an answer',
     async run() {
@@ -547,6 +540,59 @@ const CHECKS = [
             status: 'FAIL',
             evidence: open.map((i) => `#${i.number} ${clip(i.title, 60)}`).join('; '),
           };
+    },
+  },
+  {
+    id: 'rate-limit-api',
+    title:
+      'The API limits a burst from one address (read from its headers; a deliberate, bounded burst unless --no-burst)',
+    async run() {
+      if (API === '') return needAdmin();
+      // 1. the limiter's own headers on three sequential requests: no burst is needed to see that a limiter exists and counts
+      const samples = [];
+      let last = null;
+      for (let i = 0; i < 3; i += 1) {
+        const r = await timed(`${API}/health`, { signal: AbortSignal.timeout(70_000) });
+        samples.push(parseRateHeaders(r.headers));
+        try {
+          last = JSON.parse(textOf(r));
+        } catch {
+          last = null;
+        }
+        await sleep(300);
+      }
+      const headers = judgeRateLimitHeaders(samples);
+      if (headers.status !== 'PASS') return headers;
+      if (values['no-burst'])
+        return {
+          status: 'PASS',
+          evidence: `${headers.evidence}; the burst was skipped (--no-burst)`,
+        };
+      // 2. the deliberate burst: sequential, bounded by the advertised limit, and only against a /health that does not ping the database
+      if (!shallowHealth(last))
+        return {
+          status: 'SKIP',
+          evidence: `${headers.evidence}; burst NOT run: GET /health on this deployment still pings the database, and a burst could starve the real work. Deploy the shallow health first`,
+        };
+      const limit = Math.max(...samples.filter(Boolean).map((x) => x.limit));
+      const plan = burstPlan(limit);
+      if (plan.max === 0)
+        return {
+          status: 'WARN',
+          evidence: `${headers.evidence}; a limit of ${limit} is not probed by exceeding it`,
+        };
+      const statuses = [];
+      for (let i = 0; i < plan.max; i += 1) {
+        const r = await timed(`${API}/health`, { signal: AbortSignal.timeout(70_000) });
+        statuses.push(r.status);
+        if (r.status === 429) break;
+        await sleep(plan.intervalMs);
+      }
+      const burst = judgeRateLimit(statuses, { allowedBeforeLimit: plan.max });
+      return {
+        status: burst.status,
+        evidence: `${headers.evidence}; ${burst.evidence}. Wait a minute before running the burst again`,
+      };
     },
   },
   {
@@ -581,7 +627,11 @@ async function main() {
     return 2;
   }
   const results = [];
+  let first = true;
   for (const c of CHECKS.filter((x) => only.size === 0 || only.has(x.id))) {
+    // a pause between phases, so the check can never hammer a service (and a longer one before the burst)
+    if (!first) await sleep(pauseBefore(c.id, { pauseMs: PAUSE_MS }));
+    first = false;
     let r;
     try {
       r = await c.run();

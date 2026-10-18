@@ -184,6 +184,64 @@ export function judgeRateLimit(statuses, { allowedBeforeLimit }) {
   };
 }
 
+// ---- pacing: the check must not be able to knock over the production API
+
+/** The limiter's own advertised state (@fastify/rate-limit sends these on every answer), or null when a header is missing or not a number. */
+export function parseRateHeaders(headers) {
+  const num = (name) => {
+    const v = headers.get(name);
+    return v !== null && /^\d+$/.test(v) ? Number(v) : null;
+  };
+  const limit = num('x-ratelimit-limit');
+  const remaining = num('x-ratelimit-remaining');
+  const resetS = num('x-ratelimit-reset');
+  return limit === null || remaining === null || resetS === null
+    ? null
+    : { limit, remaining, resetS };
+}
+
+/** A limiter exists if it advertises a positive limit and the remaining count goes down request by request. No burst is needed to see that. */
+export function judgeRateLimitHeaders(samples) {
+  const seen = samples.filter((s) => s !== null);
+  if (seen.length === 0)
+    return {
+      status: 'FAIL',
+      evidence: 'the answers carry no x-ratelimit headers: no limiter is advertised',
+    };
+  const { limit } = seen[0];
+  if (!(limit > 0))
+    return { status: 'FAIL', evidence: `the limiter advertises a limit of ${limit}` };
+  const counts = seen.map((s) => s.remaining);
+  const counts_down = counts.length >= 2 && counts.every((c, i) => i === 0 || c < counts[i - 1]);
+  if (!counts_down)
+    return {
+      status: 'FAIL',
+      evidence: `the remaining count does not go down across ${counts.length} requests (${counts.join(', ')})`,
+    };
+  return {
+    status: 'PASS',
+    evidence: `the limiter advertises ${limit} a minute and counted down ${counts.join(', ')} (no burst needed)`,
+  };
+}
+
+/**
+ * A deliberate burst, if one is wanted at all: one request at a time, no faster than ten a second, never more than the advertised limit plus a
+ * few, and none at all when the limit is large (nobody should probe a limit of thousands by exceeding it).
+ */
+export function burstPlan(limit) {
+  const MAX_PROBED_LIMIT = 300;
+  if (limit === null || !(limit > 0) || limit > MAX_PROBED_LIMIT)
+    return { max: 0, intervalMs: 0, concurrency: 1 };
+  return { max: limit + 5, intervalMs: 125, concurrency: 1 };
+}
+
+/** Whether GET /health is the shallow one (no database ping), the only kind a burst is allowed against. */
+export const shallowHealth = (body) => body !== null && typeof body === 'object' && !('db' in body);
+
+/** How long to wait before a check: a pause between phases, and a longer one before the burst. */
+export const pauseBefore = (id, { pauseMs }) =>
+  pauseMs === 0 ? 0 : id === 'rate-limit-api' ? Math.max(5000, pauseMs * 4) : pauseMs;
+
 /** The licence is the owner's decision; the README must say what the LICENSE file says. */
 export function judgeLicense({ license, readmeSection }) {
   const none = /no licen[cs]e has been chosen/i.test(readmeSection);

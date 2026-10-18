@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
+  burstPlan,
   cacheSeconds,
   findLeaks,
   judgeCacheControl,
@@ -8,10 +9,14 @@ import {
   judgeColdStart,
   judgeEdgeCache,
   judgeLicense,
+  judgeRateLimitHeaders,
   judgeRateLimit,
   judgeUnfurl,
   parseMeta,
+  parseRateHeaders,
+  pauseBefore,
   pngSize,
+  shallowHealth,
   slugsFromSitemap,
   summarise,
 } from './launch-check-lib.mjs';
@@ -254,4 +259,64 @@ test('judgeEdgeCache never accepts a private or no-store response, even from the
       .status,
     'FAIL',
   );
+});
+
+// Pacing. The check must not be able to knock over the production API (it did, twice, on 2026-10-18: a 20-wide burst of GET /health, each one
+// a database ping, delayed Render's own health probe). The burst is sequential, bounded by the limit the limiter itself advertises, and
+// refused against a /health that still pings the database.
+test('parseRateHeaders reads the limiter headers, and nothing else', () => {
+  const h = new Headers({
+    'x-ratelimit-limit': '120',
+    'x-ratelimit-remaining': '117',
+    'x-ratelimit-reset': '41',
+  });
+  assert.deepEqual(parseRateHeaders(h), { limit: 120, remaining: 117, resetS: 41 });
+  assert.equal(parseRateHeaders(new Headers()), null);
+  assert.equal(parseRateHeaders(new Headers({ 'x-ratelimit-limit': 'many' })), null);
+});
+
+test('judgeRateLimitHeaders passes a limiter that advertises a limit and counts down, without any burst', () => {
+  const r = judgeRateLimitHeaders([
+    { limit: 120, remaining: 119, resetS: 59 },
+    { limit: 120, remaining: 118, resetS: 59 },
+    { limit: 120, remaining: 117, resetS: 58 },
+  ]);
+  assert.equal(r.status, 'PASS');
+  assert.match(r.evidence, /120 a minute/);
+  assert.match(r.evidence, /no burst/);
+});
+
+test('judgeRateLimitHeaders fails when there are no headers or the count does not move', () => {
+  assert.equal(judgeRateLimitHeaders([null, null]).status, 'FAIL');
+  assert.equal(judgeRateLimitHeaders([]).status, 'FAIL');
+  const stuck = judgeRateLimitHeaders([
+    { limit: 120, remaining: 119, resetS: 59 },
+    { limit: 120, remaining: 119, resetS: 59 },
+  ]);
+  assert.equal(stuck.status, 'FAIL');
+  assert.equal(judgeRateLimitHeaders([{ limit: 0, remaining: 0, resetS: 1 }]).status, 'FAIL');
+});
+
+test('burstPlan never sends more than the limit plus a few, one at a time, no faster than ten a second', () => {
+  const p = burstPlan(120);
+  assert.equal(p.max, 125);
+  assert.ok(p.intervalMs >= 100);
+  assert.equal(p.concurrency, 1);
+  // a limit nobody should probe by exceeding it is not probed
+  assert.equal(burstPlan(100_000).max, 0);
+  assert.equal(burstPlan(301).max, 0);
+  assert.equal(burstPlan(300).max, 305);
+  assert.equal(burstPlan(null).max, 0);
+});
+
+test('shallowHealth says whether /health still pings the database', () => {
+  assert.equal(shallowHealth({ status: 'ok', time: 'x' }), true);
+  assert.equal(shallowHealth({ status: 'ok', db: true, time: 'x' }), false);
+  assert.equal(shallowHealth(null), false);
+});
+
+test('pauses: a pause between phases, longer before the burst', () => {
+  assert.equal(pauseBefore('site-reachable', { pauseMs: 1500 }), 1500);
+  assert.ok(pauseBefore('rate-limit-api', { pauseMs: 1500 }) >= 5000);
+  assert.equal(pauseBefore('site-reachable', { pauseMs: 0 }), 0);
 });
