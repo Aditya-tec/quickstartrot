@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import {
+  HARNESS_VERSION,
   noopLogger,
   redact,
   RUNNER_ENV_KEYS,
@@ -10,6 +11,7 @@ import {
   WORK_DIR,
   type Logger,
   type RunOutcome,
+  type ShadowExportCheck,
   type Step,
   type StepIR,
   type StepResult,
@@ -21,9 +23,16 @@ import {
   type ImageInfo,
   type ResourceLimits,
 } from './docker.js';
-import { CHECK_TIMEOUT_S, HARNESS_CHECK_KIND, planChecks, type HarnessCheck } from './checks.js';
+import {
+  CHECK_IDS,
+  CHECK_TIMEOUT_S,
+  HARNESS_CHECK_KIND,
+  planChecks,
+  type HarnessCheck,
+} from './checks.js';
 import { evaluateExpect } from './expect.js';
 import { isInstallCommand } from './install.js';
+import { parseShadowOutput } from './shadow.js';
 import { StepOutput } from './sink.js';
 
 export { isInstallCommand };
@@ -39,7 +48,7 @@ export { isInstallCommand };
 //   L3  L1 + the run step met its Expect (including auth-error-as-pass); no check failed
 
 export interface ExecuteInput {
-  target: Pick<Target, 'slug' | 'language' | 'level' | 'placeholders' | 'expect'>;
+  target: Pick<Target, 'slug' | 'language' | 'level' | 'placeholders' | 'expect' | 'harness'>;
   ir: StepIR;
   /** Image reference to run, e.g. `ghcr.io/owner/qsr-node:22` or one pinned by digest. */
   image: string;
@@ -68,6 +77,11 @@ export interface ExecuteDeps {
    * set by the probe: only `qsr mutate --exports-check` and `qsr run --exports-check` ask for it.
    */
   exportsCheck?: boolean;
+  /**
+   * Shadow mode (P9d): after every normal step, run the export check and RECORD its answer on the imports-check step. It changes no step
+   * outcome, level, failed step or run outcome (shadow.test.ts pins it). `qsr execute` turns it on; nothing may read it back into a verdict.
+   */
+  shadowExportCheck?: boolean;
 }
 
 /** A failure of the harness itself (never the vendor's quickstart): the run outcome is HARNESS_ERROR. */
@@ -302,6 +316,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     logFile: null,
     matchedAuthPattern: null,
     skipReason: null,
+    shadowExportCheck: null,
     ...r,
   });
 
@@ -465,10 +480,67 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     });
   };
 
+  /**
+   * Shadow mode. Runs last, after every plan step and normal check has finished, so nothing it does can reach a step. Whatever
+   * happens (a fail, a crash, a timeout, plumbing that throws) is written to the shadow field of the imports-check step and nowhere
+   * else: it never throws out of here and never touches outcome, failedStepId or any other step.
+   */
+  const recordShadowExportCheck = async (): Promise<void> => {
+    const at = steps.findIndex((s) => s.stepId === CHECK_IDS.imports);
+    if (at < 0) return;
+    const write = (record: ShadowExportCheck): void => {
+      steps[at] = { ...(steps[at] as StepResult), shadowExportCheck: record };
+    };
+    const optOut = target.harness;
+    if (optOut?.skipExportCheck === true) {
+      write({
+        outcome: 'skipped',
+        missing: [],
+        note: `skipExportCheck: ${optOut.reason}`,
+        durationMs: 0,
+      });
+      return;
+    }
+    const check = planChecks(ir, { exports: true })?.checks.find((c) => c.id === CHECK_IDS.exports);
+    if (!check) return;
+    const out = new StepOutput({ secrets, stdoutIncludes: [] });
+    const began = clock();
+    try {
+      const exec = await docker.exec(name, check.argv, {
+        stdin: check.stdin,
+        timeoutMs: (CHECK_TIMEOUT_S + KILL_GRACE_S + HOST_SLACK_S) * SECOND,
+        signal,
+        onStdout: (c) => out.stdout(c),
+        onStderr: (c) => out.stderr(c),
+      });
+      const o = out.finish();
+      write(
+        parseShadowOutput({
+          exitCode: exec.exitCode,
+          timedOut: exec.timedOut,
+          stdout: o.stdoutTail,
+          stderr: o.stderrTail,
+          durationMs: Math.round(clock() - began),
+        }),
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      write({
+        outcome: 'skipped',
+        missing: [],
+        note: redact(`the check could not run: ${message}`, { secrets }).slice(0, 300),
+        durationMs: Math.round(clock() - began),
+      });
+    }
+  };
+
   const installIds = new Set(
     ir.steps.flatMap((s) => (s.kind === 'shell' && isInstallCommand(s.command) ? [s.id] : [])),
   );
-  const checkPlan = planChecks(ir, { exports: deps.exportsCheck === true });
+  // A target that opted out (harness.skipExportCheck, with a reason) never gets the export check, in shadow mode or as the experiment.
+  const checkPlan = planChecks(ir, {
+    exports: deps.exportsCheck === true && target.harness?.skipExportCheck !== true,
+  });
   const lastInstall = ir.steps.reduce(
     (last, s, i) => (s.kind === 'shell' && isInstallCommand(s.command) ? i : last),
     -1,
@@ -567,6 +639,13 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
         if (outcome === 'FAIL') break;
       }
     }
+    if (
+      deps.shadowExportCheck === true &&
+      deps.exportsCheck !== true &&
+      outcome === 'PASS' &&
+      checkPlan !== null
+    )
+      await recordShadowExportCheck();
     if (!resolvedCaptured) await captureResolved();
   } catch (err) {
     outcome = 'HARNESS_ERROR';
@@ -601,6 +680,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     attempt: input.attempt,
     planId: input.planId,
     snapshotHash: input.snapshotHash,
+    harnessVersion: HARNESS_VERSION,
     outcome,
     reachedLevel: reachedLevel(steps, installIds),
     failedStepId,

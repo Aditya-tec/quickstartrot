@@ -127,6 +127,14 @@ export const RULES: readonly Rule[] = [
     pattern: /ES modules need the full file name/,
   },
   {
+    id: 'check.python_submodule_missing',
+    failureClass: 'API_DRIFT',
+    description:
+      'Python: the package is installed but a module path inside it that the docs import is gone (harness version 2 resolves the full dotted path). The same class as a Node deep import, check.deep_import_missing.',
+    stepKinds: CHECK,
+    pattern: /No module named '[^'.]+(?:\.[^'.]+)+'/,
+  },
+  {
     id: 'check.package_not_installed',
     failureClass: 'DOCS_SNIPPET_ERROR',
     description: "The docs' code imports a package that no step of the docs installs.",
@@ -175,6 +183,13 @@ export const RULES: readonly Rule[] = [
     failureClass: 'DEPENDENCY_RESOLUTION',
     description: 'npm: no version matches the requested range (ETARGET / notarget).',
     pattern: /npm (?:error|ERR!) (?:code ETARGET\b|notarget)/,
+  },
+  {
+    id: 'dependency.npm_resolver_crash',
+    failureClass: 'DEPENDENCY_RESOLUTION',
+    description:
+      "npm's own dependency-tree builder crashed (Cannot read properties of null, reading 'edgesOut'): the install could not be resolved. It is npm failing rather than a named package, so a person reviews it before it is public like any vendor failure.",
+    pattern: /npm (?:error|ERR!) Cannot read properties of null \(reading 'edgesOut'\)/,
   },
   {
     id: 'dependency.npm_eresolve',

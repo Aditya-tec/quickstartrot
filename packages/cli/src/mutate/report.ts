@@ -4,7 +4,11 @@ import {
   compareRuns,
   misclassified,
   summarize,
+  type Cell,
   type Comparison,
+  type HarnessComparison,
+  type Kind,
+  type KindLevel,
   type Rate,
   type Summary,
 } from './stats.js';
@@ -23,6 +27,8 @@ export interface DetectionResults {
     /** The check that was on for these runs; `none` is what production cycles do. */
     harnessChecks:
       'production (syntax, imports)' | 'production plus qsr-check-exports (experimental)';
+    /** The version of the checks (P9d). Results from before versioning have none, which means 1. */
+    harnessVersion?: number;
     compilerVersion: string;
     targetsRequested: number;
   };
@@ -32,6 +38,10 @@ export interface DetectionResults {
   summary: Summary;
   /** Present when the export check was compared with the baseline. */
   comparison: Comparison | null;
+  /** Mutants whose verdict comes from a later run of the target alone, because the network failed twice in the full run. */
+  reruns?: { slug: string; operator: OperatorId; reason: string }[];
+  /** Present when an earlier harness version's results were given (`--render --v1`): the same mutants, one by one. */
+  harnessComparison: HarnessComparison | null;
 }
 
 export function buildResults(args: {
@@ -52,6 +62,7 @@ export function buildResults(args: {
     mutants: merged.mutants,
     summary: summarize(merged.controls, merged.mutants),
     comparison: args.baseline ? compareRuns(args.baseline, args) : null,
+    harnessComparison: null,
   };
 }
 
@@ -123,6 +134,106 @@ export function renderSampleTable(mutants: readonly MutantRecord[]): string {
   return lines.join('\n');
 }
 
+/** "12 of 40 (30%)" for a cell, with the targets behind it: the figure and its denominator travel together. */
+const cellText = (c: Cell): string =>
+  c.tested === 0
+    ? 'none tested'
+    : `${c.detected} of ${c.tested} (${pct(c.detection)}), ${c.targets} targets`;
+
+const LEVEL_KEYS = ['L1', 'L2', 'L3'] as const;
+
+function kindTable(
+  title: string,
+  operators: string,
+  cells: KindLevel[Kind],
+  levelTargets: Summary['levelTargets'],
+): string[] {
+  return [
+    `### ${title}`,
+    '',
+    `Operators: ${operators}.`,
+    '',
+    row([
+      'Level',
+      'Targets at this level',
+      'Tested',
+      'Detected',
+      'Rate',
+      'Targets with a tested mutant',
+      'Correct class',
+      'No site',
+      'Invalid',
+      'Harness errors',
+    ]),
+    row(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---']),
+    ...LEVEL_KEYS.map((l) => {
+      const c = cells[l];
+      return row([
+        l,
+        levelTargets[l],
+        c.tested,
+        c.detected,
+        pct(c.detection),
+        c.targets,
+        c.classified === 0 ? 'n/a' : `${c.classCorrect} of ${c.classified}`,
+        c.notApplicable,
+        c.invalid,
+        c.harnessError,
+      ]);
+    }),
+    '',
+  ];
+}
+
+/** The same mutants under harness v1 and v2 (and v2 with the export check): code-level by level, then what changed one by one. */
+function harnessSection(results: DetectionResults): string[] {
+  const h = results.harnessComparison;
+  if (!h && !results.comparison) return [];
+  const out: string[] = [];
+  out.push('## Harness versions, same mutants, same seed', '');
+  const columns: { label: string; code: KindLevel['code']; install: KindLevel['install'] }[] = [];
+  if (h) columns.push({ label: 'harness v1', code: h.before.code, install: h.before.install });
+  if (h)
+    columns.push({
+      label: `harness v${results.method.harnessVersion ?? 2}`,
+      code: h.after.code,
+      install: h.after.install,
+    });
+  else
+    columns.push({
+      label: 'production checks',
+      code: results.summary.byKind.code,
+      install: results.summary.byKind.install,
+    });
+  if (results.comparison)
+    columns.push({
+      label: 'with the export check (experiment)',
+      code: results.comparison.byKindAfter.code,
+      install: results.comparison.byKindAfter.install,
+    });
+  out.push(
+    'Code-level mutants by level (install-level mutants are shown below the table). Each cell: detected of tested, rate, targets with a tested mutant.',
+    '',
+    row(['Level', ...columns.map((c) => c.label)]),
+    row(['---', ...columns.map(() => '---')]),
+    ...LEVEL_KEYS.map((l) => row([l, ...columns.map((c) => cellText(c.code[l]))])),
+    '',
+    row(['Install-level', ...columns.map((c) => c.label)]),
+    row(['---', ...columns.map(() => '---')]),
+    ...LEVEL_KEYS.map((l) => row([l, ...columns.map((c) => cellText(c.install[l]))])),
+    '',
+  );
+  if (h) {
+    out.push(
+      `Newly detected under the newer harness: ${h.newlyDetected.length}${h.newlyDetected.length ? ` (${h.newlyDetected.join(', ')})` : ''}.`,
+      '',
+      `Detected before and surviving now: ${h.newlyMissed.length}${h.newlyMissed.length ? ` (${h.newlyMissed.join(', ')})` : ''}. A mutant that survives a newer harness after being detected by the older one is a regression to be explained, not tuned away.`,
+      '',
+    );
+  }
+  return out;
+}
+
 export function renderDocument(results: DetectionResults, existing?: string): string {
   const s = results.summary;
   const out: string[] = [];
@@ -132,7 +243,9 @@ export function renderDocument(results: DetectionResults, existing?: string): st
   add(
     '# Detection power: what the monitor can and cannot see',
     '',
-    `Generated ${results.generatedAt} by \`qsr mutate\`. Raw results: \`docs/detection-power.json\`. Seed \`${results.method.seed}\`, harness checks: ${results.method.harnessChecks}.`,
+    `Generated ${results.generatedAt} by \`qsr mutate\`. Raw results: \`docs/detection-power.json\`. Seed \`${results.method.seed}\`, harness version ${results.method.harnessVersion ?? 1}, harness checks: ${results.method.harnessChecks}.`,
+    '',
+    'There is no single detection rate in this document, on purpose. Mutants that change the **install** command (a typo in a package name, a version that does not exist) are stopped by npm or pip whatever the harness checks do; mutants that change the **code** (a symbol, a method, a deep path, syntax, an option) are what the harness checks are for. Averaging the two would credit the monitor for what the package manager does anyway, so they are reported apart and by level.',
     '',
     '## What this is',
     '',
@@ -168,7 +281,7 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     '',
     '## Controls and exclusions',
     '',
-    `${s.controls.included} of ${s.controls.total} controls passed. ${results.controls.filter((c) => c.retried).length} failed once and were run again; ${results.controls.filter((c) => c.retried && c.included).length} of those passed the second time.`,
+    `${s.controls.included} of ${s.controls.total} controls passed. ${results.controls.filter((c) => c.retried).length} ${results.controls.filter((c) => c.retried).length === 1 ? 'control failed once and was' : 'controls failed once and were'} run again; ${results.controls.filter((c) => c.retried && c.included).length} passed the second time.`,
     '',
   );
   const left = [...results.skipped, ...s.controls.excluded];
@@ -183,27 +296,36 @@ export function renderDocument(results: DetectionResults, existing?: string): st
     '',
   );
 
+  if (results.reruns && results.reruns.length > 0)
+    add(
+      '### Mutants run again after an environment failure',
+      '',
+      'The network (registry DNS) failed twice for these mutants in the full run, which is a harness error and no verdict. Each was run again alone with the same seed; the verdict below is from that run. Nothing else was re-run or chosen.',
+      '',
+      ...results.reruns.map((x) => `- ${x.slug} \`${x.operator}\`: ${x.reason}`),
+      '',
+    );
+
   add(
     '## Results',
     '',
-    `**Overall: ${frac(s.mutation)} mutants detected (${pct(s.mutation.detection)}).** Correct class where one was expected: ${s.mutation.classCorrect} of ${s.mutation.classified} (${pct(s.mutation.classification)}). Not counted: ${s.mutation.invalid} invalid, ${s.mutation.notApplicable} not applicable, ${s.mutation.harnessError} harness errors.`,
+    `Targets at each level (the level its control reached): L1 ${s.levelTargets.L1}, L2 ${s.levelTargets.L2}, L3 ${s.levelTargets.L3}. A cell below says how many mutants were tested, how many of those targets had at least one, and how many mutants were left out because the plan had no site for the operator (\`no site\`), the real validator refused the pair (\`invalid\`) or the harness itself failed.`,
     '',
-    'The overall figure mixes very different kinds of target. Read it by level:',
+    `**Limits that apply to every rate here:** L3 rests on ${s.levelTargets.L3} targets. ${s.noSite.code + s.noSite.install} mutants had no site to change (${s.noSite.code} code-level, ${s.noSite.install} install-level) and are in no rate. A rate over a handful of targets is an order of magnitude, not a percentage.`,
     '',
-    '### By level',
-    '',
-    row(['Level', 'Targets', 'Detected', 'Rate', 'Correct class']),
-    row(['---', '---', '---', '---', '---']),
-    ...Object.entries(s.byLevel).map(([l, r]) =>
-      row([
-        l,
-        r.targets,
-        frac(r),
-        pct(r.detection),
-        r.classified === 0 ? 'n/a' : `${r.classCorrect} of ${r.classified}`,
-      ]),
+    ...kindTable(
+      'Install-level mutants',
+      'pkg_typo, version_pin',
+      s.byKind.install,
+      s.levelTargets,
     ),
-    '',
+    ...kindTable(
+      'Code-level mutants',
+      'renamed_symbol, renamed_method, deep_import, syntax_error, option_misnamed',
+      s.byKind.code,
+      s.levelTargets,
+    ),
+    ...harnessSection(results),
     '### By operator',
     '',
     row(['Operator', 'Detected', 'Rate', 'Correct class', 'Invalid', 'Not applicable']),
@@ -335,24 +457,18 @@ export function renderDocument(results: DetectionResults, existing?: string): st
   if (results.comparison) {
     const c = results.comparison;
     add(
-      '## With the proposed export check (`qsr-check-exports`, experimental, off in production)',
+      '## With the export check (`qsr-check-exports`; in production it runs in shadow mode only)',
       '',
-      `Same mutants, same seed. **False positives on controls: ${c.falsePositives.length}.** ${c.falsePositives.map((f) => `${f.slug} (${clip(f.reason, 100)})`).join('; ')}`,
+      `Same mutants, same seed; here the check FAILS the run, which production does not do. A target that opted out (\`harness.skipExportCheck\`) is not checked. **False positives on controls: ${c.falsePositives.length}.** ${c.falsePositives.map((f) => `${f.slug} (${clip(f.reason, 100)})`).join('; ')}`,
       '',
-      row(['', 'Before', 'After']),
+      row(['Code-level mutants', 'Without the check', 'With the check']),
       row(['---', '---', '---']),
-      row([
-        'Overall detection',
-        `${frac(c.before)} (${pct(c.before.detection)})`,
-        `${frac(c.after)} (${pct(c.after.detection)})`,
-      ]),
       ...(['L1', 'L2', 'L3'] as const).map((l) =>
-        row([
-          l,
-          `${frac(c.byLevelBefore[l] as Rate)} (${pct((c.byLevelBefore[l] as Rate).detection)})`,
-          `${frac(c.byLevelAfter[l] as Rate)} (${pct((c.byLevelAfter[l] as Rate).detection)})`,
-        ]),
+        row([l, cellText(c.byKindBefore.code[l]), cellText(c.byKindAfter.code[l])]),
       ),
+      '',
+      row(['By operator', 'Without the check', 'With the check']),
+      row(['---', '---', '---']),
       ...ops.map((id) =>
         row([
           `\`${id}\``,

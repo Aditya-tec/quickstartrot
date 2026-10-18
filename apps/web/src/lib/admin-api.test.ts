@@ -42,7 +42,7 @@ const STATS = {
   days: 7,
   since: '2026-10-10T12:00:00.000Z',
   cycles: { total: 0, valid: 0, invalid: 0, unfinished: 0, recent: [] },
-  harness: { overall: { runs: 0, errors: 0, rate: 0 }, byDay: [] },
+  harness: { overall: { runs: 0, errors: 0, rate: 0 }, byDay: [], versions: [] },
   tools: [],
   unknowns: [],
   llmClassified: [],

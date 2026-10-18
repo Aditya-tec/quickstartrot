@@ -154,6 +154,7 @@ const pass = (
       matchedAuthPattern: null,
       skipReason: null,
     })),
+    harnessVersion: 2,
     imageDigest: 'sha256:' + 'a'.repeat(64),
     runnerEnv: { resolved: JSON.stringify({ 'acme-sdk': '3.0.0' }) },
     startedAt: '2026-10-18T00:00:00.000Z',
@@ -204,7 +205,9 @@ describe('qsr mutate <slug>', () => {
       /\| esm-node \| L2 \| pkg_typo \| DETECTED \| L1 \| s1 \(shell\) \| DEPENDENCY_RESOLUTION \(DEPENDENCY_RESOLUTION\) \| dependency.npm_e404 \|/,
     );
     expect(o.out()).toMatch(/\| esm-node \| L2 \| renamed_symbol \| SURVIVED \|/);
-    expect(o.out()).toMatch(/detected 1 of 2 tested \(50%\)/);
+    expect(o.out()).toMatch(/install-level L2: 1 of 1 \(100%\) over 1 targets/);
+    expect(o.out()).toMatch(/code-level L2: 0 of 1 \(0%\) over 1 targets/);
+    expect(o.out()).not.toMatch(/detected \d+ of \d+ tested/);
     const json = JSON.parse(await readFile(path.join(workDir, 'results.json'), 'utf8'));
     expect(json.schemaVersion).toBe(1);
     expect(json.method).toMatchObject({
@@ -217,6 +220,42 @@ describe('qsr mutate <slug>', () => {
       'renamed_symbol',
     ]);
     expect(json.timing.runs).toBeGreaterThan(2);
+  });
+
+  it('--controls-only runs the unmutated plans once each, records the harness version, and runs no mutant', async () => {
+    await seed(esmInput());
+    await seed(cjsInput());
+    const seen: string[] = [];
+    const recording: PlanRunner = async (a) => {
+      seen.push(a.label);
+      return pass(a);
+    };
+    const o = out();
+    const code = await mutateCommand(
+      [
+        '--all',
+        '--controls-only',
+        '--targets',
+        targetsDir,
+        '--cache-dir',
+        cacheDir,
+        '--work-dir',
+        workDir,
+      ],
+      recordingLogger(),
+      o.io,
+      { runner: recording, now: () => new Date('2026-10-18T10:00:00.000Z') },
+    );
+    expect(code).toBe(0);
+    expect(seen).toEqual(['control', 'control']);
+    const json = JSON.parse(await readFile(path.join(workDir, 'controls.json'), 'utf8'));
+    expect(json.harnessVersion).toBe(2);
+    expect(json.controls.map((c: { slug: string }) => c.slug).sort()).toEqual([
+      'cjs-node',
+      'esm-node',
+    ]);
+    expect(json.mutants).toBeUndefined();
+    expect(o.out()).toMatch(/controls: 2 of 2 passed/);
   });
 
   it('skips a target with no cached extraction or no cached plan, and says why', async () => {
@@ -296,6 +335,92 @@ describe('qsr mutate <slug>', () => {
   });
 });
 
+describe('qsr mutate --render with results saved by an older build', () => {
+  it('recomputes the summary from the saved records, so results without the install/code split still render', async () => {
+    await seed(esmInput());
+    await mutateCommand(
+      ['esm-node', '--targets', targetsDir, '--cache-dir', cacheDir, '--work-dir', workDir],
+      recordingLogger(),
+      out().io,
+      { runner },
+    );
+    const file = path.join(workDir, 'results.json');
+    const saved = JSON.parse(await readFile(file, 'utf8'));
+    delete saved.summary.byKind;
+    delete saved.summary.noSite;
+    delete saved.summary.levelTargets;
+    saved.reruns = [
+      {
+        slug: 'esm-node',
+        operator: 'pkg_typo',
+        reason: 'the network failed twice in the full run; run again alone, same seed',
+      },
+    ];
+    await writeFile(file, JSON.stringify(saved));
+    const docs = path.join(dir, 'docs');
+    await mkdir(docs, { recursive: true });
+    expect(
+      await mutateCommand(['--render', file, '--targets', targetsDir], recordingLogger(), out().io),
+    ).toBe(0);
+    expect(await readFile(path.join(docs, 'DETECTION-POWER.md'), 'utf8')).toContain(
+      '### Code-level mutants',
+    );
+    expect(await readFile(path.join(docs, 'DETECTION-POWER.md'), 'utf8')).toMatch(
+      /esm-node `pkg_typo`: .*run again alone/,
+    );
+  });
+});
+
+describe('qsr mutate --render --v1', () => {
+  it('adds the harness v1 to v2 table (code-level, by level) and lists what v2 newly detects, from two saved results', async () => {
+    await seed(esmInput());
+    const run = async (name: string, over: PlanRunner) => {
+      await mutateCommand(
+        [
+          'esm-node',
+          '--targets',
+          targetsDir,
+          '--cache-dir',
+          cacheDir,
+          '--work-dir',
+          workDir,
+          '--operators',
+          'pkg_typo,syntax_error',
+          '--out-json',
+          path.join(workDir, name),
+        ],
+        recordingLogger(),
+        out().io,
+        { runner: over },
+      );
+      return path.join(workDir, name);
+    };
+    // v1 misses the syntax error in an ES-module .js file; v2 sees it
+    const v1 = await run('v1.json', runner);
+    const seesSyntax: PlanRunner = async (a) => {
+      const s = a.ir.steps.find((x) => x.kind === 'write_file');
+      return s && /\.m?js$/.test((s as { path: string }).path) && a.label === 'syntax_error'
+        ? pass(a, 'FAIL', s.id, 'SyntaxError: Unexpected token')
+        : runner(a);
+    };
+    const v2 = await run('v2.json', seesSyntax);
+    const docs = path.join(dir, 'docs');
+    await mkdir(docs, { recursive: true });
+    const code = await mutateCommand(
+      ['--render', v2, '--v1', v1, '--targets', targetsDir],
+      recordingLogger(),
+      out().io,
+    );
+    expect(code).toBe(0);
+    const md = await readFile(path.join(docs, 'DETECTION-POWER.md'), 'utf8');
+    expect(md).toContain('## Harness versions, same mutants, same seed');
+    expect(md).toContain('harness v1');
+    expect(md).toContain('esm-node:syntax_error');
+    const json = JSON.parse(await readFile(path.join(docs, 'detection-power.json'), 'utf8'));
+    expect(json.harnessComparison.newlyMissed).toEqual([]);
+  });
+});
+
 describe('sampling', () => {
   const inputs = (): MutationInput[] => [esmInput(), cjsInput(), pythonInput(), installOnlyInput()];
 
@@ -351,7 +476,11 @@ describe('qsr mutate --render', () => {
     expect(md).toMatch(/^# Detection power/);
     expect(md).toContain('## What this does NOT show');
     expect(md).toContain('It does not show how often real quickstarts break');
-    expect(md).toContain('### By level');
+    expect(md).toContain('### Install-level mutants');
+    expect(md).toContain('### Code-level mutants');
+    expect(md).not.toMatch(/Overall:/); // there is no blended headline
+    expect(md).not.toMatch(/mixes very different kinds/);
+    expect(md).toMatch(/targets at each level/i);
     expect(md).toContain('## Survivors');
     expect(md.endsWith('## Recommendation\n\nWritten by a person.\n')).toBe(true);
     const json = JSON.parse(await readFile(path.join(docs, 'detection-power.json'), 'utf8'));

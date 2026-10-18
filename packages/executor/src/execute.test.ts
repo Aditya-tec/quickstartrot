@@ -1049,6 +1049,7 @@ describe('pure helpers', () => {
     logFile: null,
     matchedAuthPattern: null,
     skipReason: null,
+    shadowExportCheck: null,
   });
 
   const ids = (...x: string[]) => new Set(x);

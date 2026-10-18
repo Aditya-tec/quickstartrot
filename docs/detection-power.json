@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-17T19:40:09.528Z",
+  "generatedAt": "2026-10-18T04:35:46.556Z",
   "method": {
     "seed": "p9c",
     "operators": [
@@ -15,6 +15,7 @@
     ],
     "concurrency": 2,
     "sample": null,
+    "harnessVersion": 2,
     "harnessChecks": "production (syntax, imports)",
     "compilerVersion": "2026-10-16.5",
     "targetsRequested": 51
@@ -31,7 +32,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 9798,
+      "durationMs": 9296,
       "resolved": {
         "ably": "2.29.0"
       }
@@ -46,7 +47,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 15172,
+      "durationMs": 16623,
       "resolved": {
         "ably": "3.1.4",
         "anyio": "4.15.1",
@@ -74,7 +75,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 2855,
+      "durationMs": 2069,
       "resolved": {
         "ajv": "8.20.0"
       }
@@ -89,7 +90,7 @@
       "outcome": "PASS",
       "reachedLevel": 3,
       "retried": false,
-      "durationMs": 10741,
+      "durationMs": 13118,
       "resolved": {
         "@anthropic-ai/sdk": "0.135.0"
       }
@@ -104,7 +105,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 24433,
+      "durationMs": 23791,
       "resolved": {
         "annotated-types": "0.8.0",
         "anthropic": "1.15.0",
@@ -134,7 +135,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 13342,
+      "durationMs": 15073,
       "resolved": {
         "annotated-types": "0.8.0",
         "anyio": "4.15.1",
@@ -165,7 +166,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 738,
+      "durationMs": 870,
       "resolved": {
         "chai": "6.3.0"
       }
@@ -180,7 +181,7 @@
       "outcome": "PASS",
       "reachedLevel": 3,
       "retried": false,
-      "durationMs": 2362,
+      "durationMs": 1676,
       "resolved": {
         "chalk": "6.0.1"
       }
@@ -195,7 +196,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 4129,
+      "durationMs": 5709,
       "resolved": {
         "cheerio": "1.2.0"
       }
@@ -210,7 +211,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 4080,
+      "durationMs": 5020,
       "resolved": {
         "click": "8.5.0"
       }
@@ -225,7 +226,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 12802,
+      "durationMs": 10680,
       "resolved": {
         "backports.zstd": "1.8.0",
         "certifi": "2026.7.22",
@@ -244,7 +245,7 @@
       "outcome": "PASS",
       "reachedLevel": 3,
       "retried": false,
-      "durationMs": 4206,
+      "durationMs": 3578,
       "resolved": {
         "python-dotenv": "1.2.4"
       }
@@ -259,7 +260,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 48734,
+      "durationMs": 52555,
       "resolved": {
         "@types/pg": "8.23.1",
         "dotenv": "18.0.8",
@@ -279,7 +280,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 4918,
+      "durationMs": 5284,
       "resolved": {
         "@e2b/code-interpreter": "2.9.0",
         "dotenv": "18.0.8"
@@ -295,7 +296,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 5016,
+      "durationMs": 5123,
       "resolved": {
         "fastify": "5.12.7"
       }
@@ -310,7 +311,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 8060,
+      "durationMs": 6808,
       "resolved": {
         "blinker": "1.9.0",
         "click": "8.5.0",
@@ -331,7 +332,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 8231,
+      "durationMs": 8065,
       "resolved": {
         "@honeybadger-io/js": "6.17.0"
       }
@@ -359,7 +360,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 26273,
+      "durationMs": 27730,
       "resolved": {
         "jest": "30.5.2"
       }
@@ -374,7 +375,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 2039,
+      "durationMs": 2492,
       "resolved": {
         "Jinja2": "3.1.6",
         "MarkupSafe": "3.0.4"
@@ -390,7 +391,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 12414,
+      "durationMs": 14308,
       "resolved": {
         "@launchdarkly/node-server-sdk": "9.15.0",
         "@launchdarkly/observability-node": "1.4.0"
@@ -406,7 +407,7 @@
       "outcome": "PASS",
       "reachedLevel": 3,
       "retried": false,
-      "durationMs": 4974,
+      "durationMs": 3663,
       "resolved": {
         "loguru": "0.7.3"
       }
@@ -421,7 +422,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 23115,
+      "durationMs": 23677,
       "resolved": {
         "loops": "7.3.0"
       }
@@ -436,7 +437,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3330,
+      "durationMs": 3795,
       "resolved": {
         "mailgun.js": "14.1.0"
       }
@@ -451,7 +452,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 1826,
+      "durationMs": 2442,
       "resolved": {
         "mixpanel": "0.24.0"
       }
@@ -466,7 +467,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3072,
+      "durationMs": 3437,
       "resolved": {
         "mocha": "12.0.3"
       }
@@ -481,7 +482,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 1814,
+      "durationMs": 1508,
       "resolved": {
         "@neondatabase/serverless": "1.2.0"
       }
@@ -496,7 +497,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3551,
+      "durationMs": 2249,
       "resolved": {
         "pg": "8.23.1"
       }
@@ -511,7 +512,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 5226,
+      "durationMs": 4872,
       "resolved": {
         "@openrouter/sdk": "1.4.25"
       }
@@ -526,7 +527,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 2093,
+      "durationMs": 2523,
       "resolved": {
         "pino": "10.4.0"
       }
@@ -541,7 +542,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 79102,
+      "durationMs": 70984,
       "resolved": {
         "polars": "2.0.0",
         "polars-runtime-32": "2.0.0"
@@ -557,7 +558,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3370,
+      "durationMs": 4415,
       "resolved": {
         "posthog-node": "5.56.2"
       }
@@ -572,7 +573,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 9355,
+      "durationMs": 8649,
       "resolved": {
         "anyio": "4.15.1",
         "backoff": "2.2.1",
@@ -599,7 +600,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 1049,
+      "durationMs": 492,
       "resolved": {}
     },
     {
@@ -612,7 +613,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 8059,
+      "durationMs": 8628,
       "resolved": {
         "annotated-types": "0.8.0",
         "pydantic": "2.14.1",
@@ -631,7 +632,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 7279,
+      "durationMs": 7399,
       "resolved": {
         "iniconfig": "2.3.1",
         "packaging": "26.3",
@@ -650,7 +651,7 @@
       "outcome": "PASS",
       "reachedLevel": 3,
       "retried": false,
-      "durationMs": 4239,
+      "durationMs": 4373,
       "resolved": {
         "resend": "6.34.1"
       }
@@ -665,7 +666,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 5288,
+      "durationMs": 6180,
       "resolved": {
         "certifi": "2026.7.22",
         "charset-normalizer": "3.5.2",
@@ -686,7 +687,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 5183,
+      "durationMs": 6644,
       "resolved": {
         "rollbar": "4.0.0"
       }
@@ -701,7 +702,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 2910,
+      "durationMs": 2659,
       "resolved": {
         "rxjs": "7.8.2"
       }
@@ -716,7 +717,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 25096,
+      "durationMs": 25410,
       "resolved": {
         "@sentry/node": "11.8.0"
       }
@@ -731,7 +732,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 6585,
+      "durationMs": 4392,
       "resolved": {
         "certifi": "2026.7.22",
         "sentry-sdk": "2.72.0",
@@ -748,7 +749,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 6468,
+      "durationMs": 4827,
       "resolved": {
         "@slack/web-api": "8.2.0"
       }
@@ -763,7 +764,7 @@
       "outcome": "PASS",
       "reachedLevel": 1,
       "retried": false,
-      "durationMs": 3334,
+      "durationMs": 2841,
       "resolved": {
         "socket.io": "4.8.4"
       }
@@ -778,7 +779,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 9672,
+      "durationMs": 7310,
       "resolved": {
         "@libsql/client": "0.18.0"
       }
@@ -793,7 +794,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3654,
+      "durationMs": 3386,
       "resolved": {
         "@upstash/qstash": "2.12.0"
       }
@@ -808,7 +809,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 2705,
+      "durationMs": 2980,
       "resolved": {
         "@upstash/redis": "1.39.0"
       }
@@ -823,7 +824,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 8428,
+      "durationMs": 5731,
       "resolved": {
         "anyio": "4.15.1",
         "certifi": "2026.7.22",
@@ -845,7 +846,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 2358,
+      "durationMs": 2424,
       "resolved": {
         "@upstash/vector": "1.2.3"
       }
@@ -860,7 +861,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 16881,
+      "durationMs": 15539,
       "resolved": {
         "vitest": "5.0.5"
       }
@@ -875,7 +876,7 @@
       "outcome": "PASS",
       "reachedLevel": 2,
       "retried": false,
-      "durationMs": 3074,
+      "durationMs": 2510,
       "resolved": {
         "zod": "4.6.7"
       }
@@ -900,7 +901,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1554,
+      "durationMs": 1847,
       "exportsCheck": false
     },
     {
@@ -921,7 +922,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1661,
+      "durationMs": 1789,
       "exportsCheck": false
     },
     {
@@ -984,7 +985,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 9125,
+      "durationMs": 7457,
       "exportsCheck": false
     },
     {
@@ -1005,7 +1006,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 8382,
+      "durationMs": 7278,
       "exportsCheck": false
     },
     {
@@ -1026,7 +1027,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 8705,
+      "durationMs": 5990,
       "exportsCheck": false
     },
     {
@@ -1047,7 +1048,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 7715,
+      "durationMs": 6585,
       "exportsCheck": false
     },
     {
@@ -1068,7 +1069,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6895,
+      "durationMs": 7246,
       "exportsCheck": false
     },
     {
@@ -1089,7 +1090,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 7405,
+      "durationMs": 6834,
       "exportsCheck": false
     },
     {
@@ -1110,7 +1111,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 14440,
+      "durationMs": 14065,
       "exportsCheck": false
     },
     {
@@ -1131,28 +1132,28 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 12514,
+      "durationMs": 14679,
       "exportsCheck": false
     },
     {
       "slug": "ably-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "ably -> ably.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:2: ModuleNotFoundError: No module named 'ably.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 14174,
+      "durationMs": 15097,
       "exportsCheck": false
     },
     {
@@ -1173,7 +1174,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 13876,
+      "durationMs": 12179,
       "exportsCheck": false
     },
     {
@@ -1215,7 +1216,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 14495,
+      "durationMs": 13528,
       "exportsCheck": false
     },
     {
@@ -1236,7 +1237,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 893,
+      "durationMs": 1053,
       "exportsCheck": false
     },
     {
@@ -1257,7 +1258,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 671,
+      "durationMs": 670,
       "exportsCheck": false
     },
     {
@@ -1299,7 +1300,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 2041,
+      "durationMs": 1884,
       "exportsCheck": false
     },
     {
@@ -1320,7 +1321,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1727,
+      "durationMs": 2353,
       "exportsCheck": false
     },
     {
@@ -1341,7 +1342,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2032,
+      "durationMs": 1763,
       "exportsCheck": false
     },
     {
@@ -1362,7 +1363,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2543,
+      "durationMs": 1971,
       "exportsCheck": false
     },
     {
@@ -1383,7 +1384,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 2564,
+      "durationMs": 2127,
       "exportsCheck": false
     },
     {
@@ -1404,7 +1405,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2084,
+      "durationMs": 2299,
       "exportsCheck": false
     },
     {
@@ -1425,7 +1426,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1479,
+      "durationMs": 1963,
       "exportsCheck": false
     },
     {
@@ -1467,7 +1468,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 7853,
+      "durationMs": 6790,
       "exportsCheck": false
     },
     {
@@ -1488,7 +1489,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6409,
+      "durationMs": 6128,
       "exportsCheck": false
     },
     {
@@ -1509,7 +1510,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6191,
+      "durationMs": 6110,
       "exportsCheck": false
     },
     {
@@ -1530,7 +1531,7 @@
       "classMatches": null,
       "survivorReason": "The snippet ran and still passed: the vendor SDK ignores an option it does not know, or the run ended with an authentication error before options were validated (an auth error counts as a pass).",
       "note": null,
-      "durationMs": 7794,
+      "durationMs": 8213,
       "exportsCheck": false
     },
     {
@@ -1572,7 +1573,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5716,
+      "durationMs": 5504,
       "exportsCheck": false
     },
     {
@@ -1593,7 +1594,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5896,
+      "durationMs": 5939,
       "exportsCheck": false
     },
     {
@@ -1635,28 +1636,28 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 21416,
+      "durationMs": 23872,
       "exportsCheck": false
     },
     {
       "slug": "anthropic-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "anthropic -> anthropic.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "quickstart.py:1: ModuleNotFoundError: No module named 'anthropic.qsr_missing' (imported from quickstart.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 22395,
+      "durationMs": 23243,
       "exportsCheck": false
     },
     {
@@ -1677,8 +1678,9 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 19121,
-      "exportsCheck": false
+      "durationMs": 15944,
+      "exportsCheck": false,
+      "retried": true
     },
     {
       "slug": "anthropic-python",
@@ -1698,8 +1700,9 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 21656,
-      "exportsCheck": false
+      "durationMs": 21402,
+      "exportsCheck": false,
+      "retried": true
     },
     {
       "slug": "anthropic-python",
@@ -1719,8 +1722,9 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 21922,
-      "exportsCheck": false
+      "durationMs": 17530,
+      "exportsCheck": false,
+      "retried": true
     },
     {
       "slug": "cerebras-python",
@@ -1740,7 +1744,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1518,
+      "durationMs": 1964,
       "exportsCheck": false
     },
     {
@@ -1761,7 +1765,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1919,
+      "durationMs": 1763,
       "exportsCheck": false
     },
     {
@@ -1782,7 +1786,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 12718,
+      "durationMs": 13569,
       "exportsCheck": false
     },
     {
@@ -1803,7 +1807,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 15193,
+      "durationMs": 13251,
       "exportsCheck": false
     },
     {
@@ -1845,7 +1849,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 14960,
+      "durationMs": 16226,
       "exportsCheck": false
     },
     {
@@ -1866,8 +1870,9 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 11845,
-      "exportsCheck": false
+      "durationMs": 11575,
+      "exportsCheck": false,
+      "retried": true
     },
     {
       "slug": "cerebras-python",
@@ -1887,8 +1892,9 @@
       "classMatches": null,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1240,
-      "exportsCheck": false
+      "durationMs": 1197,
+      "exportsCheck": false,
+      "retried": true
     },
     {
       "slug": "chai-node",
@@ -1908,7 +1914,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1071,
+      "durationMs": 5022,
       "exportsCheck": false
     },
     {
@@ -1929,7 +1935,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 764,
+      "durationMs": 1038,
       "exportsCheck": false
     },
     {
@@ -2055,7 +2061,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 1271,
+      "durationMs": 1224,
       "exportsCheck": false
     },
     {
@@ -2076,7 +2082,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 873,
+      "durationMs": 788,
       "exportsCheck": false
     },
     {
@@ -2097,7 +2103,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 844,
+      "durationMs": 773,
       "exportsCheck": false
     },
     {
@@ -2160,7 +2166,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1940,
+      "durationMs": 71263,
       "exportsCheck": false
     },
     {
@@ -2181,7 +2187,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1182,
+      "durationMs": 1400,
       "exportsCheck": false
     },
     {
@@ -2223,7 +2229,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 1756,
+      "durationMs": 1530,
       "exportsCheck": false
     },
     {
@@ -2244,7 +2250,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 854,
+      "durationMs": 10737,
       "exportsCheck": false
     },
     {
@@ -2265,7 +2271,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1127,
+      "durationMs": 942,
       "exportsCheck": false
     },
     {
@@ -2328,7 +2334,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4136,
+      "durationMs": 3767,
       "exportsCheck": false
     },
     {
@@ -2349,7 +2355,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4491,
+      "durationMs": 3031,
       "exportsCheck": false
     },
     {
@@ -2391,7 +2397,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 4030,
+      "durationMs": 2959,
       "exportsCheck": false
     },
     {
@@ -2412,7 +2418,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1731,
+      "durationMs": 1640,
       "exportsCheck": false
     },
     {
@@ -2433,7 +2439,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1340,
+      "durationMs": 1350,
       "exportsCheck": false
     },
     {
@@ -2494,9 +2500,9 @@
       "ruleId": null,
       "evidence": null,
       "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. The import check resolves the full dotted path, but a package that registers or lazily loads submodules at run time (a module-level __getattr__, sys.modules, a lazy loader) is not reported, because a missing file proves nothing there; the plan does not run the snippet either.",
       "note": null,
-      "durationMs": 3664,
+      "durationMs": 3164,
       "exportsCheck": false
     },
     {
@@ -2517,7 +2523,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2464,
+      "durationMs": 2456,
       "exportsCheck": false
     },
     {
@@ -2559,7 +2565,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3735,
+      "durationMs": 3157,
       "exportsCheck": false
     },
     {
@@ -2580,7 +2586,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2154,
+      "durationMs": 1591,
       "exportsCheck": false
     },
     {
@@ -2601,7 +2607,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3197,
+      "durationMs": 2929,
       "exportsCheck": false
     },
     {
@@ -2650,21 +2656,21 @@
       "slug": "clickhouse-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "clickhouse_connect -> clickhouse_connect.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:1: ModuleNotFoundError: No module named 'clickhouse_connect.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 12180,
+      "durationMs": 9413,
       "exportsCheck": false
     },
     {
@@ -2685,7 +2691,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 11657,
+      "durationMs": 8379,
       "exportsCheck": false
     },
     {
@@ -2706,7 +2712,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 12062,
+      "durationMs": 9170,
       "exportsCheck": false
     },
     {
@@ -2727,7 +2733,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 19711,
+      "durationMs": 16014,
       "exportsCheck": false
     },
     {
@@ -2748,7 +2754,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2070,
+      "durationMs": 1696,
       "exportsCheck": false
     },
     {
@@ -2769,7 +2775,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1719,
+      "durationMs": 1507,
       "exportsCheck": false
     },
     {
@@ -2790,7 +2796,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4106,
+      "durationMs": 3495,
       "exportsCheck": false
     },
     {
@@ -2823,16 +2829,16 @@
       "change": "dotenv -> dotenv.qsr_missing",
       "expected": ["API_DRIFT"],
       "outcome": "FAIL",
-      "reachedLevel": 2,
-      "failedStepId": "s4",
-      "failedStepKind": "run",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
       "failureClass": "API_DRIFT",
-      "ruleId": "import.missing_submodule",
-      "evidence": "ModuleNotFoundError: No module named 'dotenv.qsr_missing'",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:1: ModuleNotFoundError: No module named 'dotenv.qsr_missing' (imported from main.py)",
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3468,
+      "durationMs": 3283,
       "exportsCheck": false
     },
     {
@@ -2853,7 +2859,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2525,
+      "durationMs": 2220,
       "exportsCheck": false
     },
     {
@@ -2895,7 +2901,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3692,
+      "durationMs": 3625,
       "exportsCheck": false
     },
     {
@@ -2916,7 +2922,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1292,
+      "durationMs": 1150,
       "exportsCheck": false
     },
     {
@@ -2937,7 +2943,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 8923,
+      "durationMs": 7017,
       "exportsCheck": false
     },
     {
@@ -2958,7 +2964,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 51355,
+      "durationMs": 47465,
       "exportsCheck": false
     },
     {
@@ -2979,7 +2985,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 42968,
+      "durationMs": 50236,
       "exportsCheck": false
     },
     {
@@ -3000,7 +3006,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 41648,
+      "durationMs": 40751,
       "exportsCheck": false
     },
     {
@@ -3021,7 +3027,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 54671,
+      "durationMs": 52149,
       "exportsCheck": false
     },
     {
@@ -3042,7 +3048,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 57054,
+      "durationMs": 42876,
       "exportsCheck": false
     },
     {
@@ -3063,7 +3069,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 40946,
+      "durationMs": 41127,
       "exportsCheck": false
     },
     {
@@ -3084,7 +3090,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1108,
+      "durationMs": 1210,
       "exportsCheck": false
     },
     {
@@ -3105,7 +3111,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1454,
+      "durationMs": 1371,
       "exportsCheck": false
     },
     {
@@ -3126,7 +3132,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 5819,
+      "durationMs": 5015,
       "exportsCheck": false
     },
     {
@@ -3147,7 +3153,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 6135,
+      "durationMs": 5304,
       "exportsCheck": false
     },
     {
@@ -3168,7 +3174,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 7568,
+      "durationMs": 3910,
       "exportsCheck": false
     },
     {
@@ -3189,7 +3195,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6051,
+      "durationMs": 5819,
       "exportsCheck": false
     },
     {
@@ -3231,7 +3237,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3706,
+      "durationMs": 4616,
       "exportsCheck": false
     },
     {
@@ -3252,7 +3258,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 851,
+      "durationMs": 947,
       "exportsCheck": false
     },
     {
@@ -3273,7 +3279,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1396,
+      "durationMs": 1207,
       "exportsCheck": false
     },
     {
@@ -3315,7 +3321,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 6273,
+      "durationMs": 5502,
       "exportsCheck": false
     },
     {
@@ -3336,7 +3342,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5552,
+      "durationMs": 4530,
       "exportsCheck": false
     },
     {
@@ -3357,7 +3363,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6004,
+      "durationMs": 4525,
       "exportsCheck": false
     },
     {
@@ -3378,7 +3384,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 5212,
+      "durationMs": 4637,
       "exportsCheck": false
     },
     {
@@ -3399,7 +3405,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 4550,
+      "durationMs": 3907,
       "exportsCheck": false
     },
     {
@@ -3420,7 +3426,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5725,
+      "durationMs": 5712,
       "exportsCheck": false
     },
     {
@@ -3441,7 +3447,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6591,
+      "durationMs": 6204,
       "exportsCheck": false
     },
     {
@@ -3567,7 +3573,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 8518,
+      "durationMs": 6449,
       "exportsCheck": false
     },
     {
@@ -3588,7 +3594,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 742,
+      "durationMs": 868,
       "exportsCheck": false
     },
     {
@@ -3609,7 +3615,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1272,
+      "durationMs": 1480,
       "exportsCheck": false
     },
     {
@@ -3651,7 +3657,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 6915,
+      "durationMs": 5626,
       "exportsCheck": false
     },
     {
@@ -3672,7 +3678,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6546,
+      "durationMs": 6910,
       "exportsCheck": false
     },
     {
@@ -3693,7 +3699,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6531,
+      "durationMs": 4727,
       "exportsCheck": false
     },
     {
@@ -3714,7 +3720,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 4836,
+      "durationMs": 3483,
       "exportsCheck": false
     },
     {
@@ -3735,7 +3741,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5835,
+      "durationMs": 4351,
       "exportsCheck": false
     },
     {
@@ -3756,7 +3762,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 787,
+      "durationMs": 956,
       "exportsCheck": false
     },
     {
@@ -3777,7 +3783,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 631,
+      "durationMs": 979,
       "exportsCheck": false
     },
     {
@@ -3861,7 +3867,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 24547,
+      "durationMs": 25992,
       "exportsCheck": false
     },
     {
@@ -3903,7 +3909,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 23591,
+      "durationMs": 18601,
       "exportsCheck": false
     },
     {
@@ -3924,7 +3930,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2136,
+      "durationMs": 1634,
       "exportsCheck": false
     },
     {
@@ -3945,7 +3951,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2034,
+      "durationMs": 1618,
       "exportsCheck": false
     },
     {
@@ -4071,7 +4077,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 2497,
+      "durationMs": 2374,
       "exportsCheck": false
     },
     {
@@ -4092,7 +4098,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2106,
+      "durationMs": 1488,
       "exportsCheck": false
     },
     {
@@ -4113,7 +4119,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1787,
+      "durationMs": 1501,
       "exportsCheck": false
     },
     {
@@ -4134,7 +4140,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 13088,
+      "durationMs": 11918,
       "exportsCheck": false
     },
     {
@@ -4176,7 +4182,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 8927,
+      "durationMs": 12282,
       "exportsCheck": false
     },
     {
@@ -4197,7 +4203,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 9787,
+      "durationMs": 10022,
       "exportsCheck": false
     },
     {
@@ -4218,7 +4224,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 10868,
+      "durationMs": 7109,
       "exportsCheck": false
     },
     {
@@ -4239,7 +4245,7 @@
       "classMatches": null,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4575,
+      "durationMs": 5434,
       "exportsCheck": false
     },
     {
@@ -4260,7 +4266,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1502,
+      "durationMs": 1933,
       "exportsCheck": false
     },
     {
@@ -4281,7 +4287,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1390,
+      "durationMs": 1764,
       "exportsCheck": false
     },
     {
@@ -4302,7 +4308,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4441,
+      "durationMs": 3944,
       "exportsCheck": false
     },
     {
@@ -4335,16 +4341,16 @@
       "change": "loguru -> loguru.qsr_missing",
       "expected": ["API_DRIFT"],
       "outcome": "FAIL",
-      "reachedLevel": 2,
-      "failedStepId": "s3",
-      "failedStepKind": "run",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
       "failureClass": "API_DRIFT",
-      "ruleId": "import.missing_submodule",
-      "evidence": "ModuleNotFoundError: No module named 'loguru.qsr_missing'",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:1: ModuleNotFoundError: No module named 'loguru.qsr_missing' (imported from main.py)",
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4495,
+      "durationMs": 3506,
       "exportsCheck": false
     },
     {
@@ -4365,7 +4371,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3136,
+      "durationMs": 2676,
       "exportsCheck": false
     },
     {
@@ -4428,7 +4434,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1803,
+      "durationMs": 949,
       "exportsCheck": false
     },
     {
@@ -4449,7 +4455,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 821,
+      "durationMs": 1158,
       "exportsCheck": false
     },
     {
@@ -4470,7 +4476,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 22052,
+      "durationMs": 19536,
       "exportsCheck": false
     },
     {
@@ -4491,7 +4497,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 18047,
+      "durationMs": 16638,
       "exportsCheck": false
     },
     {
@@ -4512,7 +4518,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 18193,
+      "durationMs": 18143,
       "exportsCheck": false
     },
     {
@@ -4533,7 +4539,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 18596,
+      "durationMs": 16686,
       "exportsCheck": false
     },
     {
@@ -4554,7 +4560,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 17368,
+      "durationMs": 15213,
       "exportsCheck": false
     },
     {
@@ -4575,7 +4581,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 18059,
+      "durationMs": 16774,
       "exportsCheck": false
     },
     {
@@ -4596,7 +4602,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 963,
+      "durationMs": 877,
       "exportsCheck": false
     },
     {
@@ -4617,7 +4623,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 781,
+      "durationMs": 862,
       "exportsCheck": false
     },
     {
@@ -4659,7 +4665,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 3659,
+      "durationMs": 3661,
       "exportsCheck": false
     },
     {
@@ -4680,7 +4686,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4091,
+      "durationMs": 3103,
       "exportsCheck": false
     },
     {
@@ -4701,7 +4707,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3077,
+      "durationMs": 3291,
       "exportsCheck": false
     },
     {
@@ -4722,7 +4728,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 4265,
+      "durationMs": 2567,
       "exportsCheck": false
     },
     {
@@ -4743,7 +4749,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3053,
+      "durationMs": 4350,
       "exportsCheck": false
     },
     {
@@ -4764,7 +4770,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1037,
+      "durationMs": 1025,
       "exportsCheck": false
     },
     {
@@ -4785,7 +4791,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1518,
+      "durationMs": 1082,
       "exportsCheck": false
     },
     {
@@ -4827,7 +4833,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 2222,
+      "durationMs": 2148,
       "exportsCheck": false
     },
     {
@@ -4848,7 +4854,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2548,
+      "durationMs": 2481,
       "exportsCheck": false
     },
     {
@@ -4869,7 +4875,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1419,
+      "durationMs": 2283,
       "exportsCheck": false
     },
     {
@@ -4932,7 +4938,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 825,
+      "durationMs": 1004,
       "exportsCheck": false
     },
     {
@@ -4953,7 +4959,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2016,
+      "durationMs": 1284,
       "exportsCheck": false
     },
     {
@@ -5023,21 +5029,21 @@
       "slug": "mocha-node",
       "operator": "syntax_error",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "closing bracket removed from: describe(\"#indexOf()\", function () {",
       "expected": ["DOCS_SNIPPET_ERROR"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The syntax check passed although a bracket or quote was removed. Either (1) the file is a .js file that uses import where no package.json says type module: node --check then exits 0 WITHOUT parsing the file (found by this run and reproduced in the sandbox image), so a broken ES-module .js file passes; or (2) the edit landed inside a string or template literal, which the parser accepts.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-syntax",
+      "failedStepKind": "harness_check",
+      "failureClass": "DOCS_SNIPPET_ERROR",
+      "ruleId": "check.syntax",
+      "evidence": "SyntaxError: Invalid destructuring assignment target",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 3852,
+      "durationMs": 3439,
       "exportsCheck": false
     },
     {
@@ -5079,7 +5085,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5034,
+      "durationMs": 5692,
       "exportsCheck": false
     },
     {
@@ -5100,7 +5106,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 931,
+      "durationMs": 960,
       "exportsCheck": false
     },
     {
@@ -5121,7 +5127,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 860,
+      "durationMs": 1168,
       "exportsCheck": false
     },
     {
@@ -5142,7 +5148,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 2553,
+      "durationMs": 1714,
       "exportsCheck": false
     },
     {
@@ -5163,7 +5169,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 1797,
+      "durationMs": 1998,
       "exportsCheck": false
     },
     {
@@ -5184,7 +5190,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1118,
+      "durationMs": 1576,
       "exportsCheck": false
     },
     {
@@ -5203,9 +5209,9 @@
       "ruleId": null,
       "evidence": null,
       "classMatches": null,
-      "survivorReason": "The syntax check passed although a bracket or quote was removed. Either (1) the file is a .js file that uses import where no package.json says type module: node --check then exits 0 WITHOUT parsing the file (found by this run and reproduced in the sandbox image), so a broken ES-module .js file passes; or (2) the edit landed inside a string or template literal, which the parser accepts.",
+      "survivorReason": "The syntax check passed although a bracket or quote was removed: the edit landed inside a string or template literal, which the parser accepts. (Harness version 1 also missed any edit in an ES-module .js file, because node --check does not parse one; version 2 parses it as a module.)",
       "note": null,
-      "durationMs": 1330,
+      "durationMs": 1398,
       "exportsCheck": false
     },
     {
@@ -5226,7 +5232,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 1914,
+      "durationMs": 1303,
       "exportsCheck": false
     },
     {
@@ -5247,7 +5253,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3554,
+      "durationMs": 3717,
       "exportsCheck": false
     },
     {
@@ -5268,7 +5274,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 922,
+      "durationMs": 1039,
       "exportsCheck": false
     },
     {
@@ -5289,7 +5295,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 594,
+      "durationMs": 777,
       "exportsCheck": false
     },
     {
@@ -5310,7 +5316,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 2552,
+      "durationMs": 2409,
       "exportsCheck": false
     },
     {
@@ -5331,7 +5337,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 1753,
+      "durationMs": 2521,
       "exportsCheck": false
     },
     {
@@ -5352,7 +5358,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2758,
+      "durationMs": 2477,
       "exportsCheck": false
     },
     {
@@ -5373,7 +5379,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2281,
+      "durationMs": 2466,
       "exportsCheck": false
     },
     {
@@ -5415,7 +5421,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 2909,
+      "durationMs": 2577,
       "exportsCheck": false
     },
     {
@@ -5436,7 +5442,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1308,
+      "durationMs": 937,
       "exportsCheck": false
     },
     {
@@ -5457,7 +5463,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1522,
+      "durationMs": 1481,
       "exportsCheck": false
     },
     {
@@ -5478,7 +5484,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 5438,
+      "durationMs": 4732,
       "exportsCheck": false
     },
     {
@@ -5499,7 +5505,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 4009,
+      "durationMs": 5459,
       "exportsCheck": false
     },
     {
@@ -5520,7 +5526,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5471,
+      "durationMs": 4476,
       "exportsCheck": false
     },
     {
@@ -5541,7 +5547,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5034,
+      "durationMs": 7242,
       "exportsCheck": false
     },
     {
@@ -5562,7 +5568,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 4727,
+      "durationMs": 5174,
       "exportsCheck": false
     },
     {
@@ -5583,7 +5589,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3757,
+      "durationMs": 4533,
       "exportsCheck": false
     },
     {
@@ -5604,7 +5610,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1794,
+      "durationMs": 1632,
       "exportsCheck": false
     },
     {
@@ -5625,7 +5631,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 686,
+      "durationMs": 1179,
       "exportsCheck": false
     },
     {
@@ -5667,7 +5673,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 2241,
+      "durationMs": 4007,
       "exportsCheck": false
     },
     {
@@ -5688,7 +5694,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2289,
+      "durationMs": 4310,
       "exportsCheck": false
     },
     {
@@ -5709,7 +5715,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2418,
+      "durationMs": 2417,
       "exportsCheck": false
     },
     {
@@ -5730,7 +5736,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2690,
+      "durationMs": 2347,
       "exportsCheck": false
     },
     {
@@ -5751,7 +5757,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 2973,
+      "durationMs": 2897,
       "exportsCheck": false
     },
     {
@@ -5772,7 +5778,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1725,
+      "durationMs": 2259,
       "exportsCheck": false
     },
     {
@@ -5793,7 +5799,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1801,
+      "durationMs": 2757,
       "exportsCheck": false
     },
     {
@@ -5877,7 +5883,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 76333,
+      "durationMs": 86460,
       "exportsCheck": false
     },
     {
@@ -5898,7 +5904,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 75924,
+      "durationMs": 78425,
       "exportsCheck": false
     },
     {
@@ -5919,7 +5925,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 70522,
+      "durationMs": 74770,
       "exportsCheck": false
     },
     {
@@ -5940,7 +5946,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1301,
+      "durationMs": 1320,
       "exportsCheck": false
     },
     {
@@ -5961,7 +5967,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 979,
+      "durationMs": 926,
       "exportsCheck": false
     },
     {
@@ -5982,7 +5988,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 2414,
+      "durationMs": 3294,
       "exportsCheck": false
     },
     {
@@ -6003,7 +6009,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 2003,
+      "durationMs": 4183,
       "exportsCheck": false
     },
     {
@@ -6024,7 +6030,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3456,
+      "durationMs": 4047,
       "exportsCheck": false
     },
     {
@@ -6045,7 +6051,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1753,
+      "durationMs": 2537,
       "exportsCheck": false
     },
     {
@@ -6087,7 +6093,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3023,
+      "durationMs": 3284,
       "exportsCheck": false
     },
     {
@@ -6108,7 +6114,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1535,
+      "durationMs": 1777,
       "exportsCheck": false
     },
     {
@@ -6129,7 +6135,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1311,
+      "durationMs": 1751,
       "exportsCheck": false
     },
     {
@@ -6150,7 +6156,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 9320,
+      "durationMs": 10197,
       "exportsCheck": false
     },
     {
@@ -6178,21 +6184,21 @@
       "slug": "posthog-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "posthog -> posthog.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:1: ModuleNotFoundError: No module named 'posthog.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 9782,
+      "durationMs": 12388,
       "exportsCheck": false
     },
     {
@@ -6213,7 +6219,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 10111,
+      "durationMs": 10226,
       "exportsCheck": false
     },
     {
@@ -6234,7 +6240,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 9384,
+      "durationMs": 9550,
       "exportsCheck": false
     },
     {
@@ -6255,7 +6261,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 11366,
+      "durationMs": 10751,
       "exportsCheck": false
     },
     {
@@ -6381,7 +6387,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 319,
+      "durationMs": 328,
       "exportsCheck": false
     },
     {
@@ -6402,7 +6408,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 521,
+      "durationMs": 534,
       "exportsCheck": false
     },
     {
@@ -6444,7 +6450,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1569,
+      "durationMs": 1776,
       "exportsCheck": false
     },
     {
@@ -6465,7 +6471,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1560,
+      "durationMs": 1524,
       "exportsCheck": false
     },
     {
@@ -6591,7 +6597,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5504,
+      "durationMs": 5491,
       "exportsCheck": false
     },
     {
@@ -6612,7 +6618,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2244,
+      "durationMs": 1645,
       "exportsCheck": false
     },
     {
@@ -6633,7 +6639,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1856,
+      "durationMs": 1417,
       "exportsCheck": false
     },
     {
@@ -6682,21 +6688,21 @@
       "slug": "pytest-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "pytest -> pytest.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "test_sysexit.py:2: ModuleNotFoundError: No module named 'pytest.qsr_missing' (imported from test_sysexit.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 8673,
+      "durationMs": 8736,
       "exportsCheck": false
     },
     {
@@ -6717,7 +6723,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6608,
+      "durationMs": 7440,
       "exportsCheck": false
     },
     {
@@ -6759,7 +6765,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 7484,
+      "durationMs": 7093,
       "exportsCheck": false
     },
     {
@@ -6780,7 +6786,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 853,
+      "durationMs": 995,
       "exportsCheck": false
     },
     {
@@ -6801,7 +6807,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1170,
+      "durationMs": 870,
       "exportsCheck": false
     },
     {
@@ -6822,7 +6828,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 4929,
+      "durationMs": 4879,
       "exportsCheck": false
     },
     {
@@ -6843,7 +6849,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3227,
+      "durationMs": 3261,
       "exportsCheck": false
     },
     {
@@ -6864,7 +6870,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2471,
+      "durationMs": 4045,
       "exportsCheck": false
     },
     {
@@ -6885,7 +6891,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3135,
+      "durationMs": 4666,
       "exportsCheck": false
     },
     {
@@ -6906,7 +6912,7 @@
       "classMatches": null,
       "survivorReason": "The snippet ran and still passed: the vendor SDK ignores an option it does not know, or the run ended with an authentication error before options were validated (an auth error counts as a pass).",
       "note": null,
-      "durationMs": 4868,
+      "durationMs": 3714,
       "exportsCheck": false
     },
     {
@@ -6927,7 +6933,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3283,
+      "durationMs": 2972,
       "exportsCheck": false
     },
     {
@@ -6948,7 +6954,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1767,
+      "durationMs": 1893,
       "exportsCheck": false
     },
     {
@@ -6969,7 +6975,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2025,
+      "durationMs": 1867,
       "exportsCheck": false
     },
     {
@@ -6990,7 +6996,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 6075,
+      "durationMs": 5820,
       "exportsCheck": false
     },
     {
@@ -7018,21 +7024,21 @@
       "slug": "resend-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "resend -> resend.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:2: ModuleNotFoundError: No module named 'resend.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 5751,
+      "durationMs": 5525,
       "exportsCheck": false
     },
     {
@@ -7053,7 +7059,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6132,
+      "durationMs": 6040,
       "exportsCheck": false
     },
     {
@@ -7095,7 +7101,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5500,
+      "durationMs": 5332,
       "exportsCheck": false
     },
     {
@@ -7116,7 +7122,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1391,
+      "durationMs": 1022,
       "exportsCheck": false
     },
     {
@@ -7137,7 +7143,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 896,
+      "durationMs": 1443,
       "exportsCheck": false
     },
     {
@@ -7200,7 +7206,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6686,
+      "durationMs": 5545,
       "exportsCheck": false
     },
     {
@@ -7221,7 +7227,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5866,
+      "durationMs": 5015,
       "exportsCheck": false
     },
     {
@@ -7242,7 +7248,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 5540,
+      "durationMs": 5317,
       "exportsCheck": false
     },
     {
@@ -7263,7 +7269,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5024,
+      "durationMs": 5238,
       "exportsCheck": false
     },
     {
@@ -7284,7 +7290,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 964,
+      "durationMs": 1030,
       "exportsCheck": false
     },
     {
@@ -7305,7 +7311,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 735,
+      "durationMs": 778,
       "exportsCheck": false
     },
     {
@@ -7431,7 +7437,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3048,
+      "durationMs": 3666,
       "exportsCheck": false
     },
     {
@@ -7452,7 +7458,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 16806,
+      "durationMs": 14981,
       "exportsCheck": false
     },
     {
@@ -7473,7 +7479,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 15308,
+      "durationMs": 14721,
       "exportsCheck": false
     },
     {
@@ -7515,7 +7521,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 24807,
+      "durationMs": 22224,
       "exportsCheck": false
     },
     {
@@ -7536,7 +7542,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 25765,
+      "durationMs": 24629,
       "exportsCheck": false
     },
     {
@@ -7557,7 +7563,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 26859,
+      "durationMs": 22218,
       "exportsCheck": false
     },
     {
@@ -7578,7 +7584,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 22508,
+      "durationMs": 24277,
       "exportsCheck": false
     },
     {
@@ -7599,7 +7605,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 22654,
+      "durationMs": 19035,
       "exportsCheck": false
     },
     {
@@ -7620,7 +7626,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1538,
+      "durationMs": 2107,
       "exportsCheck": false
     },
     {
@@ -7641,7 +7647,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1764,
+      "durationMs": 1814,
       "exportsCheck": false
     },
     {
@@ -7690,21 +7696,21 @@
       "slug": "sentry-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "sentry_sdk -> sentry_sdk.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:1: ModuleNotFoundError: No module named 'sentry_sdk.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 5285,
+      "durationMs": 5013,
       "exportsCheck": false
     },
     {
@@ -7725,7 +7731,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5326,
+      "durationMs": 6936,
       "exportsCheck": false
     },
     {
@@ -7746,7 +7752,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 5407,
+      "durationMs": 4694,
       "exportsCheck": false
     },
     {
@@ -7767,7 +7773,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 5099,
+      "durationMs": 4352,
       "exportsCheck": false
     },
     {
@@ -7788,7 +7794,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 990,
+      "durationMs": 1296,
       "exportsCheck": false
     },
     {
@@ -7809,7 +7815,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1697,
+      "durationMs": 799,
       "exportsCheck": false
     },
     {
@@ -7830,7 +7836,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 4874,
+      "durationMs": 4871,
       "exportsCheck": false
     },
     {
@@ -7872,7 +7878,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 6866,
+      "durationMs": 5585,
       "exportsCheck": false
     },
     {
@@ -7893,7 +7899,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 7020,
+      "durationMs": 5113,
       "exportsCheck": false
     },
     {
@@ -7914,7 +7920,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 5712,
+      "durationMs": 5218,
       "exportsCheck": false
     },
     {
@@ -7935,7 +7941,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 6544,
+      "durationMs": 5910,
       "exportsCheck": false
     },
     {
@@ -7956,7 +7962,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 885,
+      "durationMs": 1379,
       "exportsCheck": false
     },
     {
@@ -7977,7 +7983,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 781,
+      "durationMs": 729,
       "exportsCheck": false
     },
     {
@@ -8103,7 +8109,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3562,
+      "durationMs": 3135,
       "exportsCheck": false
     },
     {
@@ -8124,7 +8130,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 849,
+      "durationMs": 935,
       "exportsCheck": false
     },
     {
@@ -8145,7 +8151,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 907,
+      "durationMs": 1313,
       "exportsCheck": false
     },
     {
@@ -8166,7 +8172,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 8599,
+      "durationMs": 8904,
       "exportsCheck": false
     },
     {
@@ -8208,7 +8214,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 7686,
+      "durationMs": 6718,
       "exportsCheck": false
     },
     {
@@ -8229,7 +8235,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 5595,
+      "durationMs": 5752,
       "exportsCheck": false
     },
     {
@@ -8250,7 +8256,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 8901,
+      "durationMs": 5190,
       "exportsCheck": false
     },
     {
@@ -8292,7 +8298,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 912,
+      "durationMs": 1131,
       "exportsCheck": false
     },
     {
@@ -8313,7 +8319,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1464,
+      "durationMs": 1513,
       "exportsCheck": false
     },
     {
@@ -8334,7 +8340,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 3444,
+      "durationMs": 3412,
       "exportsCheck": false
     },
     {
@@ -8376,7 +8382,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2451,
+      "durationMs": 3073,
       "exportsCheck": false
     },
     {
@@ -8397,7 +8403,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3116,
+      "durationMs": 2526,
       "exportsCheck": false
     },
     {
@@ -8418,7 +8424,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2460,
+      "durationMs": 2124,
       "exportsCheck": false
     },
     {
@@ -8439,7 +8445,7 @@
       "classMatches": null,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1370,
+      "durationMs": 1927,
       "exportsCheck": false
     },
     {
@@ -8460,7 +8466,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 810,
+      "durationMs": 913,
       "exportsCheck": false
     },
     {
@@ -8481,7 +8487,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1690,
+      "durationMs": 1053,
       "exportsCheck": false
     },
     {
@@ -8502,7 +8508,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 2566,
+      "durationMs": 2161,
       "exportsCheck": false
     },
     {
@@ -8523,7 +8529,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A method the object no longer has is only found when it is called.",
       "note": null,
-      "durationMs": 1922,
+      "durationMs": 2666,
       "exportsCheck": false
     },
     {
@@ -8544,7 +8550,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2474,
+      "durationMs": 2910,
       "exportsCheck": false
     },
     {
@@ -8565,7 +8571,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1747,
+      "durationMs": 3139,
       "exportsCheck": false
     },
     {
@@ -8586,7 +8592,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2261,
+      "durationMs": 2122,
       "exportsCheck": false
     },
     {
@@ -8607,7 +8613,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 3459,
+      "durationMs": 3972,
       "exportsCheck": false
     },
     {
@@ -8628,7 +8634,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1513,
+      "durationMs": 2330,
       "exportsCheck": false
     },
     {
@@ -8649,7 +8655,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2134,
+      "durationMs": 2184,
       "exportsCheck": false
     },
     {
@@ -8670,7 +8676,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 5237,
+      "durationMs": 5751,
       "exportsCheck": false
     },
     {
@@ -8698,21 +8704,21 @@
       "slug": "upstash-redis-python",
       "operator": "deep_import",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "upstash_redis -> upstash_redis.qsr_missing",
       "expected": ["API_DRIFT"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-imports",
+      "failedStepKind": "harness_check",
+      "failureClass": "API_DRIFT",
+      "ruleId": "check.python_submodule_missing",
+      "evidence": "main.py:2: ModuleNotFoundError: No module named 'upstash_redis.qsr_missing' (imported from main.py)",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 4643,
+      "durationMs": 4709,
       "exportsCheck": false
     },
     {
@@ -8733,7 +8739,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3755,
+      "durationMs": 4236,
       "exportsCheck": false
     },
     {
@@ -8754,7 +8760,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 5028,
+      "durationMs": 5021,
       "exportsCheck": false
     },
     {
@@ -8775,7 +8781,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 19433,
+      "durationMs": 18679,
       "exportsCheck": false
     },
     {
@@ -8796,7 +8802,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 857,
+      "durationMs": 1150,
       "exportsCheck": false
     },
     {
@@ -8817,7 +8823,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1903,
+      "durationMs": 1369,
       "exportsCheck": false
     },
     {
@@ -8838,7 +8844,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 2313,
+      "durationMs": 2315,
       "exportsCheck": false
     },
     {
@@ -8880,7 +8886,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2980,
+      "durationMs": 2482,
       "exportsCheck": false
     },
     {
@@ -8901,7 +8907,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1517,
+      "durationMs": 1544,
       "exportsCheck": false
     },
     {
@@ -8922,7 +8928,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2208,
+      "durationMs": 1607,
       "exportsCheck": false
     },
     {
@@ -8943,7 +8949,7 @@
       "classMatches": null,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1197,
+      "durationMs": 1472,
       "exportsCheck": false
     },
     {
@@ -8964,7 +8970,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 911,
+      "durationMs": 919,
       "exportsCheck": false
     },
     {
@@ -8985,7 +8991,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 806,
+      "durationMs": 1049,
       "exportsCheck": false
     },
     {
@@ -9006,7 +9012,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. A name the package no longer exports is invisible until the code runs.",
       "note": null,
-      "durationMs": 19313,
+      "durationMs": 14390,
       "exportsCheck": false
     },
     {
@@ -9048,28 +9054,28 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 18738,
+      "durationMs": 15749,
       "exportsCheck": false
     },
     {
       "slug": "vitest-node",
       "operator": "syntax_error",
       "group": "mutation",
-      "status": "survived",
+      "status": "detected",
       "level": 2,
       "change": "closing bracket removed from: test('adds 1 + 2 to equal 3', () => {",
       "expected": ["DOCS_SNIPPET_ERROR"],
-      "outcome": "PASS",
-      "reachedLevel": 2,
-      "failedStepId": null,
-      "failedStepKind": null,
-      "failureClass": null,
-      "ruleId": null,
-      "evidence": null,
-      "classMatches": null,
-      "survivorReason": "The syntax check passed although a bracket or quote was removed. Either (1) the file is a .js file that uses import where no package.json says type module: node --check then exits 0 WITHOUT parsing the file (found by this run and reproduced in the sandbox image), so a broken ES-module .js file passes; or (2) the edit landed inside a string or template literal, which the parser accepts.",
+      "outcome": "FAIL",
+      "reachedLevel": 1,
+      "failedStepId": "qsr-check-syntax",
+      "failedStepKind": "harness_check",
+      "failureClass": "DOCS_SNIPPET_ERROR",
+      "ruleId": "check.syntax",
+      "evidence": "SyntaxError: Unexpected token '=>'",
+      "classMatches": true,
+      "survivorReason": null,
       "note": null,
-      "durationMs": 17169,
+      "durationMs": 13401,
       "exportsCheck": false
     },
     {
@@ -9105,13 +9111,13 @@
       "reachedLevel": 0,
       "failedStepId": "s1",
       "failedStepKind": "shell",
-      "failureClass": "UNKNOWN",
-      "ruleId": "none",
-      "evidence": null,
+      "failureClass": "DEPENDENCY_RESOLUTION",
+      "ruleId": "dependency.npm_resolver_crash",
+      "evidence": "npm error Cannot read properties of null (reading 'edgesOut')",
       "classMatches": null,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3755,
+      "durationMs": 3198,
       "exportsCheck": false
     },
     {
@@ -9132,7 +9138,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 853,
+      "durationMs": 1005,
       "exportsCheck": false
     },
     {
@@ -9153,7 +9159,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 1104,
+      "durationMs": 872,
       "exportsCheck": false
     },
     {
@@ -9216,7 +9222,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 3261,
+      "durationMs": 2707,
       "exportsCheck": false
     },
     {
@@ -9237,7 +9243,7 @@
       "classMatches": true,
       "survivorReason": null,
       "note": null,
-      "durationMs": 2112,
+      "durationMs": 2338,
       "exportsCheck": false
     },
     {
@@ -9258,7 +9264,7 @@
       "classMatches": null,
       "survivorReason": "The plan never runs the snippet (the run reaches L2). The L2 checks parse the file (`node --check`, or TypeScript syntax diagnostics) and resolve each import specifier from node_modules; they do not load the package, so they cannot see which names it exports. An option name is only meaningful to the vendor's code at call time.",
       "note": null,
-      "durationMs": 2067,
+      "durationMs": 1998,
       "exportsCheck": false
     },
     {
@@ -9279,7 +9285,7 @@
       "classMatches": null,
       "survivorReason": "The previous major version installed without error and the checks (and the run, if the plan has one) still passed: the snippet works with both majors, or the part of the API the snippet touches did not change.",
       "note": null,
-      "durationMs": 4320,
+      "durationMs": 2546,
       "exportsCheck": false
     }
   ],
@@ -9294,17 +9300,98 @@
         }
       ]
     },
-    "mutation": {
-      "detected": 174,
-      "survived": 78,
-      "tested": 252,
-      "detection": 0.6904761904761905,
-      "classified": 174,
-      "classCorrect": 174,
-      "classification": 1,
-      "invalid": 1,
-      "notApplicable": 97,
-      "harnessError": 0
+    "byKind": {
+      "install": {
+        "L1": {
+          "detected": 12,
+          "survived": 0,
+          "tested": 12,
+          "detection": 1,
+          "classified": 12,
+          "classCorrect": 12,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 6
+        },
+        "L2": {
+          "detected": 76,
+          "survived": 0,
+          "tested": 76,
+          "detection": 1,
+          "classified": 76,
+          "classCorrect": 76,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 2,
+          "harnessError": 0,
+          "targets": 38
+        },
+        "L3": {
+          "detected": 10,
+          "survived": 0,
+          "tested": 10,
+          "detection": 1,
+          "classified": 10,
+          "classCorrect": 10,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 5
+        }
+      },
+      "code": {
+        "L1": {
+          "detected": 0,
+          "survived": 0,
+          "tested": 0,
+          "detection": null,
+          "classified": 0,
+          "classCorrect": 0,
+          "classification": null,
+          "invalid": 0,
+          "notApplicable": 30,
+          "harnessError": 0,
+          "targets": 0
+        },
+        "L2": {
+          "detected": 71,
+          "survived": 66,
+          "tested": 137,
+          "detection": 0.5182481751824818,
+          "classified": 71,
+          "classCorrect": 71,
+          "classification": 1,
+          "invalid": 1,
+          "notApplicable": 57,
+          "harnessError": 0,
+          "targets": 39
+        },
+        "L3": {
+          "detected": 15,
+          "survived": 2,
+          "tested": 17,
+          "detection": 0.8823529411764706,
+          "classified": 15,
+          "classCorrect": 15,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 8,
+          "harnessError": 0,
+          "targets": 5
+        }
+      }
+    },
+    "noSite": {
+      "install": 2,
+      "code": 95
+    },
+    "levelTargets": {
+      "L1": 6,
+      "L2": 39,
+      "L3": 5
     },
     "byOperator": {
       "pkg_typo": {
@@ -9356,24 +9443,24 @@
         "harnessError": 0
       },
       "deep_import": {
-        "detected": 30,
-        "survived": 9,
+        "detected": 38,
+        "survived": 1,
         "tested": 39,
-        "detection": 0.7692307692307693,
-        "classified": 30,
-        "classCorrect": 30,
+        "detection": 0.9743589743589743,
+        "classified": 38,
+        "classCorrect": 38,
         "classification": 1,
         "invalid": 0,
         "notApplicable": 11,
         "harnessError": 0
       },
       "syntax_error": {
-        "detected": 41,
-        "survived": 3,
+        "detected": 43,
+        "survived": 1,
         "tested": 44,
-        "detection": 0.9318181818181818,
-        "classified": 41,
-        "classCorrect": 41,
+        "detection": 0.9772727272727273,
+        "classified": 43,
+        "classCorrect": 43,
         "classification": 1,
         "invalid": 0,
         "notApplicable": 6,
@@ -9407,12 +9494,12 @@
         "targets": 6
       },
       "L2": {
-        "detected": 137,
-        "survived": 76,
+        "detected": 147,
+        "survived": 66,
         "tested": 213,
-        "detection": 0.6431924882629108,
-        "classified": 137,
-        "classCorrect": 137,
+        "detection": 0.6901408450704225,
+        "classified": 147,
+        "classCorrect": 147,
         "classification": 1,
         "invalid": 1,
         "notApplicable": 59,
@@ -9561,12 +9648,12 @@
           "classification": null
         },
         "L2": {
-          "detected": 25,
-          "survived": 9,
+          "detected": 33,
+          "survived": 1,
           "tested": 34,
-          "detection": 0.7352941176470589,
-          "classified": 25,
-          "classCorrect": 25,
+          "detection": 0.9705882352941176,
+          "classified": 33,
+          "classCorrect": 33,
           "classification": 1
         },
         "L3": {
@@ -9590,12 +9677,12 @@
           "classification": null
         },
         "L2": {
-          "detected": 36,
-          "survived": 3,
+          "detected": 38,
+          "survived": 1,
           "tested": 39,
-          "detection": 0.9230769230769231,
-          "classified": 36,
-          "classCorrect": 36,
+          "detection": 0.9743589743589743,
+          "classified": 38,
+          "classCorrect": 38,
           "classification": 1
         },
         "L3": {
@@ -9725,23 +9812,6 @@
         ]
       },
       {
-        "operator": "deep_import",
-        "level": 2,
-        "reason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
-        "count": 9,
-        "targets": [
-          "ably-python",
-          "anthropic-python",
-          "click-python",
-          "clickhouse-python",
-          "posthog-python",
-          "pytest-python",
-          "resend-python",
-          "sentry-python",
-          "upstash-redis-python"
-        ]
-      },
-      {
         "operator": "option_misnamed",
         "level": 2,
         "reason": "The plan never runs the snippet (the run reaches L2). The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. An option name is only meaningful to the vendor's code at call time.",
@@ -9777,70 +9847,67 @@
         "targets": ["ably-python", "anthropic-python", "cerebras-python"]
       },
       {
-        "operator": "syntax_error",
-        "level": 2,
-        "reason": "The syntax check passed although a bracket or quote was removed: the edit landed in text the parser accepts (a string, a template literal or a docstring), or in a file the check does not parse.",
-        "count": 3,
-        "targets": ["mocha-node", "neon-serverless-node", "vitest-node"]
-      },
-      {
         "operator": "option_misnamed",
         "level": 3,
         "reason": "The snippet ran and still passed: the vendor SDK ignores an option it does not know, or the run ended with an authentication error before options were validated (an auth error counts as a pass).",
         "count": 2,
         "targets": ["anthropic-node", "resend-node"]
+      },
+      {
+        "operator": "deep_import",
+        "level": 2,
+        "reason": "The L2 checks compile the file (`py_compile`) and look up the top-level module of each import; they do not import the package, so they cannot see which names it provides. A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.",
+        "count": 1,
+        "targets": ["click-python"]
+      },
+      {
+        "operator": "syntax_error",
+        "level": 2,
+        "reason": "The syntax check passed although a bracket or quote was removed. Either (1) the file is a .js file that uses import where no package.json says type module: node --check then exits 0 WITHOUT parsing the file (found by this run and reproduced in the sandbox image), so a broken ES-module .js file passes; or (2) the edit landed inside a string or template literal, which the parser accepts.",
+        "count": 1,
+        "targets": ["neon-serverless-node"]
       }
     ]
   },
   "comparison": {
-    "falsePositives": [
-      {
-        "slug": "launchdarkly-node",
-        "reason": "the control did not pass twice: FAIL at qsr-check-exports (API_DRIFT, check.export_missing)"
-      }
-    ],
+    "falsePositives": [],
     "newlyDetected": [
       "ably-python:renamed_symbol",
-      "ably-python:deep_import",
-      "anthropic-python:deep_import",
       "cerebras-python:renamed_symbol",
       "click-python:deep_import",
-      "clickhouse-python:deep_import",
+      "drizzle-node:renamed_symbol",
+      "e2b-node:renamed_symbol",
       "loops-node:renamed_symbol",
-      "mocha-node:syntax_error",
       "neon-serverless-node:renamed_symbol",
       "node-postgres-node:renamed_symbol",
       "openrouter-node:renamed_symbol",
       "posthog-node:renamed_symbol",
       "posthog-python:renamed_symbol",
-      "posthog-python:deep_import",
-      "pytest-python:deep_import",
       "resend-python:renamed_symbol",
-      "resend-python:deep_import",
-      "sentry-python:deep_import",
       "slack-node:renamed_symbol",
+      "turso-libsql-node:renamed_symbol",
+      "upstash-qstash-node:renamed_symbol",
       "upstash-redis-node:renamed_symbol",
       "upstash-redis-python:renamed_symbol",
-      "upstash-redis-python:deep_import",
-      "vitest-node:renamed_symbol",
-      "vitest-node:syntax_error"
+      "upstash-vector-node:renamed_symbol",
+      "vitest-node:renamed_symbol"
     ],
     "before": {
-      "detected": 174,
-      "survived": 78,
+      "detected": 184,
+      "survived": 68,
       "tested": 252,
-      "detection": 0.6904761904761905,
-      "classified": 174,
-      "classCorrect": 174,
+      "detection": 0.7301587301587301,
+      "classified": 184,
+      "classCorrect": 184,
       "classification": 1
     },
     "after": {
-      "detected": 198,
-      "survived": 54,
+      "detected": 203,
+      "survived": 49,
       "tested": 252,
-      "detection": 0.7857142857142857,
-      "classified": 198,
-      "classCorrect": 198,
+      "detection": 0.8055555555555556,
+      "classified": 203,
+      "classCorrect": 203,
       "classification": 1
     },
     "byLevelBefore": {
@@ -9854,12 +9921,12 @@
         "classification": 1
       },
       "L2": {
-        "detected": 137,
-        "survived": 76,
+        "detected": 147,
+        "survived": 66,
         "tested": 213,
-        "detection": 0.6431924882629108,
-        "classified": 137,
-        "classCorrect": 137,
+        "detection": 0.6901408450704225,
+        "classified": 147,
+        "classCorrect": 147,
         "classification": 1
       },
       "L3": {
@@ -9883,12 +9950,12 @@
         "classification": 1
       },
       "L2": {
-        "detected": 161,
-        "survived": 52,
+        "detected": 166,
+        "survived": 47,
         "tested": 213,
-        "detection": 0.755868544600939,
-        "classified": 161,
-        "classCorrect": 161,
+        "detection": 0.7793427230046949,
+        "classified": 166,
+        "classCorrect": 166,
         "classification": 1
       },
       "L3": {
@@ -9939,21 +10006,21 @@
         "classification": 1
       },
       "deep_import": {
-        "detected": 30,
-        "survived": 9,
+        "detected": 38,
+        "survived": 1,
         "tested": 39,
-        "detection": 0.7692307692307693,
-        "classified": 30,
-        "classCorrect": 30,
+        "detection": 0.9743589743589743,
+        "classified": 38,
+        "classCorrect": 38,
         "classification": 1
       },
       "syntax_error": {
-        "detected": 41,
-        "survived": 3,
+        "detected": 43,
+        "survived": 1,
         "tested": 44,
-        "detection": 0.9318181818181818,
-        "classified": 41,
-        "classCorrect": 41,
+        "detection": 0.9772727272727273,
+        "classified": 43,
+        "classCorrect": 43,
         "classification": 1
       },
       "option_misnamed": {
@@ -9986,12 +10053,12 @@
         "classification": 1
       },
       "renamed_symbol": {
-        "detected": 16,
-        "survived": 6,
+        "detected": 21,
+        "survived": 1,
         "tested": 22,
-        "detection": 0.7272727272727273,
-        "classified": 16,
-        "classCorrect": 16,
+        "detection": 0.9545454545454546,
+        "classified": 21,
+        "classCorrect": 21,
         "classification": 1
       },
       "renamed_method": {
@@ -10030,6 +10097,384 @@
         "classCorrect": 0,
         "classification": null
       }
+    },
+    "byKindBefore": {
+      "install": {
+        "L1": {
+          "detected": 12,
+          "survived": 0,
+          "tested": 12,
+          "detection": 1,
+          "classified": 12,
+          "classCorrect": 12,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 6
+        },
+        "L2": {
+          "detected": 76,
+          "survived": 0,
+          "tested": 76,
+          "detection": 1,
+          "classified": 76,
+          "classCorrect": 76,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 2,
+          "harnessError": 0,
+          "targets": 38
+        },
+        "L3": {
+          "detected": 10,
+          "survived": 0,
+          "tested": 10,
+          "detection": 1,
+          "classified": 10,
+          "classCorrect": 10,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 5
+        }
+      },
+      "code": {
+        "L1": {
+          "detected": 0,
+          "survived": 0,
+          "tested": 0,
+          "detection": null,
+          "classified": 0,
+          "classCorrect": 0,
+          "classification": null,
+          "invalid": 0,
+          "notApplicable": 30,
+          "harnessError": 0,
+          "targets": 0
+        },
+        "L2": {
+          "detected": 71,
+          "survived": 66,
+          "tested": 137,
+          "detection": 0.5182481751824818,
+          "classified": 71,
+          "classCorrect": 71,
+          "classification": 1,
+          "invalid": 1,
+          "notApplicable": 57,
+          "harnessError": 0,
+          "targets": 39
+        },
+        "L3": {
+          "detected": 15,
+          "survived": 2,
+          "tested": 17,
+          "detection": 0.8823529411764706,
+          "classified": 15,
+          "classCorrect": 15,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 8,
+          "harnessError": 0,
+          "targets": 5
+        }
+      }
+    },
+    "byKindAfter": {
+      "install": {
+        "L1": {
+          "detected": 12,
+          "survived": 0,
+          "tested": 12,
+          "detection": 1,
+          "classified": 12,
+          "classCorrect": 12,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 6
+        },
+        "L2": {
+          "detected": 76,
+          "survived": 0,
+          "tested": 76,
+          "detection": 1,
+          "classified": 76,
+          "classCorrect": 76,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 2,
+          "harnessError": 0,
+          "targets": 38
+        },
+        "L3": {
+          "detected": 10,
+          "survived": 0,
+          "tested": 10,
+          "detection": 1,
+          "classified": 10,
+          "classCorrect": 10,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 5
+        }
+      },
+      "code": {
+        "L1": {
+          "detected": 0,
+          "survived": 0,
+          "tested": 0,
+          "detection": null,
+          "classified": 0,
+          "classCorrect": 0,
+          "classification": null,
+          "invalid": 0,
+          "notApplicable": 30,
+          "harnessError": 0,
+          "targets": 0
+        },
+        "L2": {
+          "detected": 90,
+          "survived": 47,
+          "tested": 137,
+          "detection": 0.656934306569343,
+          "classified": 90,
+          "classCorrect": 90,
+          "classification": 1,
+          "invalid": 1,
+          "notApplicable": 57,
+          "harnessError": 0,
+          "targets": 39
+        },
+        "L3": {
+          "detected": 15,
+          "survived": 2,
+          "tested": 17,
+          "detection": 0.8823529411764706,
+          "classified": 15,
+          "classCorrect": 15,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 8,
+          "harnessError": 0,
+          "targets": 5
+        }
+      }
     }
-  }
+  },
+  "harnessComparison": {
+    "before": {
+      "install": {
+        "L1": {
+          "detected": 12,
+          "survived": 0,
+          "tested": 12,
+          "detection": 1,
+          "classified": 12,
+          "classCorrect": 12,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 6
+        },
+        "L2": {
+          "detected": 76,
+          "survived": 0,
+          "tested": 76,
+          "detection": 1,
+          "classified": 76,
+          "classCorrect": 76,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 2,
+          "harnessError": 0,
+          "targets": 38
+        },
+        "L3": {
+          "detected": 10,
+          "survived": 0,
+          "tested": 10,
+          "detection": 1,
+          "classified": 10,
+          "classCorrect": 10,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 5
+        }
+      },
+      "code": {
+        "L1": {
+          "detected": 0,
+          "survived": 0,
+          "tested": 0,
+          "detection": null,
+          "classified": 0,
+          "classCorrect": 0,
+          "classification": null,
+          "invalid": 0,
+          "notApplicable": 30,
+          "harnessError": 0,
+          "targets": 0
+        },
+        "L2": {
+          "detected": 61,
+          "survived": 76,
+          "tested": 137,
+          "detection": 0.44525547445255476,
+          "classified": 61,
+          "classCorrect": 61,
+          "classification": 1,
+          "invalid": 1,
+          "notApplicable": 57,
+          "harnessError": 0,
+          "targets": 39
+        },
+        "L3": {
+          "detected": 15,
+          "survived": 2,
+          "tested": 17,
+          "detection": 0.8823529411764706,
+          "classified": 15,
+          "classCorrect": 15,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 8,
+          "harnessError": 0,
+          "targets": 5
+        }
+      }
+    },
+    "after": {
+      "install": {
+        "L1": {
+          "detected": 12,
+          "survived": 0,
+          "tested": 12,
+          "detection": 1,
+          "classified": 12,
+          "classCorrect": 12,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 6
+        },
+        "L2": {
+          "detected": 76,
+          "survived": 0,
+          "tested": 76,
+          "detection": 1,
+          "classified": 76,
+          "classCorrect": 76,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 2,
+          "harnessError": 0,
+          "targets": 38
+        },
+        "L3": {
+          "detected": 10,
+          "survived": 0,
+          "tested": 10,
+          "detection": 1,
+          "classified": 10,
+          "classCorrect": 10,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 0,
+          "harnessError": 0,
+          "targets": 5
+        }
+      },
+      "code": {
+        "L1": {
+          "detected": 0,
+          "survived": 0,
+          "tested": 0,
+          "detection": null,
+          "classified": 0,
+          "classCorrect": 0,
+          "classification": null,
+          "invalid": 0,
+          "notApplicable": 30,
+          "harnessError": 0,
+          "targets": 0
+        },
+        "L2": {
+          "detected": 71,
+          "survived": 66,
+          "tested": 137,
+          "detection": 0.5182481751824818,
+          "classified": 71,
+          "classCorrect": 71,
+          "classification": 1,
+          "invalid": 1,
+          "notApplicable": 57,
+          "harnessError": 0,
+          "targets": 39
+        },
+        "L3": {
+          "detected": 15,
+          "survived": 2,
+          "tested": 17,
+          "detection": 0.8823529411764706,
+          "classified": 15,
+          "classCorrect": 15,
+          "classification": 1,
+          "invalid": 0,
+          "notApplicable": 8,
+          "harnessError": 0,
+          "targets": 5
+        }
+      }
+    },
+    "newlyDetected": [
+      "ably-python:deep_import",
+      "anthropic-python:deep_import",
+      "clickhouse-python:deep_import",
+      "mocha-node:syntax_error",
+      "posthog-python:deep_import",
+      "pytest-python:deep_import",
+      "resend-python:deep_import",
+      "sentry-python:deep_import",
+      "upstash-redis-python:deep_import",
+      "vitest-node:syntax_error"
+    ],
+    "newlyMissed": []
+  },
+  "reruns": [
+    {
+      "slug": "anthropic-python",
+      "operator": "syntax_error",
+      "reason": "the network failed twice in the full run (a harness error); run again alone, same seed"
+    },
+    {
+      "slug": "anthropic-python",
+      "operator": "option_misnamed",
+      "reason": "the network failed twice in the full run (a harness error); run again alone, same seed"
+    },
+    {
+      "slug": "anthropic-python",
+      "operator": "previous_major",
+      "reason": "the network failed twice in the full run (a harness error); run again alone, same seed"
+    },
+    {
+      "slug": "cerebras-python",
+      "operator": "option_misnamed",
+      "reason": "the network failed twice in the full run (a harness error); run again alone, same seed"
+    },
+    {
+      "slug": "cerebras-python",
+      "operator": "previous_major",
+      "reason": "the network failed twice in the full run (a harness error); run again alone, same seed"
+    }
+  ]
 }

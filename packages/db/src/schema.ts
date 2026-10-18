@@ -58,6 +58,9 @@ export const tools = pgTable(
     transientStreak: integer('transient_streak').notNull().default(0),
     lastFailureSignature: text('last_failure_signature'),
     lastFailureClass: failureClass('last_failure_class'),
+    // The harness version the last counted failure ran under: failures under different versions are never consecutive
+    // (P9d, packages/status). Null while there is no counted failure.
+    lastFailureHarnessVersion: smallint('last_failure_harness_version'),
     lastRunAt: tstz('last_run_at'),
     createdAt: tstz('created_at').notNull().defaultNow(),
     // Canaries (targets/_canary) are harness probes, not tracked tools: never in the status engine or the public views.
@@ -158,6 +161,8 @@ export const runs = pgTable(
     // The status engine reads both (spec section 10): the level reached, and why a run was skipped.
     reachedLevel: smallint('reached_level').notNull().default(0),
     skipReason: text('skip_reason'), // 'manual_step' or null
+    // Which version of the harness checks produced this run (P9d). Everything recorded before it is version 1.
+    harnessVersion: smallint('harness_version').notNull().default(1),
     imageDigest: text('image_digest').notNull(),
     runnerEnv: jsonb('runner_env').notNull(), // node/python version, runner os, region
     durationMs: integer('duration_ms').notNull(),
@@ -187,6 +192,10 @@ export const stepResults = pgTable(
     stdoutTail: text('stdout_tail'), // last 4 KB, redacted
     stderrTail: text('stderr_tail'),
     logPath: text('log_path'), // full redacted log in storage
+    harnessVersion: smallint('harness_version').notNull().default(1),
+    // Shadow mode (P9d): the experimental export check's result, kept on the L2 imports-check step it follows. It is NEVER
+    // read by the status engine, the classifier or the public views.
+    shadowExportCheck: jsonb('shadow_export_check'),
   },
   (t) => [index('step_results_run_id_ordinal_idx').on(t.runId, t.ordinal)],
 );

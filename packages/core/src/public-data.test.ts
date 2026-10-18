@@ -289,6 +289,20 @@ describe('confirmedOnly', () => {
   });
 });
 
+describe('harness_version on a public run', () => {
+  it('is read from the view, and is 1 for a row from before the column existed', () => {
+    expect(PublicRunRow.parse(runRow({ harness_version: 2 })).harness_version).toBe(2);
+    expect(PublicRunRow.parse(runRow()).harness_version).toBe(1);
+    expect(() => PublicRunRow.parse(runRow({ harness_version: 0 }))).toThrow();
+  });
+
+  it('survives sanitizeRun for a masked failure: a version is not a cause', () => {
+    const safe = sanitizeRun(PublicRunRow.parse(runRow({ harness_version: 2 })), []);
+    expect(safe.causeVisible).toBe(false);
+    expect(safe.harness_version).toBe(2);
+  });
+});
+
 describe('sanitizeRun: the last line of defence', () => {
   const confirmed = confirmedOnly([PublicIncidentRow.parse(incidentRow())]);
 

@@ -119,6 +119,19 @@ export function renderCalibrationReport(stats: StatsResponse): string {
     add('No runs by day.', '');
   }
 
+  add('### Harness versions in the window', '');
+  add(
+    ...(stats.harness.versions.length === 0
+      ? ['None.']
+      : table(
+          ['Harness version', 'Runs', 'First run (UTC)', 'Last run (UTC)'],
+          stats.harness.versions.map((v) => [`v${v.version}`, String(v.runs), v.firstAt, v.lastAt]),
+        )),
+    '',
+    'The status engine never counts failures under different harness versions as consecutive, so a new version cannot turn one old and one new failure into an incident.',
+    '',
+  );
+
   // ---- tools
   add('## Tools', '');
   add(

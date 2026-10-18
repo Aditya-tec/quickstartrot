@@ -57,6 +57,7 @@ function result(
       reachedLevel: over.reached ?? (over.outcome === 'PASS' ? args.input.ir.maxLevelReachable : 1),
       failedStepId: failed,
       steps,
+      harnessVersion: 2,
       imageDigest: 'sha256:' + 'a'.repeat(64),
       runnerEnv: {
         hostPlatform: 'test',
@@ -93,6 +94,13 @@ const monitor =
       return result(a, { outcome: 'FAIL', failedStepId: 's3', kind: 'run', stderr: NO_EXPORT });
     return result(a, { outcome: 'PASS' });
   };
+
+/** Mutants that gave a verdict, summed over the install-level and code-level cells (there is no blended rate to read it from). */
+const testedIn = (s: ReturnType<typeof summarize>): number =>
+  (['install', 'code'] as const).reduce(
+    (n, k) => n + s.byKind[k].L1.tested + s.byKind[k].L2.tested + s.byKind[k].L3.tested,
+    0,
+  );
 
 describe('controls', () => {
   it('a control that passes is included', async () => {
@@ -140,7 +148,7 @@ describe('controls', () => {
     const s = summarize(run.controls, run.mutants);
     expect(s.controls).toMatchObject({ total: 1, included: 0 });
     expect(s.controls.excluded[0]?.slug).toBe('esm-node');
-    expect(s.mutation.tested).toBe(0); // an excluded target is in no statistic
+    expect(testedIn(s)).toBe(0); // an excluded target is in no statistic
   });
 
   it('a skipped control (a person has to act) is excluded too', async () => {
@@ -312,7 +320,82 @@ describe('mutants', () => {
     });
     expect(run.mutants[0]?.status).toBe('harness_error');
     const s = summarize(run.controls, run.mutants);
-    expect(s.mutation).toMatchObject({ tested: 0, harnessError: 1, detection: null });
+    expect(testedIn(s)).toBe(0);
+    expect(s.byKind.install.L2).toMatchObject({ tested: 0, harnessError: 1, detection: null });
+  });
+
+  describe('a failure of the environment is not a detection (found in the P9d v2 run: a DNS blip counted as "detected")', () => {
+    const DNS =
+      'npm error code ENOTFOUND\nnpm error network request to https://registry.npmjs.org/acme-sdk failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org';
+    const options = {
+      operators: ['pkg_typo' as const],
+      seed: 's',
+      concurrency: 1,
+      exportsCheck: false,
+    };
+    const firstShell = (a: RunnerArgs): string =>
+      a.ir.steps.find((s) => s.kind === 'shell')?.id ?? 's1';
+
+    it('a network failure is run once more, and the second answer is the verdict', async () => {
+      let seen = 0;
+      const blip: PlanRunner = async (a) => {
+        if (a.label !== 'pkg_typo' && a.label !== 'pkg_typo-retry')
+          return result(a, { outcome: 'PASS' });
+        seen += 1;
+        return seen === 1
+          ? result(a, { outcome: 'FAIL', failedStepId: firstShell(a), stderr: DNS })
+          : result(a, { outcome: 'FAIL', failedStepId: firstShell(a), stderr: E404 });
+      };
+      const run = await runMutation(blip, [esmInput()], options);
+      expect(seen).toBe(2);
+      expect(run.mutants[0]).toMatchObject({
+        status: 'detected',
+        failureClass: 'DEPENDENCY_RESOLUTION',
+        classMatches: true,
+        retried: true,
+      });
+    });
+
+    it('a second network failure leaves the mutant out of the rates as a harness error, never as a detection', async () => {
+      const down: PlanRunner = async (a) =>
+        a.label.startsWith('pkg_typo')
+          ? result(a, { outcome: 'FAIL', failedStepId: firstShell(a), stderr: DNS })
+          : result(a, { outcome: 'PASS' });
+      const run = await runMutation(down, [esmInput()], options);
+      expect(run.mutants[0]).toMatchObject({ status: 'harness_error', retried: true });
+      expect(run.mutants[0]?.note).toMatch(/network|environment/i);
+      const s = summarize(run.controls, run.mutants);
+      expect(testedIn(s)).toBe(0);
+    });
+
+    it('a failure of a class the operator does not expect is also run once more; if it repeats it stays detected and is shown as a mismatch', async () => {
+      let n = 0;
+      const odd: PlanRunner = async (a) => {
+        if (!a.label.startsWith('pkg_typo')) return result(a, { outcome: 'PASS' });
+        n += 1;
+        return result(a, { outcome: 'FAIL', failedStepId: firstShell(a), stderr: 'something odd' });
+      };
+      const run = await runMutation(odd, [esmInput()], options);
+      expect(n).toBe(2);
+      expect(run.mutants[0]).toMatchObject({
+        status: 'detected',
+        classMatches: false,
+        retried: true,
+      });
+    });
+
+    it('a mutant that fails as expected the first time is not run twice', async () => {
+      let n = 0;
+      const clean: PlanRunner = async (a) => {
+        if (!a.label.startsWith('pkg_typo')) return result(a, { outcome: 'PASS' });
+        n += 1;
+        return result(a, { outcome: 'FAIL', failedStepId: firstShell(a), stderr: E404 });
+      };
+      const run = await runMutation(clean, [esmInput()], options);
+      expect(n).toBe(1);
+      expect(run.mutants[0]).toMatchObject({ status: 'detected', classMatches: true });
+      expect(run.mutants[0]?.retried).toBeFalsy();
+    });
   });
 
   it('is deterministic: the same seed gives the same mutants and the same records', async () => {
@@ -400,6 +483,16 @@ describe('survivor reasons', () => {
     expect(r).toMatch(/cannot see which names/);
   });
 
+  it('the reasons describe harness v2: ES-module .js is parsed now, and a dotted Python import resolves its full path except for packages that build submodules at run time', () => {
+    const base = { controlLevel: 2, runsSnippet: false, writesSource: true, exportsCheck: false };
+    const syntax = survivorReason({ ...base, operator: 'syntax_error', language: 'node' });
+    expect(syntax).not.toMatch(/WITHOUT parsing/);
+    expect(syntax).toMatch(/string or template literal/);
+    const deep = survivorReason({ ...base, operator: 'deep_import', language: 'python' });
+    expect(deep).toMatch(/full dotted path/);
+    expect(deep).toMatch(/at run time/);
+  });
+
   it('a surviving mutant record always carries its reason', async () => {
     const passAll: PlanRunner = async (a) => result(a, { outcome: 'PASS' });
     const run = await runMutation(passAll, [esmInput(), cjsInput(), pythonInput()], {
@@ -425,7 +518,9 @@ describe('statistics', () => {
     });
     const s = summarize(run.controls, run.mutants);
     expect(s.controls.included).toBe(3);
-    expect(s.mutation.tested).toBe(s.mutation.detected + s.mutation.survived);
+    expect(testedIn(s)).toBe(
+      Object.values(s.byOperator).reduce((n, r) => n + r.detected + r.survived, 0),
+    );
     expect(s.byOperator['pkg_typo']).toMatchObject({ detected: 3, survived: 0, detection: 1 });
     expect(s.byLevel['L3']?.targets).toBe(1);
     expect(s.byLevel['L1']?.targets).toBe(1);

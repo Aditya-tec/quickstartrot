@@ -122,6 +122,7 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
         classifierRule: classification?.ruleId ?? null,
         reachedLevel: result.reachedLevel,
         skipReason: runSkipReason(result),
+        harnessVersion: result.harnessVersion,
         imageDigest: result.imageDigest,
         runnerEnv: result.runnerEnv,
         durationMs,
@@ -146,6 +147,9 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
           stdoutTail: s.stdoutTail,
           stderrTail: s.stderrTail,
           logPath: logPaths.get(s.stepId) ?? null,
+          harnessVersion: result.harnessVersion,
+          // Shadow mode: stored for the shadow report and read by nothing else (not the classifier, not the status engine).
+          shadowExportCheck: s.shadowExportCheck ?? null,
         })),
       );
     if (classification?.source === 'llm') {
@@ -282,6 +286,7 @@ async function existingRun(
       logFile: s.logPath,
       matchedAuthPattern: null,
       skipReason: s.kind === 'manual' && row.skipReason === 'manual_step' ? 'manual_step' : null,
+      shadowExportCheck: null, // a replay needs only what the classifier reads
     }));
   const failed = steps.find((s) => s.stepId === row.failedStepId);
   const input = inputFromRunResult(
@@ -295,6 +300,7 @@ async function existingRun(
       reachedLevel: row.reachedLevel,
       failedStepId: row.failedStepId,
       steps,
+      harnessVersion: row.harnessVersion,
       imageDigest: row.imageDigest,
       runnerEnv: {},
       startedAt: row.startedAt.toISOString(),

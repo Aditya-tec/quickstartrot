@@ -146,6 +146,13 @@ test.describe('run page', () => {
     await expect(page.getByRole('note')).toContainText('Stale plan');
   });
 
+  test('states the harness version of the run, small and factual', async ({ page }) => {
+    await page.goto(`/runs/${RUN_IDS.healthy}`);
+    await expect(page.getByTestId('harness-version')).toContainText('Harness v2');
+    await page.goto(`/runs/${RUN_IDS.stale}`);
+    await expect(page.getByTestId('harness-version')).toContainText('Harness v1');
+  });
+
   test('a run of an unreviewed failure shows no outcome detail', async ({ page }) => {
     await page.goto(`/runs/${RUN_IDS.verifying}`);
     await expect(page.getByText('A failure was seen and is being verified.')).toBeVisible();

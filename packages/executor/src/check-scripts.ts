@@ -13,7 +13,8 @@
 /**
  * Node. Run as `node --input-type=module - <syntax|imports> <files...>` from /work.
  *
- * syntax:  `node --check` for .js/.mjs/.cjs. For .ts/.mts/.cts: `tsc --noEmit --noResolve` (the
+ * syntax:  `node --check` for .js/.mjs/.cjs (version 2: and a .js file that uses import is also parsed as a module, because
+ *          node --check does not parse it otherwise). For .ts/.mts/.cts: `tsc --noEmit --noResolve` (the
  *          project's own typescript if installed, else the image's global one), keeping ONLY the
  *          syntactic diagnostics (TS1xxx). A full type check is deliberately not used: a snippet is
  *          not a project, so it has no tsconfig and none of the @types packages a type check needs,
@@ -68,6 +69,32 @@ function checkTypescript(tsFiles) {
   }
 }
 
+// Harness version 2. Found by qsr mutate (P9c): "node --check" exits 0 for a .js file that uses import when no package.json says
+// "type": "module" (Node detects the module syntax, then checks nothing), so a broken ES-module .js file passed this check.
+// Such a file is parsed here as a module, from a copy named .mjs. Files that already are modules (.mjs, or a package of type
+// module) were parsed as modules by node --check and are left alone.
+let esmCopies = 0;
+const esmDir = [];
+function checkEsmSyntax(f) {
+  if (!/\.js$/.test(f)) return;
+  const src = readFileSync(abs(f), 'utf8');
+  if (packageType(f) === 'module' || !isEsm(f, src)) return;
+  if (esmDir.length === 0) esmDir.push(mkdtempSync(path.join(tmpdir(), 'qsr-esm-')));
+  const copy = path.join(esmDir[0], 'esm-' + esmCopies++ + '.mjs');
+  writeFileSync(copy, src);
+  const r = spawnSync(process.execPath, ['--check', copy], { cwd, encoding: 'utf8' });
+  if (r.status !== 0) {
+    const detail = r.stderr
+      .split('\n')
+      .filter((l) => !/^\s+at /.test(l) && !/^Node\.js v/.test(l))
+      .join('\n')
+      .split(copy)
+      .join(f)
+      .trim();
+    fail(f, '\n' + detail);
+  }
+}
+
 function checkSyntax() {
   const tsFiles = [];
   for (const f of files) {
@@ -84,6 +111,8 @@ function checkSyntax() {
           .join('\n')
           .trim();
         fail(f, '\n' + detail);
+      } else {
+        checkEsmSyntax(f);
       }
     }
   }
@@ -210,9 +239,10 @@ function checkImports() {
 // exports (experimental, off unless the executor is asked for it): for every static NAMED import of an installed package
 // (import { A } from 'pkg', or const { A } = require('pkg')), load the package once, in this process, and check that it
 // exports A. This is the only check that executes package code (an import runs the module body), so it runs with the
-// network blocked in-process (sockets, DNS and fetch throw) and never calls anything the package exports. TypeScript files
-// are skipped: a named import there may be a type, which has no runtime export. A package that cannot be loaded here is
-// reported as unchecked, never as a failure of the docs.
+// network blocked in-process (sockets, DNS and fetch throw) and never calls anything the package exports. TypeScript (a .ts file,
+// or code with TypeScript-only syntax) is checked only for the names it USES AS A VALUE: a name that appears only after a colon, in
+// angle brackets, after as, extends or implements is a type, and a type has no run-time export. A package that cannot be loaded here
+// is reported as unchecked, never as a failure of the docs.
 const NAMED_ESM_RE = /^[ \t]*import\s+(?!type\b)(?:[\w$]+\s*,\s*)?\{([^}]*)\}\s*from\s*(['"])([^'"\n]+)\2/gm;
 const NAMED_CJS_RE = /(?:const|let|var)\s*\{([^}]*)\}\s*=\s*require\s*\(\s*(['"])([^'"\n]+)\2\s*\)/g;
 
@@ -233,6 +263,31 @@ async function blockNetwork() {
   syncBuiltinESMExports();
 }
 
+// TypeScript-only syntax: any one of these means the snippet is TypeScript whatever its file extension says.
+const TS_SIGNALS = [
+  /^\s*(?:export\s+)?(?:interface|enum|namespace|declare)\s+[\w$]+/m,
+  /^\s*(?:export\s+)?type\s+[\w$]+(?:<[^>\n]*>)?\s*=/m,
+  /\bimport\s+type\b/,
+  /\bimport\s*\{[^}]*\btype\s+[\w$]+/,
+  /\bas\s+const\b/,
+  /\b(?:const|let|var)\s+[\w$]+\s*:\s*[A-Za-z_$][\w$.<>\[\]| ]*\s*=/,
+  /\)\s*:\s*[A-Za-z_$][\w$.<>\[\]| ]*\s*(?:=>|\{)/,
+  /\bimplements\s+[\w$]/,
+];
+const looksLikeTypeScript = (file, src) => isTs(file) || TS_SIGNALS.some((re) => re.test(src));
+const TYPE_POSITION = /(?::\s*|<\s*|\bas\s+|\bextends\s+|\bimplements\s+|\|\s*|&\s*)$/;
+
+// A name is used as a value when it appears outside its own import statement and outside a type position.
+function usedAsValue(rest, name) {
+  const re = new RegExp('(?<![\\w$.])' + name.replace(/\$/g, '\\$') + '(?![\\w$])', 'g');
+  for (const m of rest.matchAll(re)) {
+    if (!TYPE_POSITION.test(rest.slice(Math.max(0, m.index - 24), m.index))) return true;
+    // "key: name(...)": a call is a value even right after a colon (a type is never called)
+    if (/^\s*\(/.test(rest.slice(m.index + name.length, m.index + name.length + 8))) return true;
+  }
+  return false;
+}
+
 function namedBindings(list) {
   const names = [];
   for (const part of list.split(',')) {
@@ -244,41 +299,16 @@ function namedBindings(list) {
   return names;
 }
 
-// Found by qsr mutate (P9c): "node --check" exits 0 for a .js file that uses import when no package.json says
-// "type": "module" (Node detects the module syntax, then checks nothing), so a broken ES-module .js file passes the
-// syntax check. Such a file is parsed here as a module, from a copy named .mjs.
-function checkEsmSyntax() {
-  const dir = mkdtempSync(path.join(tmpdir(), 'qsr-esm-'));
-  let n = 0;
-  for (const f of files) {
-    if (!/\.js$/.test(f) || !existsSync(abs(f))) continue;
-    const src = readFileSync(abs(f), 'utf8');
-    if (packageType(f) === 'module' || !isEsm(f, src)) continue;
-    const copy = path.join(dir, 'esm-' + n++ + '.mjs');
-    writeFileSync(copy, src);
-    const r = spawnSync(process.execPath, ['--check', copy], { cwd, encoding: 'utf8' });
-    if (r.status !== 0) {
-      const detail = r.stderr
-        .split('\n')
-        .filter((l) => !/^\s+at /.test(l) && !/^Node\.js v/.test(l))
-        .join('\n')
-        .split(copy)
-        .join(f)
-        .trim();
-      fail(f, '\n' + detail);
-    }
-  }
-}
-
 async function checkExports() {
-  checkEsmSyntax();
   await blockNetwork();
   const cache = new Map();
   const unchecked = [];
   for (const f of files) {
-    if (!existsSync(abs(f)) || isTs(f)) continue;
+    if (!existsSync(abs(f))) continue;
     const src = stripComments(readFileSync(abs(f), 'utf8'));
     const esm = isEsm(f, src);
+    const typed = looksLikeTypeScript(f, src);
+    const rest = typed ? src.replace(NAMED_ESM_RE, (m) => ' '.repeat(m.length)).replace(NAMED_CJS_RE, (m) => ' '.repeat(m.length)) : '';
     const sites = [];
     for (const re of [NAMED_ESM_RE, NAMED_CJS_RE]) for (const m of src.matchAll(re)) sites.push({ names: namedBindings(m[1]), spec: m[3], index: m.index, cjs: re === NAMED_CJS_RE });
     for (const site of sites) {
@@ -296,6 +326,15 @@ async function checkExports() {
       const mod = cache.get(key);
       if (mod === null || mod === undefined) continue;
       for (const name of site.names) {
+        if (typed && !usedAsValue(rest, name)) continue; // a type: it has no run-time export
+        // TypeScript is usually run through a loader that also lets it take a name from a CommonJS package, so a name found by either route counts
+        if (typed && !(name in Object(mod))) {
+          try {
+            if (name in Object(req(spec))) continue;
+          } catch {
+            /* not loadable as CommonJS: the ES module answer stands */
+          }
+        }
         if (!(name in Object(mod))) fail(f + ':' + lineOf(src, site.index), "qsr-check-exports: '" + spec + "' does not export '" + name + "' (imported from " + f + ')');
       }
     }
@@ -327,12 +366,16 @@ console.log('ok ' + mode + ' ' + files.join(' '));
  *          `importlib.util.find_spec` (installed packages, the stdlib, or a module written next to the
  *          importing file or under /work). Relative imports must point at a written file or package.
  *          An import inside a try whose handlers catch ImportError/Exception is optional and skipped.
+ *          Version 2: a dotted path (import pkg.sub, from pkg.sub import x) must also resolve, one parent at a time,
+ *          with find_spec for the top-level name and PathFinder for each child (directories are read, nothing is imported).
  *          find_spec of a top-level name imports nothing; neither the snippet nor the vendor package
  *          is executed. importlib.import_module() and __import__() are NOT checked.
  */
 export const PYTHON_CHECK_SCRIPT = String.raw`import ast
+import importlib.machinery
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -404,6 +447,51 @@ def module_exists(top, file):
         sys.path[:] = saved
 
 
+def builds_submodules_dynamically(spec):
+    # A package that registers submodules at run time (six.moves), loads them lazily (a module-level __getattr__) or installs an
+    # import hook has children that are not files, so the absence of a file proves nothing. Read its __init__ as text; never run it.
+    origin = getattr(spec, 'origin', None)
+    if not origin or not os.path.isfile(origin):
+        return False
+    try:
+        with open(origin, encoding='utf-8', errors='ignore') as fh:
+            text = fh.read(300000)
+    except OSError:
+        return False
+    return re.search(r'sys\.modules\[|__getattr__|meta_path|LazyModule|lazy_import', text) is not None
+
+
+def dotted_status(name, file):
+    # Harness version 2. Resolve the FULL dotted path of an import, one parent at a time, without importing any of them:
+    # find_spec of the top-level name imports nothing, and each next part is looked up in the parent's search locations with
+    # PathFinder, which only reads directories. Returns 'found', 'missing' (the parent is a package and has no such child) or
+    # 'unknown' (not decidable here: a standard-library module, a parent that is not a package, a namespace oddity).
+    parts = name.split('.')
+    if parts[0] in getattr(sys, 'stdlib_module_names', ()):
+        return 'unknown'
+    saved = list(sys.path)
+    sys.path[:0] = [os.path.dirname(os.path.abspath(file)), cwd]
+    try:
+        importlib.invalidate_caches()
+        spec = importlib.util.find_spec(parts[0])
+        if spec is None:
+            return 'missing'
+        for i in range(1, len(parts)):
+            locations = spec.submodule_search_locations
+            if locations is None:
+                return 'unknown'
+            if builds_submodules_dynamically(spec):
+                return 'unknown'
+            spec = importlib.machinery.PathFinder.find_spec('.'.join(parts[: i + 1]), list(locations))
+            if spec is None:
+                return 'missing'
+        return 'found'
+    except (ImportError, ValueError, AttributeError):
+        return 'unknown'
+    finally:
+        sys.path[:] = saved
+
+
 def relative_exists(level, module, file):
     base = os.path.dirname(os.path.abspath(file))
     for _ in range(level - 1):
@@ -436,6 +524,8 @@ def check_imports():
                     fail(where, "ModuleNotFoundError: No module named '" + '.' * level + (module or '') + "' (imported from " + f + ')')
             elif not module_exists(module.split('.')[0], f):
                 fail(where, "ModuleNotFoundError: No module named '" + module.split('.')[0] + "' (imported from " + f + ')')
+            elif '.' in module and dotted_status(module, f) == 'missing':
+                fail(where, "ModuleNotFoundError: No module named '" + module + "' (imported from " + f + ')')
 
 
 def block_network():

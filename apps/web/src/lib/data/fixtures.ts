@@ -420,6 +420,7 @@ function runRow(spec: ToolSpec, toolIndex: number, i: number, kind: RunKind): Pu
             clippedBlockIndexes: [],
           },
     plan_stale: stale,
+    harness_version: stale ? 1 : 2,
     snapshot_blocks: BLOCKS,
     snapshot_title: `${spec.name} quickstart`,
     snapshot_url: spec.docsUrl,

@@ -166,6 +166,8 @@ export interface MutantRecord {
   note: string | null;
   durationMs: number | null;
   exportsCheck: boolean;
+  /** The mutant was run a second time because the first failure was the environment's or of an unexpected class. */
+  retried?: boolean;
 }
 
 const blank = (
@@ -261,11 +263,27 @@ export async function runMutantJob(
   if (!job.run) return job.record;
   const { record } = job;
   const args: RunnerArgs = { input, ir: job.run.ir, label: record.operator, exportsCheck };
-  const out = await runner(args);
+  let out = await runner(args);
+  let cls = classifyRun(args, out);
+  // A failure of the environment (the registry or a download was unreachable) says nothing about the monitor, and a failure of a class the
+  // operator does not expect is suspicious: both are run once more, and the second answer is the verdict. Found in the P9d v2 run, where a
+  // DNS blip was counted as a detection of four mutants.
+  const suspect = (): boolean =>
+    out.result.outcome === 'FAIL' &&
+    (cls.failureClass === 'NETWORK_TRANSIENT' ||
+      (record.expected !== null &&
+        !(cls.failureClass !== null && record.expected.includes(cls.failureClass))));
+  let retried = false;
+  if (suspect()) {
+    retried = true;
+    args.label = `${record.operator}-retry`;
+    out = await runner(args);
+    cls = classifyRun(args, out);
+  }
   const r = out.result;
-  const cls = classifyRun(args, out);
   const base: MutantRecord = {
     ...record,
+    ...(retried ? { retried: true } : {}),
     outcome: r.outcome,
     reachedLevel: r.reachedLevel,
     failedStepId: r.failedStepId,
@@ -280,6 +298,12 @@ export async function runMutantJob(
       ...base,
       status: 'harness_error',
       note: 'the harness itself failed; the mutant is left out of the rates',
+    };
+  if (r.outcome === 'FAIL' && cls.failureClass === 'NETWORK_TRANSIENT')
+    return {
+      ...base,
+      status: 'harness_error',
+      note: 'the network (registry or a download) failed twice: an environment failure is not a detection, so the mutant is left out of the rates',
     };
   if (r.outcome === 'FAIL') {
     const expected = record.expected;

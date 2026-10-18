@@ -46,6 +46,53 @@ export const countsOf = (rows: readonly MutantRecord[]): Counts => ({
   harnessError: rows.filter((r) => r.status === 'harness_error').length,
 });
 
+/**
+ * Install-level mutants (a package typo, a version pin) are stopped by the package manager at L1, whatever the harness checks do.
+ * Code-level mutants (a symbol, a method, a deep path, syntax, an option) are what the harness checks are for. They are reported
+ * apart and never averaged: a blended rate would credit the monitor for what npm and pip do anyway.
+ */
+export type Kind = 'install' | 'code';
+export const KINDS: readonly Kind[] = ['install', 'code'];
+export const OPERATOR_KIND: Record<OperatorId, Kind | null> = {
+  pkg_typo: 'install',
+  version_pin: 'install',
+  renamed_symbol: 'code',
+  renamed_method: 'code',
+  deep_import: 'code',
+  syntax_error: 'code',
+  option_misnamed: 'code',
+  previous_major: null,
+};
+
+/** One cell of the install/code by level table: the rate, the mutants left out, and how many targets stand behind it. */
+export type Cell = Rate & Counts & { targets: number };
+export type KindLevel = Record<Kind, Record<'L1' | 'L2' | 'L3', Cell>>;
+
+const LEVEL_KEYS = ['L1', 'L2', 'L3'] as const;
+
+export function cellOf(rows: readonly MutantRecord[]): Cell {
+  const rate = rateOf(rows);
+  return {
+    ...rate,
+    ...countsOf(rows),
+    targets: new Set(
+      rows.filter((r) => r.status === 'detected' || r.status === 'survived').map((r) => r.slug),
+    ).size,
+  };
+}
+
+export function kindLevelOf(mutants: readonly MutantRecord[]): KindLevel {
+  const mutation = only(mutants, 'mutation');
+  const cells = (kind: Kind): Record<'L1' | 'L2' | 'L3', Cell> =>
+    Object.fromEntries(
+      LEVELS.map((level) => [
+        `L${level}`,
+        cellOf(mutation.filter((m) => OPERATOR_KIND[m.operator] === kind && m.level === level)),
+      ]),
+    ) as Record<'L1' | 'L2' | 'L3', Cell>;
+  return { install: cells('install'), code: cells('code') };
+}
+
 export interface SurvivorPattern {
   operator: OperatorId;
   level: number;
@@ -56,7 +103,12 @@ export interface SurvivorPattern {
 
 export interface Summary {
   controls: { total: number; included: number; excluded: { slug: string; reason: string }[] };
-  mutation: Rate & Counts;
+  /** Install-level and code-level mutants by level. There is deliberately no blended overall rate. */
+  byKind: KindLevel;
+  /** Mutants with no site, per kind: the plan had nothing for that operator to change. */
+  noSite: Record<Kind, number>;
+  /** Included targets by the level their control reached. */
+  levelTargets: Record<'L1' | 'L2' | 'L3', number>;
   byOperator: Record<string, Rate & Counts>;
   byLevel: Record<string, Rate & Counts & { targets: number }>;
   byOperatorLevel: Record<string, Record<string, Rate>>;
@@ -121,7 +173,21 @@ export function summarize(
         .filter((c) => !c.included)
         .map((c) => ({ slug: c.slug, reason: c.excludedReason ?? '' })),
     },
-    mutation: { ...rateOf(mutation), ...countsOf(mutation) },
+    byKind: kindLevelOf(mutants),
+    noSite: {
+      install: mutation.filter(
+        (m) => OPERATOR_KIND[m.operator] === 'install' && m.status === 'not_applicable',
+      ).length,
+      code: mutation.filter(
+        (m) => OPERATOR_KIND[m.operator] === 'code' && m.status === 'not_applicable',
+      ).length,
+    },
+    levelTargets: Object.fromEntries(
+      LEVEL_KEYS.map((l) => [
+        l,
+        controls.filter((c) => c.included && `L${c.reachedLevel}` === l).length,
+      ]),
+    ) as Record<'L1' | 'L2' | 'L3', number>,
     byOperator,
     byLevel,
     byOperatorLevel,
@@ -149,6 +215,8 @@ export interface Comparison {
   byLevelAfter: Record<string, Rate>;
   byOperatorBefore: Record<string, Rate>;
   byOperatorAfter: Record<string, Rate>;
+  byKindBefore: KindLevel;
+  byKindAfter: KindLevel;
 }
 
 /**
@@ -189,5 +257,35 @@ export function compareRuns(
     byLevelAfter: levelRates(afterM),
     byOperatorBefore: opRates(beforeM),
     byOperatorAfter: opRates(afterM),
+    byKindBefore: kindLevelOf(beforeM),
+    byKindAfter: kindLevelOf(afterM),
+  };
+}
+
+// ---------------------------------------------------------------- the same mutants under two harness versions
+
+export interface HarnessComparison {
+  before: KindLevel;
+  after: KindLevel;
+  /** slug:operator that survived before and is detected now. */
+  newlyDetected: string[];
+  /** slug:operator that was detected before and survives now: a regression, to be explained. */
+  newlyMissed: string[];
+}
+
+/** Both runs use the same seed and the same mutants, so the verdicts are compared one by one. */
+export function compareHarnessRuns(
+  before: { controls: readonly ControlRecord[]; mutants: readonly MutantRecord[] },
+  after: { controls: readonly ControlRecord[]; mutants: readonly MutantRecord[] },
+): HarnessComparison {
+  const key = (m: MutantRecord): string => `${m.slug}:${m.operator}`;
+  const was = new Map(before.mutants.map((m) => [key(m), m.status]));
+  const now = new Map(after.mutants.map((m) => [key(m), m.status]));
+  const keys = [...new Set([...was.keys(), ...now.keys()])].sort();
+  return {
+    before: kindLevelOf(before.mutants),
+    after: kindLevelOf(after.mutants),
+    newlyDetected: keys.filter((k) => was.get(k) === 'survived' && now.get(k) === 'detected'),
+    newlyMissed: keys.filter((k) => was.get(k) === 'detected' && now.get(k) === 'survived'),
   };
 }

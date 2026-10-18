@@ -437,6 +437,19 @@ d('GET /admin/stats', () => {
     ]);
   });
 
+  it('says which harness versions produced the runs of the window, with their first and last run', async () => {
+    const { id } = await seed();
+    await db()
+      .update(runs)
+      .set({ harnessVersion: 2 })
+      .where(eq(runs.toolId, id['alpha-node'] as string));
+    const s = await stats();
+    expect(s.harness.versions.map((v) => v.version)).toEqual([1, 2]);
+    expect(s.harness.versions.reduce((n, v) => n + v.runs, 0)).toBe(s.harness.overall.runs);
+    for (const v of s.harness.versions) expect(v.firstAt <= v.lastAt).toBe(true);
+    expect((await stats('?days=2')).harness.versions.length).toBeGreaterThan(0);
+  });
+
   it('counts incidents by state and review, and lists them', async () => {
     await seed();
     const s = await stats();

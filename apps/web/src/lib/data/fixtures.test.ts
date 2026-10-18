@@ -77,6 +77,14 @@ describe('the fixture data', () => {
     expect(run.plan_stale).toBe(true);
   });
 
+  it('has runs of both harness versions: the stale-plan run is an older v1 run, the rest are v2', async () => {
+    const history = await source.listHistory(60);
+    const staleRun = history.find((h) => h.stale) as PublicRunHistoryRow;
+    expect(((await source.getRun(staleRun.run_id)) as PublicRunRow).harness_version).toBe(1);
+    const fresh = history.find((h) => !h.stale) as PublicRunHistoryRow;
+    expect(((await source.getRun(fresh.run_id)) as PublicRunRow).harness_version).toBe(2);
+  });
+
   it('has a CONFIRMED incident with a summary, a suggested fix, a docs diff and a version diff', async () => {
     const incidents = await source.listIncidents();
     const confirmed = incidents.find(

@@ -104,6 +104,7 @@ export const step = (
   logFile: `slug-1/${String(ordinal).padStart(2, '0')}-${stepId}.log`,
   matchedAuthPattern: null,
   skipReason: null,
+  shadowExportCheck: null,
   ...over,
 });
 

@@ -263,6 +263,54 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
       });
     }, 300_000);
 
+    // Harness version 2 (P9d). "node --check" exits 0 for a .js file that uses import when no package.json says "type": "module":
+    // Node detects the module syntax and then checks nothing. Found by the mutation tests on mocha-node and vitest-node, whose plans
+    // write their own package.json (so the harness does not add the type).
+    describe('harness v2: an ES-module .js file is parsed as a module', () => {
+      const PACKAGE_JSON = '{\n  "scripts": { "test": "mocha" }\n}';
+      const BROKEN =
+        'import assert from "node:assert";\n\ndescribe("Array", function () {\n  describe("#indexOf()", function ( {\n    it("works", function () {\n      assert.equal(1, 1);\n    });\n  });\n});\n';
+      const FINE = BROKEN.replace('function ( {', 'function () {');
+
+      it('REGRESSION (the mocha-node syntax mutant): a deliberately broken ES-module .js file FAILS the syntax check', async () => {
+        const r = await execute('node', [
+          shell('s1', 'npm install ms'),
+          write('s2', 'package.json', PACKAGE_JSON),
+          write('s3', 'test/example.test.js', BROKEN),
+        ]);
+        expect(r).toMatchObject({
+          outcome: 'FAIL',
+          failedStepId: 'qsr-check-syntax',
+          reachedLevel: 1,
+        });
+        expect(failure(r)).toContain('SyntaxError');
+        expect(failure(r)).toContain('test/example.test.js');
+        expect(r.harnessVersion).toBe(2);
+      }, 240_000);
+
+      it('the same file, correct, passes the syntax check and the plan reaches level 2', async () => {
+        const r = await execute('node', [
+          shell('s1', 'npm install ms'),
+          write('s2', 'package.json', PACKAGE_JSON),
+          write('s3', 'test/example.test.js', FINE),
+        ]);
+        expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+      }, 240_000);
+
+      it('a broken CommonJS .js file still fails exactly as before, and a correct one still passes', async () => {
+        const bad = await execute('node', [
+          shell('s1', 'npm install ms'),
+          write('s2', 'a.js', 'const ms = require("ms");\nfoo(function () {\n  bar(;\n});\n'),
+        ]);
+        expect(bad).toMatchObject({ outcome: 'FAIL', failedStepId: 'qsr-check-syntax' });
+        const good = await execute('node', [
+          shell('s1', 'npm install ms'),
+          write('s2', 'a.js', 'const ms = require("ms");\nconsole.log(ms(1000));\n'),
+        ]);
+        expect(good).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+      }, 480_000);
+    });
+
     it('a global module (tsx, typescript are installed globally in the image) does not satisfy an import', async () => {
       const r = await execute('node', [
         shell('s1', 'npm install ms'),
@@ -327,6 +375,83 @@ describe.skipIf(!available)('harness checks in the real sandbox images', () => {
       ]);
       expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
     }, 240_000);
+
+    // Harness version 2 (P9d): the full dotted path of an import must resolve. Which class this is: the Python imports check reports
+    // "No module named 'pkg.sub'", which the classifier maps to API_DRIFT (check.python_submodule_missing), the same class as a Node
+    // deep import into an installed package (check.deep_import_missing): the package is installed, a path inside it is gone.
+    describe('harness v2: a dotted import resolves all the way', () => {
+      it('REGRESSION (the python deep_import mutant): import pkg.missing, and from pkg.missing import x, FAIL at the imports check', async () => {
+        for (const code of [
+          'import idna.qsr_missing\nprint(1)\n',
+          'from idna.qsr_missing import x\nprint(1)\n',
+        ]) {
+          const r = await execute('python', [
+            shell('s1', 'pip install idna'),
+            write('s2', 'main.py', code),
+          ]);
+          expect(r, code).toMatchObject({
+            outcome: 'FAIL',
+            failedStepId: 'qsr-check-imports',
+            reachedLevel: 1,
+          });
+          expect(failure(r)).toContain("No module named 'idna.qsr_missing'");
+          expect(r.harnessVersion).toBe(2);
+        }
+      }, 480_000);
+
+      it('a real submodule, a standard-library dotted import, and a package that builds submodules at run time (six.moves) all pass', async () => {
+        const r = await execute('python', [
+          shell('s1', 'pip install six'),
+          write(
+            's2',
+            'main.py',
+            'import os.path\nimport xml.etree.ElementTree\nimport concurrent.futures\nfrom urllib.parse import urlparse\nimport importlib.util\nfrom six.moves import urllib\nprint(1)\n',
+          ),
+        ]);
+        expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+      }, 240_000);
+
+      it('a package that registers submodules at run time (a local pkg/__init__.py writing sys.modules) is not reported missing, because a missing file proves nothing there', async () => {
+        const r = await execute('python', [
+          shell('s1', 'pip install idna'),
+          write(
+            's2',
+            'pkg/__init__.py',
+            'import sys\nimport types\n\nsys.modules[__name__ + ".dyn"] = types.ModuleType("dyn")\n',
+          ),
+          write('s3', 'main.py', 'import pkg.dyn\nprint(pkg.dyn)\n'),
+        ]);
+        expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+      }, 240_000);
+
+      it('a dotted import of a submodule a written local package really has passes, and one it lacks fails', async () => {
+        const ok = await execute('python', [
+          shell('s1', 'pip install idna'),
+          write('s2', 'pkg/__init__.py', ''),
+          write('s3', 'pkg/real.py', 'X = 1\n'),
+          write('s4', 'main.py', 'import pkg.real\nprint(pkg.real.X)\n'),
+        ]);
+        expect(ok).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+        const bad = await execute('python', [
+          shell('s1', 'pip install idna'),
+          write('s2', 'pkg/__init__.py', ''),
+          write('s3', 'main.py', 'import pkg.gone\n'),
+        ]);
+        expect(bad).toMatchObject({ outcome: 'FAIL', failedStepId: 'qsr-check-imports' });
+      }, 480_000);
+
+      it('a dotted import inside try/except ImportError is optional', async () => {
+        const r = await execute('python', [
+          shell('s1', 'pip install idna'),
+          write(
+            's2',
+            'main.py',
+            'try:\n    import idna.qsr_missing\nexcept ImportError:\n    idna = None\nprint(1)\n',
+          ),
+        ]);
+        expect(r).toMatchObject({ outcome: 'PASS', reachedLevel: 2 });
+      }, 240_000);
+    });
 
     it('leaves no bytecode in /work', async () => {
       const r = await execute('python', [

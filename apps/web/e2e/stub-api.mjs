@@ -142,6 +142,14 @@ createServer(async (req, res) => {
         harness: {
           overall: { runs: 100, errors: 3, rate: 0.03 },
           byDay: [{ day: '2026-10-17', runs: 100, errors: 3, rate: 0.03 }],
+          versions: [
+            {
+              version: 1,
+              runs: 100,
+              firstAt: '2026-10-17T06:17:00.000Z',
+              lastAt: '2026-10-17T18:17:00.000Z',
+            },
+          ],
         },
         tools: [],
         unknowns: [],

@@ -50,6 +50,20 @@ function seeded(over: Partial<StatsResponse> = {}): StatsResponse {
         { day: '2026-10-23', runs: 200, errors: 2, rate: 0.01 },
         { day: '2026-10-24', runs: 100, errors: 4, rate: 0.04 },
       ],
+      versions: [
+        {
+          version: 1,
+          runs: 1000,
+          firstAt: '2026-10-18T06:17:00.000Z',
+          lastAt: '2026-10-24T18:17:00.000Z',
+        },
+        {
+          version: 2,
+          runs: 400,
+          firstAt: '2026-10-25T00:17:00.000Z',
+          lastAt: '2026-10-25T06:17:00.000Z',
+        },
+      ],
     },
     tools: [
       {
@@ -261,6 +275,13 @@ describe('renderCalibrationReport', () => {
     expect(md).toContain('canary-pass-node: expected PASS, got FAIL');
   });
 
+  it('lists the harness versions that produced the window, and says a version bump cannot make an incident by itself', () => {
+    expect(md).toContain('### Harness versions in the window');
+    expect(md).toContain('| v1 | 1000 | 2026-10-18T06:17:00.000Z | 2026-10-24T18:17:00.000Z |');
+    expect(md).toContain('| v2 | 400 |');
+    expect(md).toMatch(/never counts failures under different harness versions as consecutive/);
+  });
+
   it('shows the harness error rate per day and overall, and judges the last three days against the 2% bar', () => {
     expect(md).toMatch(/Overall: 14 errors in 1400 runs \(1\.0%\)/);
     expect(md).toContain('| 2026-10-24 | 100 | 4 | 4.0% |');
@@ -278,6 +299,7 @@ describe('renderCalibrationReport', () => {
             { day: '2026-10-23', runs: 100, errors: 4, rate: 0.04 },
             { day: '2026-10-24', runs: 100, errors: 4, rate: 0.04 },
           ],
+          versions: [],
         },
       }),
     );
@@ -341,7 +363,7 @@ describe('renderCalibrationReport', () => {
       StatsResponse.parse({
         ...seeded(),
         cycles: { total: 0, valid: 0, invalid: 0, unfinished: 0, recent: [] },
-        harness: { overall: { runs: 0, errors: 0, rate: 0 }, byDay: [] },
+        harness: { overall: { runs: 0, errors: 0, rate: 0 }, byDay: [], versions: [] },
         tools: [],
         unknowns: [],
         llmClassified: [],

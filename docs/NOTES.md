@@ -9,6 +9,94 @@ Nothing is carried forward from P8 that P9a left open. The P9 request to choose 
 below): `chalk-node`, `loguru-python` and `dotenv-python` are calibration targets only, and the L3 share is small on purpose
 (most vendor quickstarts need an account).
 
+## Findings from P9d (harness fixes, harness versioning, the export check in shadow mode)
+
+Nothing was posted to the API by the mutation tooling, no vendor page was crawled again, no model was asked, no vendor was contacted. P9b and P10 are not
+started. Production data was not touched except through the schema migration below; statuses only change through the normal cron.
+
+### Harness version
+
+- `HARNESS_VERSION` (`packages/core/src/run-result.ts`) is **2**. Everything recorded before is version **1** (the column default backfills it).
+  `RunResult.harnessVersion` (default 1 when parsing an older payload) is the one new top-level key on the report payload (the spec section 9 shape test
+  now lists it; the owner asked for it). `StepResult.harnessVersion` is stored on every step row.
+- **Migration `0007_harness_version_and_shadow`** (additive, not applied to production until this commit is pushed; apply it BEFORE the deploy with
+  `pnpm --filter @qsr/db db:migrate`): `tools.last_failure_harness_version smallint` (null), `runs.harness_version smallint not null default 1`,
+  `step_results.harness_version smallint not null default 1`, `step_results.shadow_export_check jsonb` (null), and `public_runs` re-created with
+  `harness_version` as its last column (the old definition otherwise unchanged, then `NOTIFY pgrst, 'reload schema'`). The `NOT NULL DEFAULT` columns are
+  metadata-only changes in Postgres 11+, so existing rows read as 1 without a rewrite. Rollback: the API of the previous release ignores the new columns,
+  so an old API against the migrated database keeps working.
+- **Status engine rule:** failures under different harness versions are never consecutive. `evaluate` forgets the failure streak when the version of the new
+  failure differs from `lastFailureHarnessVersion` (null on a tool that has failure memory counts as 1). A PASS clears the field. Tests: `evaluate.test.ts`
+  (version-change cases for DEGRADED, BROKEN, transient streaks, the 100% coverage gate still holds) and `apps/api/test/harness-version.test.ts` (through the
+  real finish path and Postgres: a v1 failure then a v2 failure leaves a tool DEGRADED and opens no incident; a bump alone changes no status).
+- Shown on the run page as one small line ("Harness v2 ...") and in `qsr calibration-report` (versions in the window) and `/admin/stats` (`harness.versions`).
+- Policy: bump the version whenever a change to a check can change a verdict.
+
+### The two harness fixes (version 2)
+
+1. **ES-module `.js` is parsed as a module.** `node --check` on a `.js` file that uses `import` where no `package.json` says `"type": "module"` exits 0 without
+   parsing (v1 bug, found by P9c on the `mocha-node` and `vitest-node` syntax mutants). v2 detects module syntax and checks a `.mjs` copy. Test: a broken
+   ES-module `.js` now FAILS, reproduced against both targets' shapes in real Docker (`checks.integration.test.ts`, "harness v2").
+2. **Python dotted imports resolve the full path.** `import pkg.missing` (and `from pkg.missing import x`) fails the imports check with
+   `ModuleNotFoundError: No module named 'pkg.missing'`. New classifier rule `check.python_submodule_missing` maps it to **API_DRIFT**, exactly like a Node
+   deep import that names a file the package does not have (fixture `synthetic-python-check-submodule-missing.json`). A package that registers or lazily loads submodules at run time (a module-level `__getattr__`, `sys.modules`) is not flagged, because a missing file proves nothing there, and a local package the plan wrote itself is resolved from `/work`.
+
+### Shadow export check
+
+- `qsr execute` turns on `ExecuteDeps.shadowExportCheck`. The check runs after every normal step; its answer is stored only as
+  `step_results.shadow_export_check` of the imports-check step and read only by `GET /admin/shadow` and `qsr shadow-report --days N`. Tests that pin the
+  isolation: `packages/executor/src/shadow.test.ts` (outcome, level, failed step, step ids, outcomes, kinds and exit codes identical with and without the
+  shadow, including when the shadow fails, crashes or times out), `packages/executor/src/execute.test.ts`, `apps/api/test/harness-version.test.ts` ("is in no
+  public view") and `apps/api/test/shadow-report.test.ts`.
+- **launchdarkly-node false positive**, fixed properly where a signal exists: a snippet is treated as TypeScript when its fence is `ts`/`tsx` or it uses
+  TypeScript-only syntax, and the check then skips type-only imports. The `launchdarkly-node` snippet has **neither** signal (an untagged fence with imports
+  only: `import { init, LDContext, LDOptions }`), so no deterministic rule can tell it from JavaScript. Making the compiler write such a snippet as `.ts`
+  would change compiled plans, which means bumping `COMPILER_VERSION` and invalidating all 51 production plans (and spending the model quota), which is
+  outside "do not touch production data". So that target uses the per-target opt-out `harness: { skipExportCheck: true, reason }` (required reason,
+  Zod-validated, shown in the shadow report). Follow-up if wanted: teach the compiler a `.ts` path and migrate plans in one planned push.
+- **vitest-node previous-major UNKNOWN (P9c experiment):** the raw output of the failing install was `npm error Cannot read properties of null (reading
+'edgesOut')`, npm's own dependency-tree builder crashing when asked for `vitest@4`. That is an install that could not be resolved, so the narrowest honest
+  class is DEPENDENCY_RESOLUTION: rule `dependency.npm_resolver_crash` matches only that exact message (fixture `synthetic-node-npm-resolver-crash.json`, the
+  log lines are the real output). It was seen once; it is npm failing rather than a named package, so like every vendor-class failure it waits for review.
+
+### Controls under harness v2 (all 51 unmutated plans, real Docker, concurrency 2)
+
+`qsr mutate --all --controls-only` (new) then `node scripts/compare-controls.mjs .qsr-mutate/full.json .qsr-mutate/controls-v2.json`. **50 of 51 PASS under both
+versions, at the same level in every case (L1 6, L2 39, L3 5), one retry in each run (the same one); `hono-node` is SKIPPED in both, by design. PASS to FAIL
+flips: 0.** There was nothing to investigate, and no check was tuned. (Mean control time 9.7 s under v1, 9.2 s under v2.)
+
+### Mutation suite, v1 against v2 against v2 with the export check (same seed `p9c`, same mutants)
+
+Reported apart, never blended (`docs/DETECTION-POWER.md`, `docs/detection-power.json`):
+
+| Mutants                     | v1                                                              | v2              | v2 + export check (experiment) |
+| --------------------------- | --------------------------------------------------------------- | --------------- | ------------------------------ |
+| Install-level (typo, pin)   | 98 of 98 (12/12, 76/76, 10/10 at L1/L2/L3, over 6/38/5 targets) | same            | same                           |
+| Code-level, L2 (39 targets) | 61 of 137 (45%)                                                 | 71 of 137 (52%) | 90 of 137 (66%)                |
+| Code-level, L3 (5 targets)  | 15 of 17 (88%)                                                  | 15 of 17 (88%)  | 15 of 17 (88%)                 |
+
+L3 rests on 5 targets; 97 mutants had no site (95 code-level, 2 install-level) and are in no rate; L1 has no code-level mutant at all (30 had no site). v2 newly
+detects 10 (8 Python `deep_import`, the `mocha-node` and `vitest-node` syntax mutants) and misses none that v1 detected. The export check adds 19 more, all
+classified as expected, with 0 false positives on the 50 controls (`launchdarkly-node` is opted out).
+
+Findings of the measurement itself (each fixed with a test, then the suite was re-run):
+
+- **A network failure was counted as a detection.** In the first v2 run a DNS blip made four mutants (`vitest-node`, `zod-node`) fail at the install step as
+  `NETWORK_TRANSIENT` and the tool called them detected; one more (`loops-node renamed_method`) failed on a GitHub download. `runMutantJob` now runs a mutant a
+  second time when its first failure is the environment's or of a class the operator does not expect; a second network failure is a `harness_error`, left
+  out of the rates. v1's results had none of these. Five anthropic/cerebras mutants hit it twice, so those two targets were run again alone with the same seed
+  and merged with `scripts/merge-mutate-reruns.mjs`; the document lists them under "Mutants run again after an environment failure".
+- **The export check treated `key: name(...)` as a type annotation** (`drizzle-node` `renamed_symbol` survived): a call is a value. Fixed in `usedAsValue`.
+- **The opt-out did not apply to the enforcing experiment** (`launchdarkly-node` failed its control with the check on): it does now, in both modes.
+
+### What to do after the deploy (first production cycle)
+
+Expected: **harness v2, statuses unchanged.** The first cycle after the deploy runs every target under v2 (and each target's shadow export check). Because the
+controls above all pass under v2, and a failure under a different version never counts as the second of two, no target can change status because of the bump
+alone. Verify afterwards: `node --env-file=.env scripts/verify-version-bump.mjs .qsr-runs/status-before-v2.json` compares each target's status with the one
+taken before the deploy and prints the harness versions seen; every difference must be explained from its run. `qsr shadow-report --days 1` shows the first
+shadow answers; `qsr calibration-report` shows the version table. The plans are NOT recompiled (`COMPILER_VERSION` is unchanged), so no model quota is spent.
+
 ## Findings from P9c (detection power: mutation testing of the monitor)
 
 Local only. Nothing was posted, no vendor page was crawled again, no model was asked. P9b and P10 are not started. The public document is

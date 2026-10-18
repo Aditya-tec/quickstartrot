@@ -35,6 +35,7 @@ const pass = (over: Partial<StatusRun> = {}): StatusRun => ({
   failureSignature: null,
   reachedLevel: 3,
   skipReason: null,
+  harnessVersion: 1,
   finishedAt: T,
   ...over,
 });
@@ -48,6 +49,7 @@ const fail = (
   failureSignature: sig,
   reachedLevel: 1,
   skipReason: null,
+  harnessVersion: 1,
   finishedAt: T,
   ...over,
 });
@@ -221,6 +223,7 @@ describe('row 2: HEALTHY / UNKNOWN + FAIL (vendor class), first failure -> DEGRA
         transientStreak: 0,
         lastFailureSignature: SIG_A,
         lastFailureClass: cls,
+        lastFailureHarnessVersion: 1,
       });
       expect(events).toEqual([]);
     },
@@ -1050,5 +1053,197 @@ describe('totality: evaluate is defined for EVERY combination (status x outcome/
       if (problems.length > 0) failures.push(`${name}: ${problems.join('; ')}`);
     }
     expect(failures.slice(0, 15)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------------------------
+// P9d: harness versions. A failure under one version of the harness checks and a failure under another are different
+// observations: the second is NOT "two in a row". These tests pin that, and that a version bump alone moves no status.
+
+describe('harness versions: failures under different versions are never consecutive', () => {
+  const v1 = { harnessVersion: 1 };
+  const v2 = { harnessVersion: 2 };
+  const step = (s: ToolState, r: StatusRun, c: StatusContext = ctx()) => evaluate(s, r, c);
+
+  it('a first failure records the version it ran under', () => {
+    const e = step(state({ status: 'HEALTHY' }), fail('API_DRIFT', SIG_A, v2));
+    expect(e.next).toMatchObject({
+      status: 'DEGRADED',
+      consecutiveFailures: 1,
+      lastFailureHarnessVersion: 2,
+    });
+  });
+
+  it('the same signature twice under the SAME version is BROKEN with an incident (the control)', () => {
+    const first = step(state({ status: 'HEALTHY' }), fail('API_DRIFT', SIG_A, v1)).next;
+    const second = step(first, fail('API_DRIFT', SIG_A, v1));
+    expect(second.next.status).toBe('BROKEN');
+    expect(types(second.events)).toEqual(['incident_opened']);
+  });
+
+  it('a failure under v1 followed by the same failure under v2 is NOT two in a row: DEGRADED stays DEGRADED, no incident', () => {
+    const first = step(state({ status: 'HEALTHY' }), fail('API_DRIFT', SIG_A, v1)).next;
+    const second = step(first, fail('API_DRIFT', SIG_A, v2));
+    expect(second.next).toMatchObject({
+      status: 'DEGRADED',
+      consecutiveFailures: 1,
+      lastFailureHarnessVersion: 2,
+      lastFailureSignature: SIG_A,
+    });
+    expect(second.events).toEqual([]);
+  });
+
+  it('...and it takes two failures under the NEW version to open the incident', () => {
+    let s = step(state({ status: 'HEALTHY' }), fail('API_DRIFT', SIG_A, v1)).next;
+    s = step(s, fail('API_DRIFT', SIG_A, v2)).next;
+    expect(s.status).toBe('DEGRADED');
+    const third = step(s, fail('API_DRIFT', SIG_A, v2));
+    expect(third.next.status).toBe('BROKEN');
+    expect(types(third.events)).toEqual(['incident_opened']);
+  });
+
+  it('the other direction counts the same: v2 then v1 is not two in a row either', () => {
+    const first = step(state({ status: 'HEALTHY' }), fail('DOCS_SNIPPET_ERROR', SIG_B, v2)).next;
+    const second = step(first, fail('DOCS_SNIPPET_ERROR', SIG_B, v1));
+    expect(second.next.status).toBe('DEGRADED');
+    expect(second.events).toEqual([]);
+  });
+
+  it('a failure recorded before versioning existed (version null on a tool with a failure) counts as version 1', () => {
+    const legacy = state({
+      status: 'DEGRADED',
+      consecutiveFailures: 1,
+      lastFailureSignature: SIG_A,
+      lastFailureClass: 'API_DRIFT',
+      lastFailureHarnessVersion: null,
+    });
+    const underV2 = step(legacy, fail('API_DRIFT', SIG_A, v2));
+    expect(underV2.next).toMatchObject({
+      status: 'DEGRADED',
+      consecutiveFailures: 1,
+      lastFailureHarnessVersion: 2,
+    });
+    expect(underV2.events).toEqual([]);
+    // while the same tool failing again under version 1 is exactly what it always was
+    expect(step(legacy, fail('API_DRIFT', SIG_A, v1)).next.status).toBe('BROKEN');
+  });
+
+  it('a tool that is already BROKEN stays BROKEN on a failure under another version, with its streak restarted and no new event', () => {
+    const broken = state({
+      status: 'BROKEN',
+      consecutiveFailures: 5,
+      lastFailureSignature: SIG_A,
+      lastFailureClass: 'API_DRIFT',
+      lastFailureHarnessVersion: 1,
+    });
+    const e = step(broken, fail('API_DRIFT', SIG_A, v2), ctx({ openIncident: openIncident() }));
+    expect(e.next).toMatchObject({
+      status: 'BROKEN',
+      consecutiveFailures: 1,
+      lastFailureHarnessVersion: 2,
+    });
+    expect(e.events).toEqual([]);
+    // a new shape of failure is still reported as a changed signature
+    const changed = step(
+      broken,
+      fail('API_DRIFT', SIG_B, v2),
+      ctx({ openIncident: openIncident() }),
+    );
+    expect(types(changed.events)).toEqual(['incident_signature_changed']);
+  });
+
+  it('transient failures under different versions do not make a streak of four', () => {
+    let s = state({ status: 'HEALTHY' });
+    for (let i = 0; i < 3; i++) s = step(s, fail('NETWORK_TRANSIENT', SIG_C, v1)).next;
+    expect(s.transientStreak).toBe(3);
+    const fourth = step(s, fail('NETWORK_TRANSIENT', SIG_C, v2));
+    expect(fourth.next.transientStreak).toBe(1);
+    expect(fourth.events).toEqual([]);
+    expect(fourth.next.status).toBe('DEGRADED');
+    // four under one version still open the incident
+    let t = state({ status: 'HEALTHY' });
+    for (let i = 0; i < 4; i++) t = step(t, fail('NETWORK_TRANSIENT', SIG_C, v2)).next;
+    expect(t.status).toBe('BROKEN');
+  });
+
+  it('a pass clears the remembered version', () => {
+    const degraded = step(state({ status: 'HEALTHY' }), fail('API_DRIFT', SIG_A, v1)).next;
+    const recovered = step(degraded, pass(v2)).next;
+    expect(recovered).toMatchObject({
+      status: 'HEALTHY',
+      lastFailureHarnessVersion: null,
+      lastFailureSignature: null,
+    });
+  });
+});
+
+describe('harness versions: a version bump alone changes no target status', () => {
+  const degraded = state({
+    status: 'DEGRADED',
+    consecutiveFailures: 1,
+    lastFailureSignature: SIG_A,
+    lastFailureClass: 'API_DRIFT',
+    lastFailureHarnessVersion: 1,
+  });
+  const STATES: [string, ToolState][] = [
+    ['UNKNOWN', state()],
+    ['HEALTHY', state({ status: 'HEALTHY' })],
+    ['DEGRADED', degraded],
+    [
+      'BROKEN',
+      state({
+        status: 'BROKEN',
+        consecutiveFailures: 3,
+        lastFailureSignature: SIG_A,
+        lastFailureClass: 'API_DRIFT',
+        lastFailureHarnessVersion: 1,
+      }),
+    ],
+  ];
+  const incidentFor = (name: string): StatusContext =>
+    ctx(name === 'BROKEN' ? { openIncident: openIncident() } : {});
+
+  it.each(STATES)('%s: a PASS under v2 gives exactly what a PASS under v1 gives', (name, s) => {
+    expect(evaluate(s, pass({ harnessVersion: 2 }), incidentFor(name))).toEqual(
+      evaluate(s, pass({ harnessVersion: 1 }), incidentFor(name)),
+    );
+  });
+
+  it.each(STATES)(
+    '%s: a skipped run, a harness error and every admin-queue class are the same under either version',
+    (name, s) => {
+      const runs = (v: number): StatusRun[] => [
+        pass({ outcome: 'SKIPPED', skipReason: 'manual_step', harnessVersion: v }),
+        fail(null, null, { outcome: 'HARNESS_ERROR', harnessVersion: v }),
+        ...ADMIN.map((c) => fail(c, SIG_A, { harnessVersion: v })),
+      ];
+      const a = runs(1).map((r) => evaluate(s, r, incidentFor(name)));
+      const b = runs(2).map((r) => evaluate(s, r, incidentFor(name)));
+      expect(b).toEqual(a);
+    },
+  );
+
+  it('a first failure moves HEALTHY and UNKNOWN to DEGRADED under either version, identically apart from the version it records', () => {
+    for (const s of [state(), state({ status: 'HEALTHY' })])
+      for (const cls of VENDOR) {
+        const a = evaluate(s, fail(cls, SIG_A, { harnessVersion: 1 }), ctx());
+        const b = evaluate(s, fail(cls, SIG_A, { harnessVersion: 2 }), ctx());
+        expect({ ...b.next, lastFailureHarnessVersion: 1 }).toEqual(a.next);
+        expect(b.events).toEqual(a.events);
+      }
+  });
+
+  it('a HEALTHY or DEGRADED target stays as it is when the harness changes, until it fails twice under the new version', () => {
+    for (const status of ['HEALTHY', 'DEGRADED'] as const) {
+      const s = status === 'HEALTHY' ? state({ status }) : degraded;
+      const afterOne = evaluate(s, fail('API_DRIFT', SIG_A, { harnessVersion: 2 }), ctx()).next;
+      expect(afterOne.status, status).toBe('DEGRADED');
+      const afterTwo = evaluate(
+        afterOne,
+        fail('API_DRIFT', SIG_A, { harnessVersion: 2 }),
+        ctx(),
+      ).next;
+      expect(afterTwo.status, status).toBe('BROKEN');
+    }
   });
 });

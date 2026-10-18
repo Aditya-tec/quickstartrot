@@ -49,6 +49,7 @@ Vendor classes: `DEPENDENCY_RESOLUTION`, `API_DRIFT`, `DOCS_SNIPPET_ERROR`, `RUN
 
 ### Decisions the spec table leaves open
 
+- **Harness versions (P9d).** A failure under a different harness version than the one that recorded the last failure is never the second of two consecutive failures: the streak is forgotten (`comparableState`) and the failure counts as a first one. `ToolState.lastFailureHarnessVersion` records the version (null on a tool with failure memory means version 1; a PASS clears it). A version bump on its own therefore never changes a status: HEALTHY and DEGRADED stay until the tool fails twice under the new version.
 - **PASS while BROKEN** changes nothing until the second consecutive pass (`consecutivePasses` counts passes; a failure resets it to 0).
 - **A transient failure never touches the vendor streak** (`consecutiveFailures`, `lastFailureSignature`), and a vendor failure or a pass resets `transientStreak`: "4 in a row" means consecutive.
 - **A transient failure while BROKEN** is not a signature change. Row 8 compares the new signature with the **open incident's**.

@@ -18,6 +18,11 @@ export const ToolState = z.object({
   transientStreak: z.number().int().min(0),
   lastFailureSignature: z.string().nullable(),
   lastFailureClass: FailureClass.nullable(),
+  /**
+   * The harness version the last counted failure ran under. Failures under different versions are never consecutive. Null while no
+   * failure is counted, and also on a tool whose failure was recorded before versioning existed: that is version 1.
+   */
+  lastFailureHarnessVersion: z.number().int().min(1).nullable(),
 });
 export type ToolState = z.infer<typeof ToolState>;
 
@@ -30,6 +35,8 @@ export const StatusRun = z.object({
   failureSignature: z.string().nullable(),
   reachedLevel: z.number().int().min(0).max(4),
   skipReason: SkipReason.nullable(),
+  /** The harness version that produced this run (see HARNESS_VERSION). */
+  harnessVersion: z.number().int().min(1),
   finishedAt: z.iso.datetime(),
 });
 export type StatusRun = z.infer<typeof StatusRun>;
@@ -131,6 +138,7 @@ export const INITIAL_TOOL_STATE: ToolState = {
   transientStreak: 0,
   lastFailureSignature: null,
   lastFailureClass: null,
+  lastFailureHarnessVersion: null,
 };
 
 /** Resolved incidents older than this no longer count as a recurrence (spec section 10). */

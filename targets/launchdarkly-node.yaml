@@ -9,4 +9,7 @@ runtime:
 extract:
   root: '#content'
   tab: JavaScript
+harness:
+  skipExportCheck: true
+  reason: "The docs snippet is TypeScript (it imports the types LDContext and LDOptions) but the page's code blocks carry no language tag and show no TypeScript-only syntax, so the plan writes index.js and the export check would report the two types as missing exports (found by qsr mutate, P9c)."
 notes: "Run 2026-10-17 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 12.7 s of steps. Plan: shell npm install @launchdarkly/node-server-sdk > shell npm install @launchdarkly/observability-node > write index.js > append index.js > append index.js, then the harness syntax and import checks (2 passed). Resolved: @launchdarkly/node-server-sdk@9.15.0, @launchdarkly/observability-node@1.4.0. Crawl: root '#content', tab 'JavaScript', 13 blocks on the page."

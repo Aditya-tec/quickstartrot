@@ -106,6 +106,10 @@ export default async function RunPage({ params }: { params: Params }) {
             <dd className="tabular mt-0.5">{run.attempt}</dd>
           </div>
         </dl>
+        <p data-testid="harness-version" className="mt-3 text-xs text-muted">
+          Harness v{run.harness_version}. The version of the checks that ran this plan; a change of
+          version never counts as a failure by itself.
+        </p>
         {run.plan_stale ? (
           <p
             role="note"

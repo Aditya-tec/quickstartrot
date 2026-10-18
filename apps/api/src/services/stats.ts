@@ -83,6 +83,7 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
       failedStepId: runs.failedStepId,
       durationMs: runs.durationMs,
       startedAt: runs.startedAt,
+      harnessVersion: runs.harnessVersion,
       stale: sql<string | null>`${runs.runnerEnv}->>'plan_stale'`,
     })
     .from(runs)
@@ -102,6 +103,18 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
   // ---- the harness error rate: real tools that ran, in every finished cycle
   const ran = real.filter((f) => finished(f.cycleId) && !preflight(f));
   const harnessErrors = ran.filter((f) => f.outcome === 'HARNESS_ERROR').length;
+  const byVersion = new Map<number, { runs: number; firstAt: Date; lastAt: Date }>();
+  for (const f of ran) {
+    const entry = byVersion.get(f.harnessVersion) ?? {
+      runs: 0,
+      firstAt: f.startedAt,
+      lastAt: f.startedAt,
+    };
+    entry.runs += 1;
+    if (f.startedAt < entry.firstAt) entry.firstAt = f.startedAt;
+    if (f.startedAt > entry.lastAt) entry.lastAt = f.startedAt;
+    byVersion.set(f.harnessVersion, entry);
+  }
   const byDay = new Map<string, { runs: number; errors: number }>();
   for (const f of ran) {
     const key = dayOf(f.startedAt);
@@ -382,6 +395,14 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
       byDay: [...byDay.entries()]
         .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([day, v]) => ({ day, runs: v.runs, errors: v.errors, rate: rate(v.errors, v.runs) })),
+      versions: [...byVersion.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([version, v]) => ({
+          version,
+          runs: v.runs,
+          firstAt: v.firstAt.toISOString(),
+          lastAt: v.lastAt.toISOString(),
+        })),
     },
     tools: perTool,
     unknowns,

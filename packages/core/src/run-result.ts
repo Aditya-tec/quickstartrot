@@ -35,6 +35,26 @@ export const SKIP_REASONS = ['manual_step'] as const;
 export const SkipReason = z.enum(SKIP_REASONS);
 export type SkipReason = z.infer<typeof SkipReason>;
 
+/**
+ * The version of the harness checks that produced a run (P9d). Version 1 is everything recorded before versioning existed (the
+ * syntax check could miss a broken ES-module .js file, and the Python imports check looked only at the top-level module);
+ * version 2 fixes both. Bump it whenever a harness-owned check changes what it can fail: the status engine never counts failures
+ * under different versions as consecutive, so a stricter check cannot turn one old failure plus one new one into an incident.
+ */
+export const HARNESS_VERSION = 2;
+
+/** The experimental export check run in SHADOW mode: recorded, never acted on (see docs/DETECTION-POWER.md). */
+export const SHADOW_OUTCOMES = ['pass', 'fail', 'skipped'] as const;
+export const ShadowExportCheck = z.object({
+  outcome: z.enum(SHADOW_OUTCOMES),
+  /** For a fail: the names the docs import that the loaded package does not have (`pkg: name`), or dotted modules that do not import. */
+  missing: z.array(z.string().max(200)).max(50),
+  /** Why it was skipped, or a short note on a fail. Never output of the vendor's code. */
+  note: z.string().max(300).nullable(),
+  durationMs: z.number().int().min(0),
+});
+export type ShadowExportCheck = z.infer<typeof ShadowExportCheck>;
+
 export const StepResult = z.object({
   stepId: z.string(),
   ordinal: z.number().int().min(0),
@@ -48,6 +68,8 @@ export const StepResult = z.object({
   matchedAuthPattern: z.string().nullable().default(null), // L3 auth-error-as-pass evidence
   // Kept on the step, not the run, so RunResult stays exactly the spec section 9 shape.
   skipReason: SkipReason.nullable().default(null),
+  // Shadow mode (P9d): present only on the L2 imports-check step the export check follows. It changes nothing else.
+  shadowExportCheck: ShadowExportCheck.nullable().optional(),
 });
 export type StepResult = z.infer<typeof StepResult>;
 
@@ -62,6 +84,8 @@ export const RunResult = z.object({
   failedStepId: z.string().nullable(),
   steps: z.array(StepResult),
   imageDigest: z.string(),
+  // Which harness version ran this (P9d). A runner from before versioning sends nothing: that is version 1.
+  harnessVersion: z.number().int().min(1).default(1),
   // Flat string record, exactly as in spec section 9. The version-drift capture of section 10
   // ("runner_env.resolved") is stored inside it as a JSON string: see RUNNER_ENV_KEYS.resolved.
   runnerEnv: z.record(z.string(), z.string()),

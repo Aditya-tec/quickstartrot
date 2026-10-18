@@ -705,12 +705,17 @@ describe('concurrency: tools are reported four at a time (the ingest is idempote
   });
 
   it('is clearly faster than one tool at a time (12 tools, 25 ms per call)', async () => {
+    // Measured against a sequential run on the same machine and in the same test, never against a fixed number of
+    // milliseconds: a loaded CI runner slows both and the ratio holds (the fixed bound failed once on CI at 423 ms).
     await twelve();
-    const started = Date.now();
+    const t0 = Date.now();
+    await report({ api: fakeApi({ latencyMs: FIVE }), options: { concurrency: 1 } });
+    const sequential = Date.now() - t0;
+    const t1 = Date.now();
     await report({ api: fakeApi({ latencyMs: FIVE }) });
-    const elapsed = Date.now() - started;
-    // one at a time would be 12 x 2 calls x 25 ms = 600 ms; four at a time is about 150 ms
-    expect(elapsed).toBeLessThan(420);
+    const concurrent = Date.now() - t1;
+    // one at a time is 12 x 2 calls x 25 ms = 600 ms; four at a time is about a quarter of that
+    expect(concurrent).toBeLessThan(sequential * 0.75);
   });
 
   it('one failing run stops the report before finishing, and no tool still queued is started after it', async () => {

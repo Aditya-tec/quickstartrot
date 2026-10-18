@@ -139,6 +139,17 @@ export const Target = z.object({
     .optional(),
   notes: z.string().optional(),
   /**
+   * Per-target switches for harness-owned checks (P9d). Absent for every target but the few that need one; absent stays absent.
+   * `skipExportCheck` turns the experimental export check off for this target (shadow or not) and MUST say why.
+   */
+  harness: z
+    .object({
+      skipExportCheck: z.literal(true),
+      reason: z.string().trim().min(10).max(300),
+    })
+    .strict()
+    .optional(),
+  /**
    * false: the file stays in the repository (with its notes) but the target is not run. A target that is absent
    * here counts as enabled, and stays absent after parsing, so the config hash of every existing target is unchanged.
    */

@@ -39,6 +39,7 @@ const step = (
   logFile: null,
   matchedAuthPattern: null,
   skipReason: null,
+  shadowExportCheck: null,
   ...over,
 });
 const base = (over: Partial<RunResult> = {}): RunResult => ({
@@ -51,6 +52,7 @@ const base = (over: Partial<RunResult> = {}): RunResult => ({
   reachedLevel: 3,
   failedStepId: null,
   steps: [step('s1', 0, 'shell'), step('s2', 1, 'write_file'), step('s3', 2, 'run')],
+  harnessVersion: 1,
   imageDigest: `sha256:${'a'.repeat(64)}`,
   runnerEnv: {
     imageSource: 'registry',

@@ -27,10 +27,12 @@ Usage:
   qsr report   --cycle <id> [--results results] [--plans plans]
   qsr gc
   qsr calibration-report [--days 7]
+  qsr shadow-report [--days 7]
   qsr export --launch [--site <url>] [--json | --md]
   qsr plans push <slug> | --all [--dry-run] [--include-disabled] [--targets <dir>] [--cache-dir <dir>]
   qsr validate [--targets <dir>] [--only a,b] [--crawl]
-  qsr mutate <slug> | --all [--sample N] [--seed S] [--operators a,b] [--concurrency 2] [--plan-only] [--baseline <json> --exports-check] [--write-docs]
+  qsr mutate <slug> | --all [--sample N] [--seed S] [--operators a,b] [--concurrency 2] [--plan-only] [--controls-only] [--baseline <json> --exports-check] [--write-docs]
+  qsr mutate --render <json> [--compare <json>] [--v1 <json>]
 
 Commands (phase that implements them):
   crawl     Crawl one target's docs page and print the extraction            (P2)
@@ -44,6 +46,7 @@ Commands (phase that implements them):
   validate  Check every target file; --crawl does a dry-run crawl              (P7)
   plans     push: send locally compiled plans to the API plan cache (admin)     (P9a)
   calibration-report  Markdown report of the last N days from GET /admin/stats   (P9a)
+  shadow-report  What the export check said in shadow mode, per target            (P9d)
   export    --launch: the numbers for a launch post, confirmed incidents only    (P9a)
   mutate    Local only: mutation-test the monitor with cached pages and plans    (P9c)
 

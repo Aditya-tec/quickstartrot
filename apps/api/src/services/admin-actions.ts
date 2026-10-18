@@ -77,6 +77,7 @@ export async function markFalsePositive(
         transientStreak: 0,
         lastFailureSignature: null,
         lastFailureClass: null,
+        lastFailureHarnessVersion: null,
       })
       .where(eq(tools.id, incident.toolId));
     const [failingRun] = incident.firstFailingRunId

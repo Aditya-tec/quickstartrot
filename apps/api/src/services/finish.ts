@@ -41,6 +41,7 @@ const stateOf = (t: ToolRow): ToolState => ({
   transientStreak: t.transientStreak,
   lastFailureSignature: t.lastFailureSignature,
   lastFailureClass: t.lastFailureClass,
+  lastFailureHarnessVersion: t.lastFailureHarnessVersion,
 });
 
 /** The model was not asked (token budget), so the run executed the tool's last accepted plan. */
@@ -57,6 +58,7 @@ const statusRunOf = (r: RunRow): StatusRun => {
     failureSignature: r.failureSignature,
     reachedLevel: Math.min(4, Math.max(0, r.reachedLevel)),
     skipReason: r.skipReason === 'manual_step' ? 'manual_step' : null,
+    harnessVersion: Math.max(1, r.harnessVersion),
     finishedAt: r.finishedAt.toISOString(),
   };
   // A FAIL on a stale plan is not evidence about the vendor: our plan may simply be out of date. For the
@@ -172,6 +174,7 @@ export async function finishCycle(ctx: Ctx, cycleId: string, log: Logger): Promi
             transientStreak: next.transientStreak,
             lastFailureSignature: next.lastFailureSignature,
             lastFailureClass: next.lastFailureClass,
+            lastFailureHarnessVersion: next.lastFailureHarnessVersion,
             lastRunAt: finalRun.finishedAt,
           })
           .where(eq(tools.id, current.id));

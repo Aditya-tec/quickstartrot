@@ -3,8 +3,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { COMPILER_VERSION } from '@qsr/compiler';
-import type { Logger } from '@qsr/core';
+import { HARNESS_VERSION, type Logger } from '@qsr/core';
 import { createDockerCli, executePlan, type DockerClient } from '@qsr/executor';
+import { createLimiter } from '../probe/crawl-pool.js';
 import { processIo, USAGE, type CliIo } from '../commands.js';
 import { loadAllTargets, loadTarget } from '../targets.js';
 import { loadInput, type MutationInput } from './inputs.js';
@@ -16,8 +17,16 @@ import {
   type DetectionResults,
 } from './report.js';
 import { createRng } from './rng.js';
+import { compareHarnessRuns, KINDS, summarize } from './stats.js';
 import { survivorReason } from './survivors.js';
-import { pairKey, planMutants, runMutation, type ControlRecord, type PlanRunner } from './run.js';
+import {
+  pairKey,
+  planMutants,
+  runControl,
+  runMutation,
+  type ControlRecord,
+  type PlanRunner,
+} from './run.js';
 
 // `qsr mutate`: mutation testing of the monitor. Local only. This module (and everything under mutate/) must never import
 // the API client, the admin client or the report job, never call fetch, and never touch an /internal endpoint: a mutated run
@@ -101,17 +110,20 @@ const parseOperators = (text: string | undefined): OperatorId[] | null => {
 };
 
 /**
- * `--render <results.json> [--compare <results-with-the-check.json>]`: writes docs/DETECTION-POWER.md and docs/detection-power.json from
+ * `--render <results.json> [--compare <results-with-the-check.json>] [--v1 <results-of-the-earlier-harness.json>]`: writes docs/DETECTION-POWER.md and docs/detection-power.json from
  * results that were already produced. Runs nothing. The first file is the production-checks run; the comparison, when given, is
  * the run with the experimental export check (it carries its own before/after numbers).
  */
 async function renderFromFiles(
   file: string,
   compare: string | undefined,
+  v1: string | undefined,
   targetsDir: string,
   io: CliIo,
 ): Promise<number> {
   const base = JSON.parse(await readFile(path.resolve(file), 'utf8')) as DetectionResults;
+  // The summary is derived from the records too, so results saved by an older build get the figures of the current one.
+  base.summary = summarize(base.controls, base.mutants);
   // Reasons are derived from stored facts, so a refinement of the wording applies to results that already exist.
   for (const m of base.mutants) {
     const control = base.controls.find((c) => c.slug === m.slug);
@@ -133,6 +145,10 @@ async function renderFromFiles(
   if (compare !== undefined) {
     const other = JSON.parse(await readFile(path.resolve(compare), 'utf8')) as DetectionResults;
     base.comparison = other.comparison;
+  }
+  if (v1 !== undefined) {
+    const before = JSON.parse(await readFile(path.resolve(v1), 'utf8')) as DetectionResults;
+    base.harnessComparison = compareHarnessRuns(before, base);
   }
   const repoRoot = path.resolve(targetsDir, '..');
   const docPath = path.join(repoRoot, 'docs', 'DETECTION-POWER.md');
@@ -178,14 +194,22 @@ export async function mutateCommand(
       'write-docs': { type: 'boolean', default: false },
       'plan-only': { type: 'boolean', default: false },
       'exports-check': { type: 'boolean', default: false },
+      'controls-only': { type: 'boolean', default: false },
       baseline: { type: 'string' },
       'seconds-per-run': { type: 'string' },
       render: { type: 'string' },
       compare: { type: 'string' },
+      v1: { type: 'string' },
     },
   });
   if (values.render !== undefined)
-    return renderFromFiles(values.render, values.compare, path.resolve(values.targets), io);
+    return renderFromFiles(
+      values.render,
+      values.compare,
+      values.v1,
+      path.resolve(values.targets),
+      io,
+    );
   const slug = positionals[0];
   const all = values.all || values.sample !== undefined;
   if ((slug === undefined) === !all) {
@@ -306,6 +330,35 @@ export async function mutateCommand(
   const runner = overrides.runner ?? dockerRunner(docker, workDir, log);
   const now = overrides.now ?? (() => new Date());
 
+  if (values['controls-only']) {
+    const limit = createLimiter(concurrency);
+    const controls = await Promise.all(
+      inputs.map((input) =>
+        limit(input.target.slug, async () => {
+          const c = await runControl(runner, input, false);
+          io.stdout(
+            `  control ${c.slug}: ${c.included ? `PASS at L${c.reachedLevel}` : `${c.outcome ?? 'EXCLUDED'}, ${c.excludedReason}`}
+`,
+          );
+          return c;
+        }),
+      ),
+    );
+    const outFile = path.resolve(values['out-json'] ?? path.join(workDir, 'controls.json'));
+    await mkdir(path.dirname(outFile), { recursive: true });
+    await writeFile(
+      outFile,
+      `${JSON.stringify({ generatedAt: now().toISOString(), harnessVersion: HARNESS_VERSION, compilerVersion: COMPILER_VERSION, skipped, controls }, null, 2)}
+`,
+    );
+    const passed = controls.filter((c) => c.included).length;
+    io.stdout(
+      `controls: ${passed} of ${controls.length} passed under harness v${HARNESS_VERSION}${skipped.length ? `; ${skipped.length} skipped (no cached input)` : ''}; results: ${outFile}
+`,
+    );
+    return 0;
+  }
+
   const started = Date.now();
   io.stdout(
     `${inputs.length} targets, ${operators.length} operators, concurrency ${concurrency}, seed ${values.seed}${values['exports-check'] ? ', export check ON (survivors of the baseline only)' : ''}\n`,
@@ -325,6 +378,7 @@ export async function mutateCommand(
       operators,
       concurrency,
       sample,
+      harnessVersion: HARNESS_VERSION,
       harnessChecks: values['exports-check']
         ? 'production plus qsr-check-exports (experimental)'
         : 'production (syntax, imports)',
@@ -352,10 +406,12 @@ export async function mutateCommand(
   io.stdout(
     [
       `controls: ${s.controls.included} of ${s.controls.total} passed${s.controls.excluded.length ? `; excluded: ${s.controls.excluded.map((e) => e.slug).join(', ')}` : ''}`,
-      `detected ${s.mutation.detected} of ${s.mutation.tested} tested (${s.mutation.detection === null ? 'n/a' : `${Math.round(s.mutation.detection * 100)}%`}); invalid ${s.mutation.invalid}, not applicable ${s.mutation.notApplicable}, harness errors ${s.mutation.harnessError}`,
-      ...Object.entries(s.byLevel).map(
-        ([l, r]) =>
-          `  ${l}: ${r.detected} of ${r.tested}${r.detection === null ? '' : ` (${Math.round(r.detection * 100)}%)`} over ${r.targets} targets`,
+      'detected of tested, by kind and level (install-level and code-level are never blended):',
+      ...KINDS.flatMap((kind) =>
+        (['L1', 'L2', 'L3'] as const).map((l) => {
+          const r = s.byKind[kind][l];
+          return `  ${kind}-level ${l}: ${r.detected} of ${r.tested}${r.detection === null ? '' : ` (${Math.round(r.detection * 100)}%)`} over ${r.targets} targets; no site ${r.notApplicable}, invalid ${r.invalid}, harness errors ${r.harnessError}`;
+        }),
       ),
       `wall time ${wallSeconds} s; results: ${outJson}`,
     ].join('\n') + '\n',

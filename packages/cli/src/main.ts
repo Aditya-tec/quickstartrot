@@ -14,6 +14,7 @@ import { exportCommand } from './launch-export.js';
 import { mutateCommand } from './mutate/command.js';
 import { plansCommand } from './plans-command.js';
 import { runCommand } from './run.js';
+import { shadowReportCommand } from './shadow-report.js';
 import { TargetFileError } from './targets.js';
 
 // Structured JSON logs go to stderr; stdout is reserved for results (and --json output).
@@ -47,6 +48,8 @@ async function main(argv: string[]): Promise<number> {
       return plansCommand(rest, log);
     case 'mutate':
       return mutateCommand(rest, log);
+    case 'shadow-report':
+      return shadowReportCommand(rest, log);
     case 'validate':
       return validateCommand(rest, log);
     default:

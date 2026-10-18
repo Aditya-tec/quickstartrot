@@ -135,6 +135,8 @@ export const PublicRunRow = z.object({
   plan_compiler_version: z.string().nullable(),
   plan_truncation: Truncation.nullable().catch(null),
   plan_stale: z.boolean(),
+  /** The version of the checks that produced the run (P9d): 1 is everything before versioning. */
+  harness_version: z.number().int().min(1).default(1),
   snapshot_blocks: z.array(ExtractionBlock).nullable().catch(null),
   snapshot_title: z.string().nullable(),
   snapshot_url: z.string().nullable(),

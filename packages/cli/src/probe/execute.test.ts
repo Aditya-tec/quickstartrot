@@ -73,8 +73,14 @@ async function writePlans(
 type Behaviour = (input: ExecuteInput, attempt: number) => RunResultType | Promise<RunResultType>;
 
 function harness(over: Partial<Deps> = {}, behaviours: Record<string, Behaviour> = {}) {
-  const calls: { slug: string; attempt: number; input: ExecuteInput; runId: string | undefined }[] =
-    [];
+  const calls: {
+    slug: string;
+    attempt: number;
+    input: ExecuteInput;
+    runId: string | undefined;
+    shadow: boolean | undefined;
+    enforced: boolean | undefined;
+  }[] = [];
   const sleeps: number[] = [];
   const pulled: string[] = [];
   const removed: string[] = [];
@@ -93,7 +99,14 @@ function harness(over: Partial<Deps> = {}, behaviours: Record<string, Behaviour>
     executePlan: async (input: ExecuteInput, d: ExecuteDeps) => {
       running += 1;
       if (running > 1) overlap = true;
-      calls.push({ slug: input.target.slug, attempt: input.attempt, input, runId: d.runId });
+      calls.push({
+        slug: input.target.slug,
+        attempt: input.attempt,
+        input,
+        runId: d.runId,
+        shadow: d.shadowExportCheck,
+        enforced: d.exportsCheck,
+      });
       try {
         const fn = behaviours[input.target.slug];
         return fn
@@ -114,6 +127,19 @@ const run = (h: ReturnType<typeof harness>, shard = 0, extra = {}) =>
   runExecute({ plans, shard, out: results, retryDelayMs: 60_000, ...extra }, h.deps);
 const readResult = async (file: string): Promise<RunResultType> =>
   RunResult.parse(JSON.parse(await readFile(path.join(results, file), 'utf8')));
+
+describe('shadow mode (P9d)', () => {
+  it('every production run asks the executor for the shadow export check, and never for the enforcing one', async () => {
+    await writePlans([readyPlan(target('a-node'), 0), readyPlan(target('b-node'), 0)]);
+    const h = harness();
+    await run(h);
+    expect(h.calls.length).toBeGreaterThan(0);
+    for (const c of h.calls) {
+      expect(c.shadow, c.slug).toBe(true);
+      expect(c.enforced, c.slug).toBeUndefined();
+    }
+  });
+});
 
 describe('which tools run', () => {
   it('runs only the ready plans of its shard, one after another, and writes results/<slug>-1.json', async () => {

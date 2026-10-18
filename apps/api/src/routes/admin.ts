@@ -8,6 +8,7 @@ import {
   LaunchExport,
   PlanImportBody,
   PlanImportResponse,
+  ShadowReportResponse,
   StatsResponse,
 } from '@qsr/core';
 import type { Ctx } from '../deps.js';
@@ -15,6 +16,7 @@ import { confirmIncident, disableTool, markFalsePositive } from '../services/adm
 import { loadQueue } from '../services/admin.js';
 import { importPlan } from '../services/plans-import.js';
 import { loadLaunchExport } from '../services/launch-export.js';
+import { loadShadowReport } from '../services/shadow.js';
 import { loadStats } from '../services/stats.js';
 
 const Id = z.object({ id: z.uuid() });
@@ -56,6 +58,18 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: Ctx): void {
       },
     },
     async (request) => loadStats(ctx, request.query.days),
+  );
+
+  // What the shadow export check said (see services/shadow.ts): recorded, never acted on.
+  r.get(
+    '/admin/shadow',
+    {
+      schema: {
+        querystring: z.object({ days: z.coerce.number().int().min(1).max(90).default(7) }),
+        response: { 200: ShadowReportResponse },
+      },
+    },
+    async (request) => loadShadowReport(ctx, request.query.days),
   );
 
   // The numbers a launch post needs: confirmed incidents only (see services/launch-export.ts).

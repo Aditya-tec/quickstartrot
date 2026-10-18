@@ -274,7 +274,16 @@ async function runAttempt(
 
   type Settled = { kind: 'done'; result: RunResult } | { kind: 'threw'; error: unknown };
   const execution: Promise<Settled> = Promise.resolve()
-    .then(() => deps.executePlan(input, { docker, log, signal: controller.signal, runId }))
+    .then(() =>
+      deps.executePlan(input, {
+        docker,
+        log,
+        signal: controller.signal,
+        runId,
+        // P9d: the export check runs in SHADOW mode: recorded on the imports-check step, never part of a verdict.
+        shadowExportCheck: true,
+      }),
+    )
     .then(
       (result): Settled => ({ kind: 'done', result }),
       (error: unknown): Settled => ({ kind: 'threw', error }),

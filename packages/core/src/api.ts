@@ -297,6 +297,15 @@ export const StatsResponse = z.object({
     byDay: z.array(
       z.object({ day: Day, runs: z.number().int(), errors: z.number().int(), rate: Rate }),
     ),
+    /** Which harness versions produced the runs of the window (P9d): version 1 is everything before versioning. */
+    versions: z.array(
+      z.object({
+        version: z.number().int(),
+        runs: z.number().int(),
+        firstAt: z.iso.datetime(),
+        lastAt: z.iso.datetime(),
+      }),
+    ),
   }),
   tools: z.array(
     z.object({
@@ -432,6 +441,54 @@ export const StatsResponse = z.object({
   }),
 });
 export type StatsResponse = z.infer<typeof StatsResponse>;
+
+// ---- GET /admin/shadow?days=N (P9d): what the export check, run in shadow mode, said. Read by `qsr shadow-report` and by nothing that
+// decides a status: the answers are recorded, never acted on, and P9b uses this to decide whether to promote the check.
+export const ShadowToolRow = z.object({
+  slug: z.string(),
+  /** The reason a target opted out of the check (target file harness.skipExportCheck), or null. */
+  optOut: z.string().nullable(),
+  /** Valid cycles in which the tool ran under a harness that records shadow results (version 2 or later). */
+  cycles: z.number().int(),
+  /** Cycles with a shadow record, and how they came out. cycles - withShadow = cycles with no record (an install-only plan, say). */
+  withShadow: z.number().int(),
+  pass: z.number().int(),
+  fail: z.number().int(),
+  skipped: z.number().int(),
+  /** Names reported missing, with the number of cycles that reported each. */
+  missing: z.array(z.object({ name: z.string(), cycles: z.number().int() })),
+  /** Distinct notes (what could not be checked, why a check was skipped). */
+  notes: z.array(z.string()),
+  lastFailAt: z.iso.datetime().nullable(),
+});
+export type ShadowToolRow = z.infer<typeof ShadowToolRow>;
+export const ShadowReportResponse = z.object({
+  generatedAt: z.iso.datetime(),
+  days: z.number().int(),
+  since: z.iso.datetime(),
+  totals: z.object({
+    cycles: z.number().int(),
+    runs: z.number().int(),
+    withShadow: z.number().int(),
+    pass: z.number().int(),
+    fail: z.number().int(),
+    skipped: z.number().int(),
+  }),
+  tools: z.array(ShadowToolRow),
+  /** Every tool whose shadow check failed at least once, for a person to judge. A candidate is not a verdict. */
+  falsePositiveCandidates: z.array(
+    z.object({
+      slug: z.string(),
+      failCycles: z.number().int(),
+      checkedCycles: z.number().int(),
+      /** Failed in every cycle in which it was checked, with the same names: a fact about the page or the plan, not weather. */
+      stable: z.boolean(),
+      missing: z.array(z.string()),
+      reason: z.string(),
+    }),
+  ),
+});
+export type ShadowReportResponse = z.infer<typeof ShadowReportResponse>;
 
 // ---- GET /admin/export/launch (P9a): the numbers a launch post needs, from reviewed and confirmed material only.
 // The schema admits ONLY incidents whose review is CONFIRMED: a response that carries anything else does not parse,

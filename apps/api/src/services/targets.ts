@@ -86,6 +86,7 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
                   transientStreak: 0,
                   lastFailureSignature: null,
                   lastFailureClass: null,
+                  lastFailureHarnessVersion: null,
                 }),
           })
           .where(eq(tools.id, current.id));

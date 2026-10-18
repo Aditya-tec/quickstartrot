@@ -46,12 +46,12 @@ export function survivorReason(f: SurvivorFacts): string {
       if (!f.writesSource)
         return `The plan writes no source file, so there was nothing to check or run. Only the install is tested (L${f.controlLevel}).`;
       return f.language === 'python'
-        ? `${PY_L2} A sub-module path that does not exist is only found when the module is imported, and the plan does not run the snippet.`
+        ? `${PY_L2} The import check resolves the full dotted path, but a package that registers or lazily loads submodules at run time (a module-level __getattr__, sys.modules, a lazy loader) is not reported, because a missing file proves nothing there; the plan does not run the snippet either.`
         : 'The import check resolved the altered specifier (the package offers that path, or the file was resolved by the CommonJS fallback), and the plan did not run the snippet.';
     case 'syntax_error':
       return f.writesSource
         ? f.language === 'node'
-          ? 'The syntax check passed although a bracket or quote was removed. Either (1) the file is a .js file that uses import where no package.json says type module: node --check then exits 0 WITHOUT parsing the file (found by this run and reproduced in the sandbox image), so a broken ES-module .js file passes; or (2) the edit landed inside a string or template literal, which the parser accepts.'
+          ? 'The syntax check passed although a bracket or quote was removed: the edit landed inside a string or template literal, which the parser accepts. (Harness version 1 also missed any edit in an ES-module .js file, because node --check does not parse one; version 2 parses it as a module.)'
           : 'The syntax check passed although a bracket or quote was removed: the edit landed inside a string or docstring, which the parser accepts.'
         : 'The plan writes no source file the syntax check parses, so the edit was never parsed.';
     case 'option_misnamed':

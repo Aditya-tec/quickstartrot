@@ -42,6 +42,35 @@ const ADMIN_REASON: Partial<Record<FailureClass, AdminQueueReason>> = {
 
 const result = (next: ToolState, events: StatusEvent[] = []): Evaluation => ({ next, events });
 
+/**
+ * Harness versions (P9d). A failure counts toward "the same failure twice in a row" (or four transient failures in a row) only
+ * if it ran under the same version of the harness checks as the failure before it: a stricter or fixed check can make an old
+ * observation and a new one disagree about the same quickstart, and that is not a streak. A tool whose last failure was recorded
+ * before versioning existed has no stored version; that failure was made by version 1.
+ */
+function priorHarnessVersion(state: ToolState): number | null {
+  if (state.lastFailureHarnessVersion !== null) return state.lastFailureHarnessVersion;
+  const remembersAFailure =
+    state.lastFailureSignature !== null ||
+    state.consecutiveFailures > 0 ||
+    state.transientStreak > 0;
+  return remembersAFailure ? 1 : null;
+}
+
+/** The state a failure is compared with: the streak is forgotten when the previous failure ran under another version. */
+function comparableState(state: ToolState, run: StatusRun): ToolState {
+  const prior = priorHarnessVersion(state);
+  return prior !== null && prior !== run.harnessVersion
+    ? { ...state, consecutiveFailures: 0, transientStreak: 0, lastFailureSignature: null }
+    : state;
+}
+
+/** Every counted failure records the version it ran under; nothing else about the evaluation changes. */
+const recordVersion = (e: Evaluation, run: StatusRun): Evaluation => ({
+  ...e,
+  next: { ...e.next, lastFailureHarnessVersion: run.harnessVersion },
+});
+
 /** Row 7 and the clarifications: unchanged state, one admin queue item. */
 function queue(
   state: ToolState,
@@ -74,6 +103,7 @@ function pass(state: ToolState, run: StatusRun, ctx: StatusContext): Evaluation 
     statusSince: run.finishedAt,
     lastFailureSignature: null,
     lastFailureClass: null,
+    lastFailureHarnessVersion: null,
   };
   const resolve: StatusEvent[] = ctx.openIncident
     ? [{ type: 'incident_resolved', incidentId: ctx.openIncident.id }]
@@ -84,7 +114,12 @@ function pass(state: ToolState, run: StatusRun, ctx: StatusContext): Evaluation 
     case 'DEGRADED': // immediately: no incident exists yet, so there is nothing to wait out
       return result(recovered, resolve);
     case 'HEALTHY':
-      return result({ ...counted, lastFailureSignature: null, lastFailureClass: null });
+      return result({
+        ...counted,
+        lastFailureSignature: null,
+        lastFailureClass: null,
+        lastFailureHarnessVersion: null,
+      });
     case 'BROKEN':
       // The status does not change until the second consecutive pass.
       return counted.consecutivePasses >= PASSES_TO_RECOVER
@@ -283,10 +318,12 @@ export function evaluate(state: ToolState, run: StatusRun, ctx: StatusContext): 
       `${cls} without a signature cannot be compared with earlier failures`,
     );
 
-  return (
-    recurrence(state, run, run.failureSignature, cls, ctx) ??
-    (isVendor(cls)
-      ? vendorFailure(state, run, run.failureSignature, cls, ctx)
-      : transientFailure(state, run, run.failureSignature, cls, ctx))
+  const compared = comparableState(state, run);
+  return recordVersion(
+    recurrence(compared, run, run.failureSignature, cls, ctx) ??
+      (isVendor(cls)
+        ? vendorFailure(compared, run, run.failureSignature, cls, ctx)
+        : transientFailure(compared, run, run.failureSignature, cls, ctx)),
+    run,
   );
 }

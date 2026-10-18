@@ -218,7 +218,7 @@ describe('RunResult', () => {
     ).toBe(false);
   });
 
-  it('is exactly the spec section 9 shape: no extra top-level keys, runnerEnv is a flat string record', () => {
+  it('is the spec section 9 shape plus harnessVersion (P9d, requested by the owner): no other top-level keys, runnerEnv is a flat string record', () => {
     expect(Object.keys(RunResult.shape).sort()).toEqual(
       [
         'toolSlug',
@@ -234,6 +234,7 @@ describe('RunResult', () => {
         'runnerEnv',
         'startedAt',
         'finishedAt',
+        'harnessVersion',
       ].sort(),
     );
     expect(
