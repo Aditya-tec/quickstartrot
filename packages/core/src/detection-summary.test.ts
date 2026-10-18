@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DetectionSummary, summariseDetection } from './detection-summary.js';
+import { badgeParagraph, levelStatements } from './detection-wording.js';
 
 // What the public /methodology page says about the monitor's detection power is derived from docs/detection-power.json by this
 // function, and nothing else. It never adds the install and code kinds together and it never invents a rate.
@@ -124,5 +125,69 @@ describe('summariseDetection', () => {
     const broken = raw();
     delete (broken.summary.byKind as { code?: unknown }).code;
     expect(() => summariseDetection(broken, [])).toThrow();
+  });
+});
+
+// The wording the site and the README quote. One definition, so they cannot differ; the approved text is in docs/DETECTION-POWER.md.
+describe('badgeParagraph: the approved wording about the badge', () => {
+  const summary = () => summariseDetection(raw(), []);
+
+  it('is wording B, with every figure read from the data', () => {
+    expect(badgeParagraph(summary())).toBe(
+      'A green L2 badge means the quickstart installs, parses and its imports resolve. In our own tests, planting broken code in 35 quickstarts, L2 noticed 64 of 121 planted breakages, all of them syntax errors and import paths that do not exist; it noticed none of the 55 renamed names, renamed methods or misnamed options, because those only exist at run time. Level 3, where the snippet reaches the vendor, rests on 2 quickstarts so far and we quote no rate for it. (Broken install commands are caught by npm and pip, 90 of 90, and say nothing about the code.)',
+    );
+  });
+
+  it('drops the claim that level 2 only saw syntax errors and import paths when it saw something else', () => {
+    const d = summary();
+    const m = d.codeL2ByOperator['renamed_method'];
+    if (!m) throw new Error('fixture');
+    m.detected = 1;
+    d.code.L2.detected += 1;
+    const t = badgeParagraph(d);
+    expect(t).not.toContain('all of them syntax errors');
+    expect(t).toContain('it noticed 1 of the 55 renamed names');
+  });
+
+  it('uses the singular for one quickstart and never quotes a level 3 rate', () => {
+    const d = summary();
+    d.l3Targets = ['only-one'];
+    d.code.L2.targets = 1;
+    const t = badgeParagraph(d);
+    expect(t).toContain('rests on 1 quickstart so far');
+    expect(t).toContain('planting broken code in 1 quickstart,');
+    expect(t).not.toMatch(/%/);
+  });
+
+  it('adds no figure across install-level and code-level mutants', () => {
+    expect(badgeParagraph(summary())).not.toContain('154 of');
+  });
+});
+
+describe('levelStatements: what a pass tells you at each level', () => {
+  const s = () => summariseDetection(raw(), []);
+
+  it('quotes the L2 counts for the names that only exist at run time, from the data', () => {
+    expect(levelStatements(s()).L2).toBe(
+      'A pass at L2 means the install works, the code parses, and the packages it imports resolve. It does not mean the names the code uses still exist: at L2 our planted renamed imports were noticed 0 of 16 times, renamed methods 0 of 15 and misnamed options 0 of 24.',
+    );
+  });
+
+  it('names the quickstarts level 3 rests on and quotes no rate for it', () => {
+    const t = levelStatements(s()).L3;
+    expect(t).toContain('rests on 2 quickstarts (anthropic-node, resend-node)');
+    expect(t).toContain('we quote no detection rate for it');
+    expect(t).not.toMatch(/%/);
+  });
+
+  it('keeps the executed-locally category out of level 3', () => {
+    expect(levelStatements(s()).local).toContain('3 targets are of that kind here');
+    expect(levelStatements(s()).local).toContain('it never counts as Level 3');
+  });
+
+  it('says L1 only means the package installs', () => {
+    expect(levelStatements(s()).L1).toBe(
+      'A pass at L1 means the package named in the install command exists and installs on a clean machine today. It does not say the code works.',
+    );
   });
 });
