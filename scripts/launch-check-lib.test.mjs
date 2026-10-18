@@ -6,6 +6,7 @@ import {
   judgeCacheControl,
   judgeCi,
   judgeColdStart,
+  judgeEdgeCache,
   judgeLicense,
   judgeRateLimit,
   judgeUnfurl,
@@ -203,4 +204,54 @@ test('summarise exits non-zero only for a failure; warnings and manual items are
   assert.deepEqual(r.counts, { PASS: 1, FAIL: 0, WARN: 1, MANUAL: 1, SKIP: 1 });
   const bad = summarise([{ id: 'x', status: 'FAIL', evidence: '' }]);
   assert.equal(bad.exitCode, 1);
+});
+
+// Vercel consumes s-maxage and shows the client a bare "public"; whether the CDN really cached a response is in x-vercel-cache and age.
+test('judgeEdgeCache passes when the CDN served a repeat request from its cache, whatever cache-control shows the client', () => {
+  const miss = { cacheControl: 'public', xVercelCache: 'MISS', age: '0' };
+  assert.equal(
+    judgeEdgeCache([miss, { cacheControl: 'public', xVercelCache: 'HIT', age: '3' }], 600).status,
+    'PASS',
+  );
+  assert.equal(
+    judgeEdgeCache([miss, { cacheControl: 'public', xVercelCache: 'STALE', age: '1400' }], 600)
+      .status,
+    'PASS',
+  );
+  const hit = judgeEdgeCache(
+    [miss, { cacheControl: 'public', xVercelCache: 'HIT', age: '3' }],
+    600,
+  );
+  assert.match(hit.evidence, /HIT/);
+  assert.match(hit.evidence, /age 3/);
+});
+
+test('judgeEdgeCache fails when a repeat request is never served from the cache', () => {
+  const miss = { cacheControl: 'public', xVercelCache: 'MISS', age: '0' };
+  const r = judgeEdgeCache([miss, miss, miss], 600);
+  assert.equal(r.status, 'FAIL');
+  assert.match(r.evidence, /MISS/);
+});
+
+test('judgeEdgeCache without a CDN header falls back on cache-control, as before', () => {
+  assert.equal(
+    judgeEdgeCache(
+      [{ cacheControl: 'public, s-maxage=600' }, { cacheControl: 'public, s-maxage=600' }],
+      600,
+    ).status,
+    'PASS',
+  );
+  assert.equal(
+    judgeEdgeCache([{ cacheControl: 'public' }, { cacheControl: 'public' }], 600).status,
+    'FAIL',
+  );
+  assert.equal(judgeEdgeCache([], 600).status, 'FAIL');
+});
+
+test('judgeEdgeCache never accepts a private or no-store response, even from the CDN cache', () => {
+  assert.equal(
+    judgeEdgeCache([{ cacheControl: 'private, no-store', xVercelCache: 'HIT', age: '2' }], 600)
+      .status,
+    'FAIL',
+  );
 });

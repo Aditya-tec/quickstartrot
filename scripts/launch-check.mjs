@@ -18,9 +18,9 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import {
   findLeaks,
-  judgeCacheControl,
   judgeCi,
   judgeColdStart,
+  judgeEdgeCache,
   judgeLicense,
   judgeRateLimit,
   judgeUnfurl,
@@ -463,20 +463,16 @@ const CHECKS = [
     title: 'Badge endpoints are cached by the CDN',
     async run() {
       const [slug = 'resend-node'] = await slugList();
-      await timed(`${SITE}/api/badge/${slug}`);
-      const again = await timed(`${SITE}/api/badge/${slug}`);
-      const verdict = judgeCacheControl(again.headers.get('cache-control'), 600);
-      const hit = again.headers.get('x-vercel-cache');
-      if (verdict.status !== 'PASS') return verdict;
-      return /HIT|STALE/.test(hit ?? '')
-        ? {
-            status: 'PASS',
-            evidence: `${verdict.evidence}; the second request was x-vercel-cache ${hit}, ${again.totalMs} ms`,
-          }
-        : {
-            status: 'WARN',
-            evidence: `${verdict.evidence}; but the second request was x-vercel-cache ${hit ?? 'absent'}`,
-          };
+      const responses = [];
+      for (let i = 0; i < 3; i += 1) {
+        const r = await timed(`${SITE}/api/badge/${slug}`);
+        responses.push({
+          cacheControl: r.headers.get('cache-control'),
+          xVercelCache: r.headers.get('x-vercel-cache'),
+          age: r.headers.get('age'),
+        });
+      }
+      return judgeEdgeCache(responses, 600);
     },
   },
   {

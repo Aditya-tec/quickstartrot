@@ -99,6 +99,34 @@ export function judgeCacheControl(cacheControl, minSeconds) {
   return { status: 'PASS', evidence: `cache-control "${cacheControl}"` };
 }
 
+/**
+ * Whether a CDN keeps a response. Vercel consumes s-maxage and shows the client a bare "public", so the evidence there is a repeat
+ * request answered from its cache (x-vercel-cache HIT or STALE, with an age). Without that header, cache-control is all there is.
+ * A response marked private or no-store never passes. `responses` are the repeat requests in order.
+ */
+export function judgeEdgeCache(responses, minSeconds) {
+  if (responses.length === 0) return { status: 'FAIL', evidence: 'no response to judge' };
+  const unshared = responses.find((r) => /\b(?:no-store|private)\b/.test(r.cacheControl ?? ''));
+  if (unshared)
+    return {
+      status: 'FAIL',
+      evidence: `cache-control "${unshared.cacheControl}" is not shared-cacheable`,
+    };
+  const served = responses.find((r) => /^(?:HIT|STALE)$/.test(r.xVercelCache ?? ''));
+  if (served)
+    return {
+      status: 'PASS',
+      evidence: `a repeat request was x-vercel-cache ${served.xVercelCache}, age ${served.age ?? 'unknown'} s`,
+    };
+  if (responses.some((r) => r.xVercelCache !== undefined && r.xVercelCache !== null))
+    return {
+      status: 'FAIL',
+      evidence: `no repeat request came from the CDN cache (x-vercel-cache ${responses.map((r) => r.xVercelCache).join(', ')})`,
+    };
+  const last = responses[responses.length - 1];
+  return judgeCacheControl(last.cacheControl ?? null, minSeconds);
+}
+
 /** Every public page answered 200 inside the limit the first time it was asked after a quiet spell. */
 export function judgeColdStart(rows, { maxMs }) {
   if (rows.length === 0) return { status: 'FAIL', evidence: 'nothing was measured' };
