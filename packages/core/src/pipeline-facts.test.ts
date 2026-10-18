@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CANARY_SLUGS } from './canary.js';
-import { PIPELINE, TARGET_GOAL } from './pipeline-facts.js';
+import { PIPELINE, TARGET_GOAL, TRAFFIC } from './pipeline-facts.js';
 import { PASSES_TO_RECOVER, RECURRENCE_WINDOW_DAYS, TRANSIENT_INCIDENT_STREAK } from './status.js';
 
 // The numbers the pipeline really uses, in one place. The public methodology page is built from this object, so a
@@ -42,5 +42,24 @@ describe('TARGET_GOAL', () => {
   it('splits the aim between libraries and vendor SDKs, and adds up', () => {
     expect(TARGET_GOAL.librariesPercent + TARGET_GOAL.vendorsPercent).toBe(100);
     expect(TARGET_GOAL.total).toBeGreaterThan(0);
+  });
+});
+
+describe('TRAFFIC (what we send to the services we test)', () => {
+  it('is at most one request per quickstart per cycle, which is the cycles in a day per day', () => {
+    expect(TRAFFIC.requestsPerTargetPerCycle).toBe(1);
+    expect(TRAFFIC.requestsPerTargetPerDay).toBe(
+      PIPELINE.cyclesPerDay * TRAFFIC.requestsPerTargetPerCycle,
+    );
+  });
+
+  it('names each service once, with the quickstarts behind it, and says when the terms were read', () => {
+    const names = TRAFFIC.services.map((x) => x.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toEqual([...names].sort());
+    const targets = TRAFFIC.services.flatMap((x) => x.targets);
+    expect(new Set(targets).size).toBe(targets.length);
+    for (const t of targets) expect(t).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
+    expect(TRAFFIC.termsReviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

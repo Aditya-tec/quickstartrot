@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { TRAFFIC } from '@qsr/core';
 import { loadAllTargets } from './targets.js';
 
 const TARGETS_DIR = fileURLToPath(new URL('../../../targets', import.meta.url));
@@ -18,6 +19,22 @@ describe('committed targets', () => {
       expect(t.docsUrl.startsWith('https://'), t.slug).toBe(true);
       expect(t.runtime.image.startsWith('ghcr.io/'), t.slug).toBe(true);
     }
+  });
+
+  // The site says which services get a request with an invalid credential. That list must be the real one: every enabled target whose
+  // run step reaches a vendor (level 3 or shadow-L3, auth-error-as-pass, not declared local), no more and no fewer.
+  it('the services the site names (TRAFFIC) are exactly the targets that send a request to a vendor', async () => {
+    const real = (await loadAllTargets(TARGETS_DIR))
+      .filter(
+        (t) =>
+          t.enabled !== false &&
+          t.level >= 3 &&
+          t.expect.authErrorIsPass &&
+          t.expect.localOnly !== true,
+      )
+      .map((t) => t.slug)
+      .sort();
+    expect(TRAFFIC.services.flatMap((s) => s.targets).sort()).toEqual(real);
   });
 
   // Go-live after P9a: hashIgnore changes how a page is hashed, so it exists only where a page was shown to print a

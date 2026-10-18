@@ -195,6 +195,7 @@ test.describe('incidents and static pages', () => {
   });
   test('bot page gives the user agent and the opt-out link', async ({ page }) => {
     await page.goto('/bot');
+    await expect(page.getByRole('heading', { name: 'About our traffic' })).toBeVisible();
     await expect(
       page.getByText(/QuickstartRotBot\/1\.0 \(\+http:\/\/localhost:3100\/bot\)/),
     ).toBeVisible();

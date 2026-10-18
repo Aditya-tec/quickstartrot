@@ -4,14 +4,37 @@ import { plural, timesWord, words, type Facts } from '@/lib/facts';
 
 // The /bot page, from the facts the crawler really follows (PIPELINE in @qsr/core). See honesty.test.tsx.
 
+/** "A", "A and B", "A, B and C". */
+const listNames = (names: readonly string[]): string =>
+  names.length <= 1
+    ? (names[0] ?? '')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+
+/** 2026-10-18 as "18 October 2026", in UTC so a server and a browser say the same. */
+const longDate = (iso: string): string =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
+export interface BotTraffic {
+  services: readonly { name: string }[];
+  /** YYYY-MM-DD: when the terms of these services were read. */
+  termsReviewedOn: string;
+}
+
 export function BotContent({
   facts: f,
   userAgent,
   email,
+  traffic,
 }: {
   facts: Facts;
   userAgent: string;
   email: string | null;
+  traffic: BotTraffic;
 }) {
   return (
     <>
@@ -58,6 +81,58 @@ export function BotContent({
       <p className="mt-2 max-w-3xl text-[15px] leading-7">
         The crawler also never signs up for anything, never solves a CAPTCHA and never uses a real
         API key.
+      </p>
+
+      <h2 id="traffic" className="mt-10 scroll-mt-20 text-xl font-semibold tracking-tight">
+        About our traffic
+      </h2>
+      <p className="mt-2 max-w-3xl text-[15px] leading-7">
+        For some quickstarts the check goes one step further than installing: it runs the
+        documentation&apos;s own code, and that code makes a request to the service&apos;s API with
+        an <strong>invalid, made-up credential</strong>. The service is expected to refuse it, and
+        the refusal coming back is how we know the code reached the service.
+      </p>
+      <ul className="mt-2 max-w-3xl list-disc space-y-2 pl-5 text-[15px] leading-7">
+        <li>
+          <strong>Which services:</strong> {listNames(traffic.services.map((s) => s.name))}. These
+          names only say where the traffic goes; there is no affiliation with, or endorsement by,
+          any of them.
+        </li>
+        <li>
+          <strong>How often:</strong> at most {words(f.vendorRequestsPerCycle)}{' '}
+          {plural(f.vendorRequestsPerCycle, 'request')} per cycle for each quickstart, so at most{' '}
+          {words(f.vendorRequestsPerDay)} a day for each quickstart (a service for which we track
+          more than one quickstart, say a Node one and a Python one, receives that for each of
+          them). A failed request is not retried.
+        </li>
+        <li>
+          <strong>From where:</strong> GitHub Actions runners, which share GitHub&apos;s address
+          ranges. The request is made by the service&apos;s own client library, so it carries the
+          library&apos;s user agent, not ours.
+        </li>
+        <li>
+          <strong>What it never does:</strong> an invalid credential cannot create, send or charge
+          anything, and we never hold a real one. We do not sign up for anything.
+        </li>
+        <li>
+          <strong>To ask us to stop:</strong> use the opt-out form below
+          {email ? (
+            <>
+              {' '}
+              or write to{' '}
+              <a href={`mailto:${email}`} className="underline underline-offset-2">
+                {email}
+              </a>
+            </>
+          ) : null}
+          . We stop within {f.optOutHours} hours.
+        </li>
+      </ul>
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
+        On {longDate(traffic.termsReviewedOn)} we read the public terms of each of these services
+        for anything about automated requests or requests with invalid credentials. That was a
+        summary check by us, it is not legal advice, and it did not cover every policy a service
+        links to. If we got something wrong, tell us and we will stop.
       </p>
 
       <h2 id="opt-out" className="mt-10 scroll-mt-20 text-xl font-semibold tracking-tight">

@@ -1,4 +1,4 @@
-import { FREE_TIER, PIPELINE, TARGET_GOAL } from '@qsr/core/public';
+import { FREE_TIER, PIPELINE, TARGET_GOAL, TRAFFIC } from '@qsr/core/public';
 import { BADGE_CACHE_CONTROL } from './badge';
 import { REVALIDATE_SECONDS } from './cache-constants';
 
@@ -30,6 +30,8 @@ export interface Facts {
   librariesPercent: number;
   vendorsPercent: number;
   storageTargetMegabytes: number;
+  vendorRequestsPerCycle: number;
+  vendorRequestsPerDay: number;
 }
 
 export const FACTS: Facts = Object.freeze({
@@ -53,6 +55,8 @@ export const FACTS: Facts = Object.freeze({
   librariesPercent: TARGET_GOAL.librariesPercent,
   vendorsPercent: TARGET_GOAL.vendorsPercent,
   storageTargetMegabytes: FREE_TIER.storageTargetBytes / (1024 * 1024),
+  vendorRequestsPerCycle: TRAFFIC.requestsPerTargetPerCycle,
+  vendorRequestsPerDay: TRAFFIC.requestsPerTargetPerDay,
 });
 
 const WORDS = [

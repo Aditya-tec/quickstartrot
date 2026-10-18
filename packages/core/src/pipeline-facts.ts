@@ -53,6 +53,30 @@ export const PIPELINE = Object.freeze({
 });
 
 /**
+ * What we send to the services we test (the public "About our traffic" section of /bot, and docs/ABOUT-OUR-TRAFFIC.md). For a few quickstarts
+ * the check runs the docs' own code one step further, and the snippet makes ONE request with an invalid, made-up credential. The probe
+ * never retries a failure at that step, so this is a ceiling, not an average. `services` is pinned to the target files by a test
+ * (packages/cli committed-targets.test.ts): it lists exactly the enabled targets whose run step reaches a vendor.
+ */
+const REQUESTS_PER_TARGET_PER_CYCLE = 1;
+export const TRAFFIC = Object.freeze({
+  requestsPerTargetPerCycle: REQUESTS_PER_TARGET_PER_CYCLE,
+  requestsPerTargetPerDay: PIPELINE.cyclesPerDay * REQUESTS_PER_TARGET_PER_CYCLE,
+  /** When the terms of these services were last read (a summary check, not legal advice). */
+  termsReviewedOn: '2026-10-18',
+  /** Names only say where traffic goes; no affiliation or endorsement is implied. Sorted by name. */
+  services: Object.freeze([
+    Object.freeze({
+      name: 'Anthropic',
+      targets: Object.freeze(['anthropic-node', 'anthropic-python']),
+    }),
+    Object.freeze({ name: 'Cerebras', targets: Object.freeze(['cerebras-python']) }),
+    Object.freeze({ name: 'OpenRouter', targets: Object.freeze(['openrouter-node']) }),
+    Object.freeze({ name: 'Resend', targets: Object.freeze(['resend-node', 'resend-python']) }),
+  ]),
+});
+
+/**
  * The Supabase free tier (spec section 2): a 500 MB Postgres and 1 GB of Storage. The nightly cleanup aims to keep
  * Storage under 800 MB (spec section 5). The admin page shows usage against these.
  */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FREE_TIER, PIPELINE, TARGET_GOAL } from '@qsr/core/public';
+import { FREE_TIER, PIPELINE, TARGET_GOAL, TRAFFIC } from '@qsr/core/public';
 import { BADGE_CACHE_CONTROL } from './badge';
 import { REVALIDATE_SECONDS } from './cache-constants';
 import { FACTS, ordinal, plural, timesWord, words } from './facts';
@@ -27,6 +27,8 @@ describe('FACTS', () => {
     expect(FACTS.librariesPercent).toBe(TARGET_GOAL.librariesPercent);
     expect(FACTS.vendorsPercent).toBe(TARGET_GOAL.vendorsPercent);
     expect(FACTS.storageTargetMegabytes).toBe(FREE_TIER.storageTargetBytes / (1024 * 1024));
+    expect(FACTS.vendorRequestsPerCycle).toBe(TRAFFIC.requestsPerTargetPerCycle);
+    expect(FACTS.vendorRequestsPerDay).toBe(TRAFFIC.requestsPerTargetPerDay);
   });
 
   it('derives the cache lifetimes from the real cache settings', () => {

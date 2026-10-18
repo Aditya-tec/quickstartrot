@@ -114,10 +114,20 @@ const PAGES: {
         facts={facts}
         userAgent="QuickstartRotBot/1.0 (+https://example.test/bot)"
         email={null}
+        traffic={{ services: [{ name: 'Alpha' }], termsReviewedOn: '2026-10-18' }}
       />
     ),
-    allowed: [],
-    uses: ['cycleHours', 'cyclesPerDay', 'crawlRetries', 'crawlRetryDelaySeconds', 'optOutHours'],
+    // the date the terms were read (18 October 2026) is a dated statement, not a figure about how the pipeline runs
+    allowed: ['18', '2026'],
+    uses: [
+      'cycleHours',
+      'cyclesPerDay',
+      'crawlRetries',
+      'crawlRetryDelaySeconds',
+      'optOutHours',
+      'vendorRequestsPerCycle',
+      'vendorRequestsPerDay',
+    ],
   },
   {
     name: 'the home headline',

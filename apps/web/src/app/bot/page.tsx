@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { BotContent } from '@/components/bot-content';
+import { TRAFFIC } from '@qsr/core/public';
 import { contactEmail, siteUrl } from '@/lib/env';
 import { FACTS } from '@/lib/facts';
 
@@ -16,6 +17,7 @@ export default function BotPage() {
       facts={FACTS}
       userAgent={`QuickstartRotBot/1.0 (+${siteUrl()}/bot)`}
       email={contactEmail()}
+      traffic={{ services: TRAFFIC.services, termsReviewedOn: TRAFFIC.termsReviewedOn }}
     />
   );
 }
