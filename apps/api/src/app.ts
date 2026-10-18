@@ -101,10 +101,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     credentials: false,
     maxAge: 600,
   });
+  // The routes behind the HMAC check (/internal/* and the two /admin routes the probe calls). A request to one of them that carries a valid
+  // signature is the probe's own report and is never rate limited; one that does not is counted against the limiter in the HMAC hook below.
+  const hmacRoutes = new Set<string>();
+  const routeKey = (method: string, url: string): string => `${method}:${url}`;
   await app.register(rateLimit, {
     global: true,
     max: config.rateLimitPerMinute,
     timeWindow: '1 minute',
+    allowList: (request) =>
+      hmacRoutes.has(routeKey(request.method, request.routeOptions.url ?? '')),
     errorResponseBuilder: (_req, context) =>
       new HttpError(
         429,
@@ -172,6 +178,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   // ---- /internal/* and /admin/gc: HMAC over the raw body
   await app.register(async (scope) => {
+    scope.addHook('onRoute', (route) => {
+      for (const method of [route.method].flat()) hmacRoutes.add(routeKey(method, route.url));
+    });
+    // what an unverified request costs: it counts against the limiter like any anonymous request, so the exemption below cannot be a way in
+    // (its own, empty allow-list: it inherits the global one, which would wave these very routes through uncounted)
+    const unverifiedLimit = app.createRateLimit({
+      max: config.rateLimitPerMinute,
+      timeWindow: '1 minute',
+      allowList: () => false,
+    });
     scope.removeAllContentTypeParsers();
     scope.addContentTypeParser('application/json', { parseAs: 'buffer' }, (request, body, done) => {
       const raw = body as Buffer;
@@ -192,6 +208,16 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
         nowSeconds: Math.floor(deps.now().getTime() / 1000),
       });
       if (!result.ok) {
+        const used = await unverifiedLimit(request);
+        if (!used.isAllowed && used.isExceeded)
+          throw new HttpError(
+            429,
+            'Too Many Requests',
+            `Rate limit exceeded; retry in ${Math.ceil(used.ttl / 1000)} seconds.`,
+            {
+              headers: { 'retry-after': String(Math.max(1, Math.ceil(used.ttl / 1000))) },
+            },
+          );
         request.log.warn({ reason: result.reason }, 'internal request rejected');
         // The reason stays in our log; the caller learns only that the request was not accepted.
         throw new HttpError(401, 'Unauthorized', 'The request signature is missing or invalid.');

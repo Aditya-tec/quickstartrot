@@ -86,6 +86,8 @@ interface Server {
   /** Run requests the API processed, duplicates included. */
   applied: () => number;
   finishes: () => number;
+  /** Every request the API received, retries included. */
+  requests: () => number;
   /** Requests answered with a failure (reset, 502, 503). */
   failed: () => number;
   health: () => number;
@@ -111,6 +113,7 @@ function fakeServer(
   let applied = 0;
   let finishes = 0;
   let failed = 0;
+  let requests = 0;
   let health = 0;
   let unauthorized = 0;
   let n = 0;
@@ -131,6 +134,7 @@ function fakeServer(
   };
 
   const fetchFn = (async (input: string | URL | Request, init?: RequestInit) => {
+    requests += 1;
     const url = new URL(String(input));
     const method = init?.method ?? 'GET';
     if (opts.outage?.atStart && down === null) down = [Date.now(), Date.now() + opts.outage.forMs];
@@ -232,6 +236,7 @@ function fakeServer(
     applied: () => applied,
     finishes: () => finishes,
     failed: () => failed,
+    requests: () => requests,
     health: () => health,
     unauthorized: () => unauthorized,
   };
@@ -285,6 +290,19 @@ describe('the retry policy the report job uses', () => {
     );
     expect(waits).toEqual([2_000, 4_000, 8_000, 16_000, 30_000, 30_000]);
     expect(waits.reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(60_000);
+  });
+});
+
+// The volume of a report, from one address: the API's rate limit exempts a validly signed request (apps/api test/rate-limit-internal.test.ts
+// sends three times this volume), so what matters is that the volume does not grow without anyone noticing.
+describe('the volume of a report', () => {
+  it('is two requests per tool plus the wake-up poll and the finish: an upload and a run each', async () => {
+    const server = fakeServer();
+    const outcome = startReport(server);
+    await untilDone(outcome);
+    expect(outcome.error).toBeUndefined();
+    expect(server.requests()).toBe(TOOLS.length * 2 + 2);
+    expect(server.failed()).toBe(0);
   });
 });
 
