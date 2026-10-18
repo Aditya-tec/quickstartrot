@@ -15,6 +15,7 @@ import { exportCommand } from './launch-export.js';
 import { mutateCommand } from './mutate/command.js';
 import { plansCommand } from './plans-command.js';
 import { runCommand } from './run.js';
+import { detectionSummaryCommand } from './detection-summary-command.js';
 import { l3ShadowReportCommand } from './l3-shadow-report.js';
 import { shadowReportCommand } from './shadow-report.js';
 import { TargetFileError } from './targets.js';
@@ -56,6 +57,8 @@ async function main(argv: string[]): Promise<number> {
       return shadowReportCommand(rest, log);
     case 'l3-shadow-report':
       return l3ShadowReportCommand(rest, log);
+    case 'detection-summary':
+      return detectionSummaryCommand(rest, log);
     case 'validate':
       return validateCommand(rest, log);
     default:

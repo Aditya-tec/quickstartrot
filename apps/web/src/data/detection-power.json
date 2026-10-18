@@ -1,0 +1,113 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-18T04:35:46.556Z",
+  "harnessVersion": 2,
+  "targetsConsidered": 51,
+  "targetsMeasured": 46,
+  "levelTargets": {
+    "L1": 6,
+    "L2": 35,
+    "L3": 2,
+    "local": 3
+  },
+  "l3Targets": ["anthropic-node", "resend-node"],
+  "shadowTargets": ["cerebras-python", "openrouter-node", "resend-python", "slack-node"],
+  "install": {
+    "L1": {
+      "detected": 12,
+      "tested": 12,
+      "targets": 6,
+      "noSite": 0,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 0
+    },
+    "L2": {
+      "detected": 68,
+      "tested": 68,
+      "targets": 34,
+      "noSite": 2,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 0
+    },
+    "L3": {
+      "detected": 4,
+      "tested": 4,
+      "targets": 2,
+      "noSite": 0,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 8
+    },
+    "local": {
+      "detected": 6,
+      "tested": 6,
+      "targets": 3,
+      "noSite": 0,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 0
+    }
+  },
+  "code": {
+    "L1": {
+      "detected": 0,
+      "tested": 0,
+      "targets": 0,
+      "noSite": 30,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 0
+    },
+    "L2": {
+      "detected": 64,
+      "tested": 121,
+      "targets": 35,
+      "noSite": 53,
+      "invalid": 1,
+      "harnessError": 0,
+      "notRun": 0
+    },
+    "L3": {
+      "detected": 7,
+      "tested": 9,
+      "targets": 2,
+      "noSite": 5,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 16
+    },
+    "local": {
+      "detected": 8,
+      "tested": 8,
+      "targets": 3,
+      "noSite": 7,
+      "invalid": 0,
+      "harnessError": 0,
+      "notRun": 0
+    }
+  },
+  "codeL2ByOperator": {
+    "renamed_symbol": {
+      "detected": 0,
+      "tested": 16
+    },
+    "renamed_method": {
+      "detected": 0,
+      "tested": 15
+    },
+    "deep_import": {
+      "detected": 30,
+      "tested": 31
+    },
+    "syntax_error": {
+      "detected": 34,
+      "tested": 35
+    },
+    "option_misnamed": {
+      "detected": 0,
+      "tested": 24
+    }
+  }
+}

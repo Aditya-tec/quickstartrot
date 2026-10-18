@@ -30,6 +30,7 @@ Usage:
   qsr retention [--apply]
   qsr shadow-report [--days 7]
   qsr l3-shadow-report [--days 7]
+  qsr detection-summary [--check]
   qsr export --launch [--site <url>] [--json | --md]
   qsr plans push <slug> | --all [--dry-run] [--include-disabled] [--targets <dir>] [--cache-dir <dir>]
   qsr validate [--targets <dir>] [--only a,b] [--crawl]
@@ -50,6 +51,7 @@ Commands (phase that implements them):
   calibration-report  Markdown report of the last N days from GET /admin/stats   (P9a)
   shadow-report  What the export check said in shadow mode, per target            (P9d)
   l3-shadow-report  What the L3 step of shadow-L3 targets said, per target        (P9d)
+  detection-summary  The file /methodology reads, from docs/detection-power.json  (P10a)
   export    --launch: the numbers for a launch post, confirmed incidents only    (P9a)
   mutate    Local only: mutation-test the monitor with cached pages and plans    (P9c)
 
