@@ -6,8 +6,9 @@ import type { z } from 'zod';
 // 30-60 s to wake, so there are two layers of patience:
 //   wakeApi()      polls GET /health every 10 s for up to 3 minutes before the cycle starts;
 //   post()         retries 502/503/504 and network errors with exponential backoff.
-// 4xx and 500 are never retried: the request may have been processed, and the idempotency keys on
-// /internal/cycles and /internal/runs exist for the cases where a retry really is wanted.
+// 4xx and 500 are never retried by default: the request may have been processed, and the idempotency keys on
+// /internal/cycles and /internal/runs exist for the cases where a retry really is wanted. A 429 is the exception a caller can opt into
+// (`retryStatuses`): the rate limiter refuses a request before processing it, so waiting out its Retry-After is safe.
 
 export interface RetryOptions {
   /** Total tries, including the first. */
@@ -30,6 +31,8 @@ export interface ApiClientOptions {
   now?: () => number;
   sleep?: (ms: number) => Promise<void>;
   retry?: Partial<RetryOptions>;
+  /** Statuses that are retried with backoff (and their Retry-After). Default 502, 503 and 504. */
+  retryStatuses?: readonly number[];
   wake?: Partial<WakeOptions>;
   requestTimeoutMs?: number;
 }
@@ -38,7 +41,12 @@ export const DEFAULT_RETRY: RetryOptions = { attempts: 7, baseDelayMs: 2_000, ma
 export const DEFAULT_WAKE: WakeOptions = { intervalMs: 10_000, timeoutMs: 180_000 };
 const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
 const MAX_RETRY_AFTER_MS = 60_000;
-const RETRYABLE = new Set([502, 503, 504]);
+const DEFAULT_RETRY_STATUSES: readonly number[] = [502, 503, 504];
+/**
+ * What the report job retries: the above, and 429. A report is about two requests per tool (about a hundred for the targets we track) from
+ * one address against a limit of 120 a minute, and an outage adds retries to that; a 429 must wait, not turn a result into a harness error.
+ */
+export const REPORT_RETRY_STATUSES: readonly number[] = [429, 502, 503, 504];
 
 export class ApiError extends Error {
   constructor(
@@ -99,6 +107,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
   const retry: RetryOptions = { ...DEFAULT_RETRY, ...options.retry };
   const wake: WakeOptions = { ...DEFAULT_WAKE, ...options.wake };
   const timeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  const retryable = new Set(options.retryStatuses ?? DEFAULT_RETRY_STATUSES);
 
   async function errorFor(res: Response, route: string): Promise<ApiError> {
     const text = await res.text().catch(() => '');
@@ -182,7 +191,7 @@ export function createApiClient(options: ApiClientOptions): ApiClient {
       if (res !== null) {
         if (res.ok) return parseJson(res, route, schema);
         const error = await errorFor(res, route);
-        if (!RETRYABLE.has(res.status)) throw error;
+        if (!retryable.has(res.status)) throw error;
         failure = error;
       }
       if (attempt < retry.attempts) await sleep(retryDelay(attempt, res));

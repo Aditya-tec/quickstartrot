@@ -784,6 +784,27 @@ describe('failures of the API', () => {
     expect(api.paths().some((p) => p.endsWith('/finish'))).toBe(false);
   });
 
+  it('a 429 (the rate limit) on a run is NOT a refusal of that result: no stand-in HARNESS_ERROR, no missing run, and the report stops before finishing', async () => {
+    await writePlans([readyPlan(a, 0), readyPlan(b, 0)]);
+    await writeResult(ok('a-node'), {});
+    await writeResult(ok('b-node'), {});
+    const api = fakeApi({
+      runError: () =>
+        new ApiError(
+          429,
+          'Too Many Requests',
+          'Rate limit exceeded; retry in 12 seconds.',
+          'POST /internal/runs',
+          12,
+        ),
+    });
+    await expect(report({ api })).rejects.toBeInstanceOf(ReportError);
+    expect(
+      [...api.stored.values()].filter((s) => s.body.runResult.outcome === 'HARNESS_ERROR'),
+    ).toEqual([]);
+    expect(api.paths().some((p) => p.endsWith('/finish'))).toBe(false);
+  });
+
   it('a network error posting a run also stops the report', async () => {
     await writePlans([readyPlan(a, 0)]);
     await writeResult(ok('a-node'), {});

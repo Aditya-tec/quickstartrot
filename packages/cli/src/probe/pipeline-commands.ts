@@ -9,7 +9,7 @@ import {
   type Logger,
   type Target,
 } from '@qsr/core';
-import { ApiError, createApiClient, type ApiClient } from '../api-client.js';
+import { ApiError, createApiClient, REPORT_RETRY_STATUSES, type ApiClient } from '../api-client.js';
 import { botUrlFromEnv, processIo, type CliIo } from '../commands.js';
 import { GoldenPlanError, loadGoldenPlan } from '../canary.js';
 import { isCanarySlug } from '../canary.js';
@@ -270,6 +270,7 @@ export async function reportCommand(
     createApiClient({
       baseUrl: (settings as { baseUrl: string }).baseUrl,
       secret: (settings as { secret: string }).secret,
+      retryStatuses: REPORT_RETRY_STATUSES,
     });
   const doFetch = overrides.fetch ?? fetch;
   const token = env['GITHUB_TOKEN'];

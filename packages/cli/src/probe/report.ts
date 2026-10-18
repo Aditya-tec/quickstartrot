@@ -280,7 +280,8 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
     try {
       return RunResponse.parse(await api.post('/internal/runs', body));
     } catch (err) {
-      if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+      // a 429 is the rate limiter, not a verdict on this result: it is never replaced by a harness error (the report stops, a re-run completes it)
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 429) {
         log.warn(
           { toolSlug: body.runResult.toolSlug, status: err.status, detail: err.detail },
           'the API refused a result; recording a harness error instead',
@@ -300,7 +301,7 @@ export async function runReport(options: ReportOptions, deps: ReportDeps): Promi
             await api.post('/internal/runs', { runResult: stand, logPaths: {} }),
           );
         } catch (second) {
-          if (second instanceof ApiError && second.status < 500) {
+          if (second instanceof ApiError && second.status < 500 && second.status !== 429) {
             log.warn(
               { toolSlug: body.runResult.toolSlug },
               'the API refused the stand-in run too; the tool has no run this cycle',
