@@ -1,5 +1,10 @@
 import { eq } from 'drizzle-orm';
-import type { ConfirmBody, FalsePositiveBody, Logger } from '@qsr/core';
+import {
+  VENDOR_FAILURE_CLASSES,
+  type ConfirmBody,
+  type FalsePositiveBody,
+  type Logger,
+} from '@qsr/core';
 import { adminQueueItems, incidentEvents, incidents, runs, tools } from '@qsr/db';
 import type { Ctx } from '../deps.js';
 import { HttpError } from '../problem.js';
@@ -23,6 +28,14 @@ export async function confirmIncident(
   const incident = await loadIncident(ctx, id);
   if (incident.state !== 'OPEN' || incident.review !== 'PENDING_REVIEW')
     throw new HttpError(409, 'Conflict', 'This incident is not waiting for review.');
+  // docs/DISCLOSURE.md: only a failure the vendor owns can be published. A transient one (the registry, the
+  // network, a timeout) and one on our side (crawler, compiler, runner) is never public, whoever reviews it.
+  if (!(VENDOR_FAILURE_CLASSES as readonly string[]).includes(incident.failureClass))
+    throw new HttpError(
+      409,
+      'Conflict',
+      `A ${incident.failureClass} incident is never published as a vendor's failure. Mark it a false positive if it is not one.`,
+    );
   const now = ctx.deps.now();
   await ctx.db.transaction(async (tx) => {
     await tx

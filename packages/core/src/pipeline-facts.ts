@@ -28,7 +28,7 @@ export const PIPELINE = Object.freeze({
   failuresToOpenIncident: FAILURES_TO_OPEN_INCIDENT,
   /** Consecutive passes before a tool is healthy again (and a confirmed incident resolves). */
   passesToRecover: PASSES_TO_RECOVER,
-  /** Network errors and timeouts in a row that open an incident labelled as a likely outage. */
+  /** Network errors and timeouts in a row that open an incident labelled as a likely outage (never published). */
   transientStreakToOpenIncident: TRANSIENT_INCIDENT_STREAK,
   /** A network error or timeout is retried this many times inside the cycle, after the delay below. */
   transientRetries: 1,

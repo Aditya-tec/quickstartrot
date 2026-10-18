@@ -166,10 +166,12 @@ export function MethodologyContent({ facts }: { facts: Facts }) {
           <strong>The failure has to be about the quickstart.</strong> Network errors and timeouts
           are retried {timesWord(f.transientRetries)} inside the cycle, after{' '}
           {f.transientRetryDelaySeconds} seconds, and only the last attempt counts.{' '}
-          {words(f.transientStreakToOpenIncident)} transient failures in a row open an incident that
-          is labelled as a likely registry or vendor outage. Problems on our side (the crawler, the
-          compiler, the runner) and anything that needs credentials never count as the
-          vendor&rsquo;s failure; they go to our own review queue.
+          {words(f.transientStreakToOpenIncident)} transient failures in a row open an incident for
+          us to look at, as a likely registry or vendor outage, and it is{' '}
+          <strong>never published</strong> as the vendor&rsquo;s failure: the review screen refuses
+          to confirm it. Problems on our side (the crawler, the compiler, the runner) and anything
+          that needs credentials never count as the vendor&rsquo;s failure either; they go to our
+          own review queue.
         </li>
         <li>
           <strong>A person reviews it.</strong> Until a person confirms the incident, the quickstart

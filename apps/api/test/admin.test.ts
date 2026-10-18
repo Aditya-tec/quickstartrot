@@ -201,6 +201,50 @@ d('POST /admin/incidents/:id/confirm', () => {
       (await t.admin('POST', '/admin/incidents/not-a-uuid/confirm', { summary: 's' })).statusCode,
     ).toBe(400);
   });
+
+  // docs/DISCLOSURE.md: a transient or infrastructure failure is never made public as the vendor's.
+  it.each([
+    'NETWORK_TRANSIENT',
+    'TIMEOUT',
+    'CRAWL_ERROR',
+    'COMPILER_ERROR',
+    'HARNESS_ERROR',
+  ] as const)(
+    'refuses to confirm a %s incident, and nothing about it becomes public',
+    async (failureClass) => {
+      const { incident } = await brokenTool();
+      await t.handle.db
+        .update(incidents)
+        .set({ failureClass })
+        .where(eq(incidents.id, incident.id));
+      const res = await t.admin('POST', `/admin/incidents/${incident.id}/confirm`, {
+        summary: 'Looks like the vendor.',
+      });
+      expect(res.statusCode).toBe(409);
+      expect(res.json().detail).toMatch(/never published/i);
+      expect(await incidentRow(incident.id)).toMatchObject({
+        review: 'PENDING_REVIEW',
+        confirmedAt: null,
+      });
+      expect(await t.handle.sql`select 1 from public_incidents`).toHaveLength(0);
+      expect(t.fetchCalls).toHaveLength(0);
+    },
+  );
+
+  it.each(['DEPENDENCY_RESOLUTION', 'API_DRIFT', 'DOCS_SNIPPET_ERROR', 'RUNTIME_VERSION'] as const)(
+    'still confirms a %s incident, the vendor classes',
+    async (failureClass) => {
+      const { incident } = await brokenTool();
+      await t.handle.db
+        .update(incidents)
+        .set({ failureClass })
+        .where(eq(incidents.id, incident.id));
+      expect(
+        (await t.admin('POST', `/admin/incidents/${incident.id}/confirm`, { summary: 's' }))
+          .statusCode,
+      ).toBe(200);
+    },
+  );
 });
 
 d('POST /admin/incidents/:id/false-positive', () => {
