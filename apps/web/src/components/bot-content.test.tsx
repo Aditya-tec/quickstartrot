@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { BotContent } from './bot-content';
-import { FACTS } from '@/lib/facts';
+import { FACTS, words } from '@/lib/facts';
 
 // "About our traffic": which services get a request with an invalid credential, how often, from where, that nothing is created or sent,
 // how to ask us to stop, and when the terms were read (and that it was a summary, not legal advice). Names only say where traffic goes.
@@ -54,6 +54,15 @@ describe('/bot: About our traffic', () => {
     expect(html()).toMatch(/ask us to stop/i);
     expect(html()).toContain('bot@example.test');
     expect(html({ email: null })).toMatch(/opt-out form/i);
+  });
+
+  // The promise, from the facts: probing stops within a day of an opt-out request; a written reply within three business days.
+  it('promises that probing stops within 24 hours of an opt-out request and a written reply within three business days', () => {
+    const t = html();
+    expect(t).toContain(`Probing stops within ${FACTS.optOutHours} hours of an opt-out request`);
+    expect(t).toContain(
+      `reply in writing within ${words(FACTS.vendorReplyBusinessDays)} business days`,
+    );
   });
 
   it('says when the terms were read, that it was a summary and not legal advice, and implies no affiliation or endorsement', () => {

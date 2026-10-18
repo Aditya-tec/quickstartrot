@@ -23,6 +23,7 @@ export interface Facts {
   recurrenceWindowDays: number;
   canaryCount: number;
   optOutHours: number;
+  vendorReplyBusinessDays: number;
   disclosureWaitHours: number;
   dataCacheMinutes: number;
   badgeCacheMinutes: number;
@@ -48,6 +49,7 @@ export const FACTS: Facts = Object.freeze({
   recurrenceWindowDays: PIPELINE.recurrenceWindowDays,
   canaryCount: PIPELINE.canaryCount,
   optOutHours: PIPELINE.optOutHours,
+  vendorReplyBusinessDays: PIPELINE.vendorReplyBusinessDays,
   disclosureWaitHours: PIPELINE.disclosureWaitHours,
   dataCacheMinutes: REVALIDATE_SECONDS / 60,
   badgeCacheMinutes: badgeMaxAgeSeconds / 60,

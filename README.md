@@ -22,7 +22,7 @@ Live site: <https://quickstartrot.vercel.app>. It reports what happened and does
 
 1 more needs a person (a sign-up or an interactive step); they are not counted above.
 
-As of 2026-10-18 11:23 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
+As of 2026-10-18 16:02 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
 <!-- qsr:status:end -->
 
 ## What each level proves
@@ -119,8 +119,13 @@ The badge is a small self-contained SVG and is cached, so it can lag the page. A
 
 - The crawler obeys `robots.txt` and identifies itself as `QuickstartRotBot` with a contact page. It never automates sign-ups, solves CAPTCHAs, or uses real vendor API keys.
 - For some quickstarts the check runs the documentation's own code, which makes a request to the service's API with an invalid, made-up credential. Which services, and how often, is in [docs/ABOUT-OUR-TRAFFIC.md](docs/ABOUT-OUR-TRAFFIC.md).
-- A vendor can ask a question or ask us to stop with the [opt-out form](https://github.com/Aditya-tec/quickstartrot/issues/new?template=opt-out.yml). We reply, and stop, within the time that page states.
+- A vendor can ask a question or ask us to stop with the [opt-out form](https://github.com/Aditya-tec/quickstartrot/issues/new?template=opt-out.yml). What we promise a vendor is the generated sentence below.
 - Before a failure is made public we tell the vendor privately and wait: [docs/DISCLOSURE.md](docs/DISCLOSURE.md). A transient or infrastructure failure is never made public.
+
+<!-- qsr:promise:start -->
+
+Probing stops within 24 hours of an opt-out request, and we reply in writing within 3 business days.
+<!-- qsr:promise:end -->
 
 ## Development
 

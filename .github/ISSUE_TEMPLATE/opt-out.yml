@@ -1,12 +1,12 @@
 name: 'Vendor: question or opt-out'
-description: Ask about a result, or ask us to stop testing a quickstart and hide its history. We reply within 24 hours.
+description: Ask about a result, or ask us to stop testing a quickstart. Probing stops within 24 hours of an opt-out request; we send a written reply within 3 business days.
 title: 'Vendor: '
 labels: ['vendor']
 body:
   - type: markdown
     attributes:
       value: |
-        Thank you for telling us. We reply within 24 hours of this issue. If you ask us to stop, we disable the tool and hide its history within 24 hours.
+        Thank you for telling us. Probing of your quickstart stops within 24 hours of an opt-out request, and the tool's history is hidden at the same time. We reply in writing within 3 business days.
         You can also block `QuickstartRotBot` in your `robots.txt`; the crawler obeys it.
 
         What our requests look like: [docs/ABOUT-OUR-TRAFFIC.md](https://github.com/Aditya-tec/quickstartrot/blob/main/docs/ABOUT-OUR-TRAFFIC.md).

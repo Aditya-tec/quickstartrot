@@ -23,6 +23,12 @@ describe('PIPELINE', () => {
     expect(PIPELINE.cyclesPerDay).toBe(24 / PIPELINE.cycleHours);
   });
 
+  // The owner's decision of 2026-10-18: probing stops within a day of an opt-out request; a written reply within three business days.
+  it('promises a vendor that probing stops within 24 hours of an opt-out request and a written reply within 3 business days', () => {
+    expect(PIPELINE.optOutHours).toBe(24);
+    expect(PIPELINE.vendorReplyBusinessDays).toBe(3);
+  });
+
   it('is read-only', () => {
     expect(Object.isFrozen(PIPELINE)).toBe(true);
     expect(() => {

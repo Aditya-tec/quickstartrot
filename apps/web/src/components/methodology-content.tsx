@@ -286,7 +286,8 @@ export function MethodologyContent({
         <Link href="/bot#opt-out" className="underline underline-offset-2">
           opt-out form
         </Link>
-        ; we disable the tool and hide its history within {f.optOutHours} hours.
+        ; probing stops, and the history is hidden, within {f.optOutHours} hours of an opt-out
+        request, and we reply in writing within {words(f.vendorReplyBusinessDays)} business days.
       </P>
     </>
   );

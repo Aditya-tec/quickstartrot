@@ -12,10 +12,10 @@ import {
 import { processIo, type CliIo } from './commands.js';
 import { buildSummaryFromRepo } from './detection-summary-command.js';
 
-// `qsr readme [--check] [--site <url>] [--root <dir>]`: keeps two blocks of README.md in step with the data, so the README never says
+// `qsr readme [--check] [--site <url>] [--root <dir>]`: keeps three blocks of README.md in step with the data, so the README never says
 // something the site and the documents do not. The first block is the table of live counts, fetched from the site's public
 // GET /api/status (the same counts as the home headline). The second is the approved wording about what each level proves, from
-// docs/detection-power.json. Everything else in the README is prose that a test keeps free of figures. `--check` changes nothing
+// docs/detection-power.json. The third is what we promise a vendor, from PIPELINE. Everything else in the README is prose that a test keeps free of figures. `--check` changes nothing
 // and exits 1 when a block differs (the launch check uses it); the "As of" time is the one thing it ignores.
 
 export const DEFAULT_SITE = 'https://quickstartrot.vercel.app';
@@ -79,6 +79,11 @@ export function renderStatusBlock(s: PublicStatusSummary, site: string = DEFAULT
   if (s.asOf !== null)
     out.push('', `As of ${utc(s.asOf)}, from the [site's status counts](${site}/api/status).`);
   return out.join('\n');
+}
+
+/** What we promise a vendor, from the pipeline constants: probing stops within a day of an opt-out request, a written reply within business days. */
+export function renderPromiseBlock(): string {
+  return `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request, and we reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`;
 }
 
 /** What each level proves: the approved wording, with the figures of the measurement. */
@@ -166,25 +171,29 @@ export async function readmeCommand(
   const wanted = {
     status: renderStatusBlock(status, site),
     detection: renderDetectionBlock(await buildSummaryFromRepo(root)),
+    promise: renderPromiseBlock(),
   };
   const readme = await readFile(file, 'utf8');
 
   if (values.check) {
     let bad = 0;
-    for (const name of ['status', 'detection'] as const) {
+    for (const name of ['status', 'detection', 'promise'] as const) {
       if (withoutAsOf(extractBlock(readme, name)) !== withoutAsOf(wanted[name])) {
         io.stderr(`README.md: the ${name} block is out of date. Run: qsr readme\n`);
         bad += 1;
       }
     }
-    if (bad === 0) io.stdout('README.md matches the site and docs/detection-power.json\n');
+    if (bad === 0)
+      io.stdout(
+        'README.md matches the site, docs/detection-power.json and the pipeline constants\n',
+      );
     return bad === 0 ? 0 : 1;
   }
 
   const next = replaceBlock(
-    replaceBlock(readme, 'status', wanted.status),
-    'detection',
-    wanted.detection,
+    replaceBlock(replaceBlock(readme, 'status', wanted.status), 'detection', wanted.detection),
+    'promise',
+    wanted.promise,
   );
   if (next !== readme) await writeFile(file, next);
   log.info({ changed: next !== readme }, 'README blocks written');

@@ -58,9 +58,15 @@ describe('README structure', () => {
     expect(hook).not.toMatch(/\d/);
   });
 
-  it('carries the two generated blocks, once each', () => {
+  it('carries the generated blocks, once each', () => {
     expect(extractBlock(readme, 'status').length).toBeGreaterThan(20);
     expect(extractBlock(readme, 'detection').length).toBeGreaterThan(20);
+    expect(extractBlock(readme, 'promise').length).toBeGreaterThan(20);
+  });
+
+  it('puts the promise to vendors in the ethics section, as a generated sentence', () => {
+    const ethics = /## Ethics and traffic([\s\S]*?)(?=\n## )/.exec(readme)?.[1] ?? '';
+    expect(ethics).toContain('<!-- qsr:promise:start -->');
   });
 
   it('draws the architecture in mermaid and names every stage', () => {

@@ -126,7 +126,8 @@ export function BotContent({
               </a>
             </>
           ) : null}
-          . We stop within {f.optOutHours} hours.
+          . Probing stops within {f.optOutHours} hours of an opt-out request, and we reply in
+          writing within {words(f.vendorReplyBusinessDays)} business days.
         </li>
       </ul>
       <p className="mt-3 max-w-3xl text-sm leading-6 text-muted">
@@ -141,8 +142,9 @@ export function BotContent({
       </h2>
       <p className="mt-2 max-w-3xl text-[15px] leading-7">
         If you maintain a quickstart we track and you want it removed, open an issue with the
-        opt-out form. We disable the tool and hide its history within {f.optOutHours} hours. You can
-        also block <code className="font-mono text-sm">QuickstartRotBot</code> in your{' '}
+        opt-out form. Probing stops, and the history is hidden, within {f.optOutHours} hours of an
+        opt-out request, and we reply in writing within {words(f.vendorReplyBusinessDays)} business
+        days. You can also block <code className="font-mono text-sm">QuickstartRotBot</code> in your{' '}
         <code className="font-mono text-sm">robots.txt</code>.
       </p>
       <p className="mt-3">

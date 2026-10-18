@@ -68,12 +68,19 @@ describe('issue template: Vendor: question or opt-out', () => {
     expect(read('apps/web/src/components/bot-content.tsx')).toContain('template=opt-out.yml');
   });
 
-  it('promises a reply and an opt-out within the hours the pipeline promises, in the description and in the form', () => {
+  // The owner's decision of 2026-10-18: probing stops within 24 hours of an opt-out request; a written reply within 3 business days.
+  it('promises, in the description and in the form, that probing stops within the hours the pipeline says and a written reply follows within its business days', () => {
     const hours = `${PIPELINE.optOutHours} hours`;
-    expect(f.description).toContain(`within ${hours}`);
+    const days = `${PIPELINE.vendorReplyBusinessDays} business days`;
+    expect(f.description).toContain(`Probing stops within ${hours} of an opt-out request`);
+    expect(f.description).toContain(`written reply within ${days}`);
     const intro = f.body.find((b) => b.type === 'markdown')?.attributes?.value ?? '';
-    expect(intro).toMatch(new RegExp(`reply[^.]*within ${hours}`, 'i'));
-    expect(intro).toMatch(new RegExp(`(?:stop|disable)[^.]*within ${hours}`, 'i'));
+    expect(intro).toContain(
+      `Probing of your quickstart stops within ${hours} of an opt-out request`,
+    );
+    expect(intro).toContain(`We reply in writing within ${days}`);
+    // the old promise, a reply in 24 hours, is gone
+    expect(JSON.stringify(f)).not.toMatch(/reply[^.]*within 24 hours/i);
   });
 
   it('lets a vendor say what they need: a question, an opt-out, a correction, or something else', () => {
@@ -167,8 +174,11 @@ describe('docs/DISCLOSURE.md', () => {
     expect(md).toContain('confirmIncident');
   });
 
-  it('says what the vendor can do: reply, fix, dispute, or opt out within the promised hours', () => {
-    expect(md).toContain(`${PIPELINE.optOutHours} hours`);
+  it('says what the vendor can do: reply, fix, dispute, or opt out, with the promised hours and the written reply', () => {
+    expect(md).toContain(
+      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request`,
+    );
+    expect(md).toContain(`written reply within ${PIPELINE.vendorReplyBusinessDays} business days`);
     expect(md).toContain('opt-out.yml');
     expect(md).toMatch(/dispute|disagree/i);
   });
@@ -204,7 +214,10 @@ describe('docs/templates/disclosure-email.md', () => {
   it('is a private heads-up: it says nothing is public yet and states the wait and the opt-out in hours', () => {
     expect(md).toMatch(/nothing about this is public/i);
     expect(md).toContain(`${PIPELINE.disclosureWaitHours} hours`);
-    expect(md).toContain(`${PIPELINE.optOutHours} hours`);
+    expect(md).toContain(
+      `probing stops, and the history is hidden, within ${PIPELINE.optOutHours} hours of an opt-out request`,
+    );
+    expect(md).toContain(`written reply within ${PIPELINE.vendorReplyBusinessDays} business days`);
     expect(md).toMatch(/you do not need to reply/i);
   });
 

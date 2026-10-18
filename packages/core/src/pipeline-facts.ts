@@ -15,7 +15,8 @@ import {
 //   failuresToOpen*, passesToRecover, transientStreak*, recurrenceWindowDays   packages/status
 //   logRetentionDays, traceRetentionDays   apps/api services/gc.ts       gc.test.ts
 //   canaryCount            packages/core canary.ts                         pipeline-facts.test.ts
-//   optOutHours            .github/ISSUE_TEMPLATE/opt-out.yml             issue-templates test
+//   optOutHours, vendorReplyBusinessDays   .github/ISSUE_TEMPLATE/opt-out.yml, docs/DISCLOSURE.md,
+//                          docs/ABOUT-OUR-TRAFFIC.md, the email template   packages/cli launch-docs.test.ts, core traffic-doc.test.ts
 //   disclosureWaitHours    spec section 14 (ethics): a promise, written down here so the pages quote one value
 
 const CYCLE_HOURS = 6;
@@ -46,8 +47,10 @@ export const PIPELINE = Object.freeze({
   hashChurnFlagAt: 3,
   logRetentionDays: 30,
   traceRetentionDays: 14,
-  /** Ethics rules (spec section 14): an opt-out is honoured within this many hours. */
+  /** Ethics rules (spec section 14): probing of a vendor stops, and its history is hidden, within this many hours of an opt-out request. */
   optOutHours: 24,
+  /** The owner's promise to a vendor who writes to us (2026-10-18): a written reply within this many business days. */
+  vendorReplyBusinessDays: 3,
   /** Before a launch post names a vendor, we tell them and wait this many hours. */
   disclosureWaitHours: 48,
 });

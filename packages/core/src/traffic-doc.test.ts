@@ -36,6 +36,15 @@ describe('docs/ABOUT-OUR-TRAFFIC.md', () => {
     expect(doc).toMatch(new RegExp(`within ${PIPELINE.optOutHours} hours`));
   });
 
+  it('promises, from the code, that probing stops within a day of an opt-out request and a written reply within three business days', () => {
+    expect(doc).toContain(
+      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request`,
+    );
+    expect(doc).toContain(
+      `we reply in writing within ${WORDS[PIPELINE.vendorReplyBusinessDays]} business days`,
+    );
+  });
+
   it('claims no affiliation with or endorsement by a service', () => {
     expect(doc).toMatch(/no affiliation with, or endorsement by/);
   });

@@ -22,6 +22,7 @@ describe('FACTS', () => {
     expect(FACTS.recurrenceWindowDays).toBe(PIPELINE.recurrenceWindowDays);
     expect(FACTS.canaryCount).toBe(PIPELINE.canaryCount);
     expect(FACTS.optOutHours).toBe(PIPELINE.optOutHours);
+    expect(FACTS.vendorReplyBusinessDays).toBe(PIPELINE.vendorReplyBusinessDays);
     expect(FACTS.disclosureWaitHours).toBe(PIPELINE.disclosureWaitHours);
     expect(FACTS.targetTotal).toBe(TARGET_GOAL.total);
     expect(FACTS.librariesPercent).toBe(TARGET_GOAL.librariesPercent);

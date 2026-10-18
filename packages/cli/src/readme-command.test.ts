@@ -4,11 +4,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PublicStatusSummary } from '@qsr/core';
-import { badgeParagraph, PIPELINE, summariseDetection } from '@qsr/core';
+import { badgeParagraph, PIPELINE } from '@qsr/core';
 import {
   extractBlock,
   readmeCommand,
   renderDetectionBlock,
+  renderPromiseBlock,
   renderStatusBlock,
   replaceBlock,
 } from './readme-command.js';
@@ -104,6 +105,14 @@ describe('renderDetectionBlock', () => {
   });
 });
 
+describe('renderPromiseBlock', () => {
+  it('states the promise to vendors from the constants: probing stops within a day of an opt-out request, a written reply within three business days', () => {
+    expect(renderPromiseBlock()).toBe(
+      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request, and we reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`,
+    );
+  });
+});
+
 describe('replaceBlock and extractBlock', () => {
   const doc = 'before\n<!-- qsr:x:start -->\nold\n<!-- qsr:x:end -->\nafter\n';
 
@@ -156,7 +165,7 @@ describe('qsr readme', () => {
     await cp(path.join(ROOT, 'targets'), path.join(dir, 'targets'), { recursive: true });
     await writeFile(
       path.join(dir, 'README.md'),
-      '# T\n\nhook\n\n<!-- qsr:status:start -->\nstale\n<!-- qsr:status:end -->\n\n## Levels\n\n<!-- qsr:detection:start -->\nstale\n<!-- qsr:detection:end -->\n\nrest of the file\n',
+      '# T\n\nhook\n\n<!-- qsr:status:start -->\nstale\n<!-- qsr:status:end -->\n\n## Levels\n\n<!-- qsr:detection:start -->\nstale\n<!-- qsr:detection:end -->\n\n<!-- qsr:promise:start -->\nstale\n<!-- qsr:promise:end -->\n\nrest of the file\n',
     );
     return dir;
   }
@@ -168,7 +177,7 @@ describe('qsr readme', () => {
     ...more,
   ];
 
-  it('writes both blocks from the site’s counts and the committed summary, and keeps the rest of the file', async () => {
+  it('writes the three blocks from the site’s counts, the committed summary and the pipeline constants, and keeps the rest of the file', async () => {
     const dir = await scratch();
     expect(await readmeCommand(args(dir), log, io(), { fetch: fetchOf(status()) })).toBe(0);
     const readme = await readFile(path.join(dir, 'README.md'), 'utf8');
@@ -178,15 +187,9 @@ describe('qsr readme', () => {
       renderStatusBlock(status(), 'https://site.test').trim(),
     );
     expect(extractBlock(readme, 'detection')).toBe(
-      renderDetectionBlock(
-        summariseDetection(
-          JSON.parse(
-            await readFile(path.join(dir, 'docs', 'detection-power.json'), 'utf8'),
-          ) as unknown,
-          (await buildSummaryFromRepo(dir)).shadowTargets,
-        ),
-      ).trim(),
+      renderDetectionBlock(await buildSummaryFromRepo(dir)).trim(),
     );
+    expect(extractBlock(readme, 'promise')).toBe(renderPromiseBlock());
   });
 
   it('--check passes straight after writing, and ignores only the "As of" time', async () => {
