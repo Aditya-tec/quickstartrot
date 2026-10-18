@@ -4,11 +4,11 @@ This is the plain-language note on the requests QuickstartRot sends to the servi
 
 ## What the request is
 
-For some quickstarts the check goes one step further than installing: it runs the documentation's own code, and that code makes **one request to the service's API with an invalid, made-up credential** (the literal `qsr_dummy_key`). The service is expected to refuse it. The refusal coming back is how we know the code reached the service. An invalid credential cannot create, send or charge anything, and we never hold a real one. We do not sign up for anything.
+For some quickstarts the check goes one step further than installing: it runs the documentation's own code, and that code makes **one request to the service's API with an invalid, made-up credential** (the literal `qsr_dummy_key`). The service is expected to refuse it. The refusal coming back is how we know the code reached the service. (For a service whose docs set no key, the request carries none at all, and is refused the same way.) An invalid credential cannot create, send or charge anything, and we never hold a real one. We do not sign up for anything.
 
 ## Which services
 
-Anthropic, Cerebras, OpenRouter and Resend (the quickstarts behind them are listed in `TRAFFIC.services`). These names only say where the traffic goes: there is no affiliation with, or endorsement by, any of them.
+Anthropic, Cerebras, OpenRouter, Resend and Slack (the quickstarts behind them are listed in `TRAFFIC.services`). These names only say where the traffic goes: there is no affiliation with, or endorsement by, any of them.
 
 ## How often
 

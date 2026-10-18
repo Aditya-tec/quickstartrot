@@ -1,0 +1,11 @@
+{
+  "slug": "slack-node",
+  "capturedWith": "qsr run <slug> in Docker, ghcr sandbox image, 2026-10-18; one request to the vendor; the docs set no token, so the request is unauthenticated",
+  "vendor": "Slack API",
+  "exitCode": 1,
+  "expect": {
+    "pass": true,
+    "matchedAuthPattern": "slack:not_authed"
+  },
+  "log": "/work/node_modules/@slack/web-api/dist/WebClient.js:206\n            throw new errors_1.WebAPIPlatformError(result);\n                  ^\n\nWebAPIPlatformError: An API error occurred: not_authed\n    at WebClient.apiCall (/work/node_modules/@slack/web-api/dist/WebClient.js:206:19)\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async /work/index.js:20:18 {\n  code: 'slack_webapi_platform_error',\n  data: {\n    ok: false,\n    error: 'not_authed',\n    response_metadata: { acceptedScopes: [ 'chat:write:bot' ] }\n  }\n}\n\nNode.js v22.23.3"
+}

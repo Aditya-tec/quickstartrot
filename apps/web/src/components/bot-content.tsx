@@ -90,7 +90,8 @@ export function BotContent({
         For some quickstarts the check goes one step further than installing: it runs the
         documentation&apos;s own code, and that code makes a request to the service&apos;s API with
         an <strong>invalid, made-up credential</strong>. The service is expected to refuse it, and
-        the refusal coming back is how we know the code reached the service.
+        the refusal coming back is how we know the code reached the service. (For a service whose
+        docs set no key, the request carries none at all, and is refused the same way.)
       </p>
       <ul className="mt-2 max-w-3xl list-disc space-y-2 pl-5 text-[15px] leading-7">
         <li>

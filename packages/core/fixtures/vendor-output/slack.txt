@@ -1,0 +1,20 @@
+# Real output of slack-node's run step (qsr run in Docker, 2026-10-18). The docs set no token, so the request is unauthenticated and Slack answers
+# not_authed. That is evidence that Slack's API was reached and answered; it is NOT evidence that a dummy token is refused (that would be invalid_auth,
+# which has not been observed and is not registered).
+/work/node_modules/@slack/web-api/dist/WebClient.js:206
+            throw new errors_1.WebAPIPlatformError(result);
+                  ^
+
+WebAPIPlatformError: An API error occurred: not_authed
+    at WebClient.apiCall (/work/node_modules/@slack/web-api/dist/WebClient.js:206:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async /work/index.js:20:18 {
+  code: 'slack_webapi_platform_error',
+  data: {
+    ok: false,
+    error: 'not_authed',
+    response_metadata: { acceptedScopes: [ 'chat:write:bot' ] }
+  }
+}
+
+Node.js v22.23.3

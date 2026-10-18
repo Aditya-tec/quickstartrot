@@ -48,6 +48,7 @@ describe('the real answers of vendors to a dummy key', () => {
       'cerebras-python',
       'openrouter-node',
       'resend-python',
+      'slack-node',
     ]);
   });
 

@@ -12,6 +12,10 @@ const doc = readFileSync(
 const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 
 describe('docs/ABOUT-OUR-TRAFFIC.md', () => {
+  it('says what happens for a service whose docs set no key', () => {
+    expect(doc).toContain('For a service whose docs set no key, the request carries none at all');
+  });
+
   it('names every service that gets a request, and only says so about those', () => {
     for (const s of TRAFFIC.services) expect(doc).toContain(s.name);
   });

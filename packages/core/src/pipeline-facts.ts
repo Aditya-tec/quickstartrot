@@ -73,6 +73,7 @@ export const TRAFFIC = Object.freeze({
     Object.freeze({ name: 'Cerebras', targets: Object.freeze(['cerebras-python']) }),
     Object.freeze({ name: 'OpenRouter', targets: Object.freeze(['openrouter-node']) }),
     Object.freeze({ name: 'Resend', targets: Object.freeze(['resend-node', 'resend-python']) }),
+    Object.freeze({ name: 'Slack', targets: Object.freeze(['slack-node']) }),
   ]),
 });
 

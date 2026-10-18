@@ -96,6 +96,10 @@ describe('vendor patterns count as auth evidence', () => {
     expect(matchAuthPattern('Request failed with status code 401: API key is invalid')).toBe(
       'http_401_403',
     );
+    expect(matchAuthPattern('WebAPIPlatformError: An API error occurred: not_authed')).toBe(
+      'slack:not_authed',
+    );
+    expect(matchAuthPattern('a not_authed_thing is not the code')).toBeNull();
   });
 });
 

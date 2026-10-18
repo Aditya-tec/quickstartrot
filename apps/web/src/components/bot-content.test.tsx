@@ -33,6 +33,7 @@ describe('/bot: About our traffic', () => {
   it("says what the request is: invalid on purpose, refused, from GitHub Actions, with the library's own user agent", () => {
     const t = html();
     expect(t).toMatch(/invalid, made-up credential/);
+    expect(t).toMatch(/docs set no key, the request carries none at all/);
     expect(t).toMatch(/GitHub Actions/);
     expect(t).toMatch(/the library's own user agent|library's user agent/i);
   });

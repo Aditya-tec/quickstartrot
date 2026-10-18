@@ -36,6 +36,9 @@ export interface VendorPattern extends OutputPattern {
 }
 export const VENDOR_AUTH_PATTERNS: readonly VendorPattern[] = [
   { id: 'resend:api_key_is_invalid', vendor: 'resend', re: /API key is invalid/i },
+  // Slack answers an unauthenticated call with ok:false, error:not_authed (HTTP 200, no status code in the text). Observed from a real run; it
+  // shows the API was reached, not that a dummy token is refused (invalid_auth, not observed, is not registered).
+  { id: 'slack:not_authed', vendor: 'slack', re: /\bnot_authed\b/ },
 ];
 
 /** The spec patterns, then the registered vendor ones: what counts as evidence of reaching a vendor. */
