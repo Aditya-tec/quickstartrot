@@ -99,6 +99,14 @@ export async function loadIncidentsPage(source: DataSource): Promise<IncidentVie
 }
 
 /** The status the badge shows. A slug that is malformed or not tracked is "not tracked". */
+/**
+ * The slugs of the tracked tools, sorted. The badge, the image and the tool page check a slug against this one list before they look
+ * anything up, so a slug nobody tracks costs no query and no cache entry of its own.
+ */
+export async function loadKnownSlugs(source: DataSource): Promise<string[]> {
+  return (await source.listTools()).map((t) => t.slug).sort();
+}
+
 export async function loadBadgeStatus(source: DataSource, slug: string): Promise<BadgeStatus> {
   if (!isValidSlug(slug)) return 'not_tracked';
   const [tools, incidents] = await Promise.all([source.listTools(), source.listIncidents()]);

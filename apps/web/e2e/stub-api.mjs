@@ -17,6 +17,7 @@ const fresh = () => ({
   confirmed: [],
   falsePositives: [],
   wakeAttempts: 0,
+  healthChecks: 0,
   forwardedFor: [],
   pending: [
     {
@@ -75,7 +76,10 @@ createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://stub');
   const path = url.pathname;
 
-  if (req.method === 'GET' && path === '/health') return send(res, 200, { status: 'ok' });
+  if (req.method === 'GET' && path === '/health') {
+    state.healthChecks += 1;
+    return send(res, 200, { status: 'ok' });
+  }
   if (req.method === 'GET' && path === '/__state') return send(res, 200, state);
   if (req.method === 'POST' && path === '/__reset') {
     state = fresh();

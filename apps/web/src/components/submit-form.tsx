@@ -27,6 +27,11 @@ export function SubmitForm({ turnstileSiteKey }: { turnstileSiteKey: string | nu
   const [token, setToken] = useState('');
   const widget = useRef<HTMLDivElement>(null);
 
+  // The API sleeps on a free tier. Opening this page wakes it, so it is awake by the time the form is sent.
+  useEffect(() => {
+    void fetch('/api/warm', { method: 'POST', keepalive: true }).catch(() => undefined);
+  }, []);
+
   useEffect(() => {
     if (!turnstileSiteKey || !widget.current) return;
     const el = widget.current;

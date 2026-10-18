@@ -4,6 +4,7 @@ import {
   loadBadgeStatus,
   loadHome,
   loadIncidentsPage,
+  loadKnownSlugs,
   loadOgData,
   loadRunPage,
   loadToolPage,
@@ -198,5 +199,18 @@ describe('loadBadgeStatus and loadOgData', () => {
       expect(leaks(await loadOgData(source, slug)), slug).toBe(false);
       expect(await loadBadgeStatus(source, slug)).not.toContain('ZZ');
     }
+  });
+});
+
+describe('loadKnownSlugs', () => {
+  // The badge, the image and the tool page check a slug against this list before they look anything up, so a slug nobody tracks costs no
+  // query and no cache entry of its own.
+  it('lists the tracked slugs, sorted, and nothing else', async () => {
+    const slugs = await loadKnownSlugs(source);
+    const tools = await source.listTools();
+    expect(slugs).toEqual(tools.map((t) => t.slug).sort());
+    expect(slugs).toContain(FIXTURE_SLUGS.healthy);
+    expect(slugs).not.toContain('some-made-up-slug');
+    expect(JSON.stringify(slugs)).not.toContain('ZZ-UNREVIEWED');
   });
 });

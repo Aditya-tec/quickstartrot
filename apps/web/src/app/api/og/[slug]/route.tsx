@@ -1,4 +1,4 @@
-import { getHome, getOgData } from '@/lib/cached';
+import { getHome, getKnownSlugs, getOgData } from '@/lib/cached';
 import { isValidSlug } from '@/lib/badge';
 import { DETECTION } from '@/lib/detection';
 import { homeImage, methodologyImage, toolImage } from '@/lib/og-image';
@@ -15,7 +15,8 @@ export async function GET(_req: Request, ctx: { params: Params }): Promise<Respo
   const { slug } = await ctx.params;
   if (slug === 'home') return homeImage((await getHome()).headline);
   if (slug === 'methodology') return methodologyImage(methodologyCard(DETECTION));
-  if (!isValidSlug(slug)) return new Response('Not found', { status: 404 });
+  if (!isValidSlug(slug) || !(await getKnownSlugs()).includes(slug))
+    return new Response('Not found', { status: 404 });
   const data = await getOgData(slug);
   if (!data) return new Response('Not found', { status: 404 });
   return toolImage(ogCard(data));

@@ -8,7 +8,7 @@ import { IncidentCard } from '@/components/incident-card';
 import { LevelBadge } from '@/components/level-badge';
 import { StatusPill } from '@/components/status-pill';
 import { StepTimeline } from '@/components/step-timeline';
-import { getToolPage } from '@/lib/cached';
+import { getKnownSlugs, getToolPage } from '@/lib/cached';
 import { getNow } from '@/lib/data';
 import { siteUrl } from '@/lib/env';
 import { FACTS, words } from '@/lib/facts';
@@ -26,9 +26,14 @@ export const revalidate = 300;
 
 type Params = Promise<{ slug: string }>;
 
+/** A slug nobody tracks is a 404 answered from the one cached list: no lookup and no cache entry of its own. */
+async function pageFor(slug: string): Promise<Awaited<ReturnType<typeof getToolPage>>> {
+  return (await getKnownSlugs()).includes(slug) ? getToolPage(slug) : null;
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
-  const page = await getToolPage(slug);
+  const page = await pageFor(slug);
   if (!page) return { title: 'Quickstart not found', robots: { index: false } };
   const { tool } = page;
   const title = `${tool.name} quickstart status`;
@@ -62,7 +67,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 
 export default async function ToolPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const page = await getToolPage(slug);
+  const page = await pageFor(slug);
   if (!page) notFound();
   const { tool, strip, openIncident, incidents, latestRun } = page;
   const now = getNow();

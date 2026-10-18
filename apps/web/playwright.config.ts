@@ -24,6 +24,7 @@ const webEnv = {
   ADMIN_SESSION_SECRET,
   REVALIDATE_SECRET,
   NEXT_TELEMETRY_DISABLED: '1',
+  QSR_WARM_WINDOW_MS: '0',
 };
 
 export default defineConfig({

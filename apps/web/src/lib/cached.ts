@@ -5,6 +5,7 @@ import {
   loadBadgeStatus,
   loadHome,
   loadIncidentsPage,
+  loadKnownSlugs,
   loadOgData,
   loadRunPage,
   loadToolPage,
@@ -19,6 +20,12 @@ export { REVALIDATE_SECONDS };
 const options = { revalidate: REVALIDATE_SECONDS, tags: [DATA_TAG] };
 
 export const getHome = unstable_cache(() => loadHome(getDataSource()), ['qsr-home'], options);
+// One entry for the whole list of tracked slugs. The per-slug loaders below are only reached for a slug on this list.
+export const getKnownSlugs = unstable_cache(
+  () => loadKnownSlugs(getDataSource()),
+  ['qsr-slugs'],
+  options,
+);
 export const getToolPage = unstable_cache(
   (slug: string) => loadToolPage(getDataSource(), slug),
   ['qsr-tool'],

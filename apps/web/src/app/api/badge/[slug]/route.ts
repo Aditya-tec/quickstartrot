@@ -5,7 +5,7 @@ import {
   renderBadge,
   type BadgeStatus,
 } from '@/lib/badge';
-import { getBadgeStatus } from '@/lib/cached';
+import { getBadgeStatus, getKnownSlugs } from '@/lib/cached';
 
 // GET /api/badge/<slug>: the README badge, a self-contained SVG. Any slug is accepted from anyone, so it is
 // validated with a strict pattern and never reflected into the image; an unknown or malformed slug is shown as
@@ -29,7 +29,8 @@ export async function GET(_req: Request, ctx: { params: Params }): Promise<Respo
   let cache = BADGE_CACHE_CONTROL;
   if (isValidSlug(slug)) {
     try {
-      status = await getBadgeStatus(slug);
+      // a slug nobody tracks is answered from the one cached list: no lookup of its own, no cache entry of its own
+      if ((await getKnownSlugs()).includes(slug)) status = await getBadgeStatus(slug);
     } catch {
       status = 'unknown'; // the data source is down: say so, and do not let the CDN keep it for long
       cache = 'public, max-age=0, s-maxage=60';

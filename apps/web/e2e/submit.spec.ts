@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 import { STUB_URL } from './env';
 
 test.beforeEach(async ({ request }) => {
@@ -111,5 +111,41 @@ test.describe('submit', () => {
       headers: { 'content-type': 'text/plain' },
     });
     expect(bad.status()).toBe(400);
+  });
+});
+
+test.describe('waking the API', () => {
+  const healthChecks = async (request: APIRequestContext) =>
+    ((await (await request.get(`${STUB_URL}/__state`)).json()) as { healthChecks: number })
+      .healthChecks;
+
+  test('opening /submit wakes the API once, before any form is sent', async ({ page, request }) => {
+    await page.goto('/submit');
+    await expect.poll(() => healthChecks(request), { timeout: 10_000 }).toBeGreaterThanOrEqual(1);
+    expect((await (await request.get(`${STUB_URL}/__state`)).json()).submissions).toHaveLength(0);
+  });
+
+  test('public pages never touch the API: a visitor to them does not wait for it, and does not wake it', async ({
+    page,
+    request,
+  }) => {
+    for (const path of ['/', '/methodology', '/bot', '/incidents', '/tools/zod-node']) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+    }
+    expect(await healthChecks(request)).toBe(0);
+  });
+
+  test('POST /api/warm answers at once with nothing in it', async ({ request }) => {
+    const t0 = Date.now();
+    const res = await request.post('/api/warm');
+    expect(res.status()).toBe(204);
+    expect(await res.text()).toBe('');
+    expect(res.headers()['cache-control']).toBe('no-store');
+    expect(Date.now() - t0).toBeLessThan(2_000);
+  });
+
+  test('the warm-up is a POST: opening the URL in a browser does nothing', async ({ request }) => {
+    expect((await request.get('/api/warm')).status()).toBe(405);
   });
 });
