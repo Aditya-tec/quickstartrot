@@ -14,6 +14,7 @@ import { calibrationCommand } from './calibration.js';
 import { exportCommand } from './launch-export.js';
 import { mutateCommand } from './mutate/command.js';
 import { plansCommand } from './plans-command.js';
+import { readmeCommand } from './readme-command.js';
 import { runCommand } from './run.js';
 import { detectionSummaryCommand } from './detection-summary-command.js';
 import { l3ShadowReportCommand } from './l3-shadow-report.js';
@@ -59,6 +60,8 @@ async function main(argv: string[]): Promise<number> {
       return l3ShadowReportCommand(rest, log);
     case 'detection-summary':
       return detectionSummaryCommand(rest, log);
+    case 'readme':
+      return readmeCommand(rest, log);
     case 'validate':
       return validateCommand(rest, log);
     default:

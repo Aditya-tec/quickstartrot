@@ -61,8 +61,13 @@ test.describe('unreviewed incident: nothing leaks', () => {
     for (const body of bodies) expectClean('a response of the tool page', body);
   });
 
-  test('the badge, sitemap and robots', async ({ request }) => {
-    for (const path of [`/api/badge/${FIXTURE_SLUGS.verifying}`, '/sitemap.xml', '/robots.txt']) {
+  test('the badge, sitemap, robots and the status counts', async ({ request }) => {
+    for (const path of [
+      `/api/badge/${FIXTURE_SLUGS.verifying}`,
+      '/sitemap.xml',
+      '/robots.txt',
+      '/api/status',
+    ]) {
       expectClean(path, await (await request.get(path)).text());
     }
   });
