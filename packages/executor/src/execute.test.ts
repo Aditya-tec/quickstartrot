@@ -382,6 +382,50 @@ describe('executePlan: an L3 claim needs evidence that a vendor was reached (har
   });
 });
 
+describe('executePlan: a failed step always stores something (loops-node, probe #13: exit 1, 596 ms, an empty log)', () => {
+  const failing = (out: FakeExec) =>
+    new FakeDocker((c) =>
+      c.kind === 'step' && c.command === 'curl -fsSL https://example.test/x | sh' ? out : undefined,
+    );
+  const planOf = () => plan([shell('s1', 'curl -fsSL https://example.test/x | sh')]);
+
+  it('a failed step that wrote nothing says so, in the stderr tail AND the log: exit code, duration, and that nothing was captured', async () => {
+    const { result, outDir } = await go(failing({ exitCode: 1 }), planOf());
+    const s = result.steps[0];
+    expect(s).toMatchObject({ outcome: 'FAIL', exitCode: 1, stdoutTail: '' });
+    expect(s?.stderrTail).toMatch(
+      /\[qsr\] the step exited with code 1 and wrote nothing to stdout or stderr/,
+    );
+    const log = await readFile(path.join(outDir, s?.logFile ?? 'missing'), 'utf8');
+    expect(log).toMatch(/wrote nothing to stdout or stderr/);
+  });
+
+  it('says it was not lost: a program that writes to the terminal directly is not captured', async () => {
+    const { result } = await go(failing({ exitCode: 1 }), planOf());
+    expect(result.steps[0]?.stderrTail).toMatch(/terminal/);
+  });
+
+  it('a failed step WITH output gets no such note', async () => {
+    const { result } = await go(
+      failing({ exitCode: 22, stderr: 'curl: (22) returned error: 403\n' }),
+      planOf(),
+    );
+    expect(result.steps[0]?.stderrTail).toBe('curl: (22) returned error: 403\n');
+  });
+
+  it('a passing step that wrote nothing gets no note', async () => {
+    const { result } = await go(new FakeDocker(), plan([shell('s1', 'true')]));
+    expect(result.steps[0]?.outcome).toBe('PASS');
+    expect(result.steps[0]?.stderrTail ?? '').toBe('');
+  });
+
+  it('a timeout keeps its own note and does not also claim it wrote nothing', async () => {
+    const { result } = await go(failing({ exitCode: null, timedOut: true }), planOf());
+    expect(result.steps[0]?.stderrTail).toMatch(/timed out/);
+    expect(result.steps[0]?.stderrTail).not.toMatch(/wrote nothing/);
+  });
+});
+
 describe('executePlan: docker itself failing is not the vendor failing', () => {
   it('exit 125 with a daemon error from `docker exec` is a HARNESS_ERROR, not a failed step', async () => {
     const docker = new FakeDocker((c) =>

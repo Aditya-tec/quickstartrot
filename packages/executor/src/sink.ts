@@ -107,6 +107,11 @@ export class StepOutput {
     this.emit('err', text);
   }
 
+  /** Whether the step wrote anything to stdout or stderr (a harness note does not count). */
+  hasOutput(): boolean {
+    return this.streams.out.bytes + this.streams.err.bytes > 0;
+  }
+
   /** Evidence collected so far, for deciding pass or fail before the final notes are added. */
   currentEvidence(): OutputEvidence {
     return this.evidence;

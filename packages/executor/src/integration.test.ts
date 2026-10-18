@@ -284,6 +284,18 @@ describe.skipIf(!available)('sandbox (real Docker)', () => {
     expect(stdoutOf(result, 't')).toContain('MATCH');
   }, 120_000);
 
+  it('SILENT FAILURE (loops-node, probe #13): a failing pipeline that writes nothing says so, and a failing pipeline that writes something keeps it', async () => {
+    const silent = await execute(
+      plan([shell('quiet', 'curl -fsS http://127.0.0.1:9/x 2>/dev/null | sh -c "exit 1"')]),
+    );
+    expect(silent.result.steps[0]).toMatchObject({ outcome: 'FAIL', exitCode: 1, stdoutTail: '' });
+    expect(silent.result.steps[0]?.stderrTail).toContain('wrote nothing to stdout or stderr');
+    const loud = await execute(
+      plan([shell('loud', 'echo "Failed to download checksums" >&2; exit 1')]),
+    );
+    expect(loud.result.steps[0]?.stderrTail).toBe('Failed to download checksums\n');
+  }, 120_000);
+
   it('TIMEOUT: kills the step, reports exit 124 within the limit, and removes the container', async () => {
     const started = Date.now();
     const { result, container } = await execute(

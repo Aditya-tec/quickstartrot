@@ -194,6 +194,21 @@ describe('StepOutput: the lines that are the evidence (shadow-L3 records them)',
   });
 });
 
+describe('StepOutput: whether the step wrote anything', () => {
+  it('knows when nothing at all arrived, and that a harness note does not count as output', () => {
+    const none = make();
+    expect(none.hasOutput()).toBe(false);
+    none.note('[qsr] something');
+    expect(none.hasOutput()).toBe(false);
+    const some = make();
+    some.stderr('x');
+    expect(some.hasOutput()).toBe(true);
+    const out = make();
+    out.stdout('');
+    expect(out.hasOutput()).toBe(false);
+  });
+});
+
 describe('StepOutput: evidence for the pass/fail decision', () => {
   it('records the first auth pattern and the first drift pattern from either stream', () => {
     const out = make();

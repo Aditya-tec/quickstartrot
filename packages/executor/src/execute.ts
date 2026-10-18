@@ -378,6 +378,12 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
       timedOut,
       ...out.currentEvidence(),
     });
+    // A failed step always stores something. When one wrote nothing at all (loops-node, probe #13: exit 1 after 596 ms, an empty log),
+    // say so, so "it wrote nothing" cannot be mistaken for "its output was lost". A timeout already has its own note.
+    if (!verdict.pass && !timedOut && exec.exitCode !== 137 && !out.hasOutput())
+      out.note(
+        `[qsr] the step exited with code ${exec.exitCode === null ? 'none' : exec.exitCode} and wrote nothing to stdout or stderr (output a program writes straight to the terminal, not to those streams, is not captured)`,
+      );
     // Only auth-error decisions get a log line: they are the one case where the exit code alone would mislead.
     if (verdict.matchedAuthPattern !== null) out.note(`[qsr] ${verdict.reason}`);
     const o = out.finish();
