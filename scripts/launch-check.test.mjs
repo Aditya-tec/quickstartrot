@@ -126,3 +126,79 @@ test('the rate-limit check is the last automated one, after every check that tal
     'only the by-hand items come after it',
   );
 });
+
+// docs/disclosure-log.md is read by two checks: `disclosure-log` (every entry has a date sent and a status; empty passes) and
+// `disclosures-48h` (no heads-up is inside its wait). No network is needed for either.
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+
+const LOG_HEAD = `# Disclosure log
+
+None have been sent.
+
+| Vendor | Tool (slug) | Failure class | Sent to (channel) | Date sent (UTC) | Status | Reply | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+`;
+async function logFile(body = '', head = LOG_HEAD) {
+  const dir = await mkdtemp(path.join(tmpdir(), 'qsr-dlog-'));
+  const file = path.join(dir, 'disclosure-log.md');
+  await writeFile(file, head + body);
+  return file;
+}
+
+test('an empty disclosure log passes both checks', async () => {
+  const file = await logFile();
+  const { code, json } = await run([
+    '--only',
+    'disclosure-log,disclosures-48h',
+    '--disclosure-log',
+    file,
+  ]);
+  assert.deepEqual(
+    json.results.map((r) => r.status),
+    ['PASS', 'PASS'],
+  );
+  assert.equal(code, 0);
+});
+
+test('an entry without a date sent or a status fails `disclosure-log`', async () => {
+  const file = await logFile(
+    '| Acme | acme-node | API_DRIFT | form | | sent | | |\n',
+    LOG_HEAD.replace('None have been sent.', 'Some have been sent.'),
+  );
+  const { code, json } = await run(['--only', 'disclosure-log', '--disclosure-log', file]);
+  assert.equal(json.results[0].status, 'FAIL');
+  assert.match(json.results[0].evidence, /Acme.*date sent/);
+  assert.equal(code, 1);
+});
+
+test('a heads-up sent an hour ago fails `disclosures-48h`, and one sent three days ago passes', async () => {
+  const ago = (h) => new Date(Date.now() - h * 3_600_000).toISOString().slice(0, 19) + 'Z';
+  const some = LOG_HEAD.replace('None have been sent.', 'Some have been sent.');
+  const recent = await logFile(
+    `| Acme | acme-node | API_DRIFT | form | ${ago(1)} | sent | | |\n`,
+    some,
+  );
+  const r1 = await run(['--only', 'disclosures-48h', '--disclosure-log', recent]);
+  assert.equal(r1.json.results[0].status, 'FAIL');
+  assert.match(r1.json.results[0].evidence, /Acme.*sent \d+ h ago/);
+  const old = await logFile(
+    `| Acme | acme-node | API_DRIFT | form | ${ago(72)} | sent | | |\n`,
+    some,
+  );
+  const r2 = await run(['--only', 'disclosures-48h', '--disclosure-log', old]);
+  assert.equal(r2.json.results[0].status, 'PASS');
+});
+
+test('the log in the repository is empty on purpose, says none have been sent, and passes', async () => {
+  const { code, json } = await run(['--only', 'disclosure-log,disclosures-48h']);
+  assert.deepEqual(
+    json.results.map((r) => r.status),
+    ['PASS', 'PASS'],
+  );
+  assert.match(
+    json.results.find((r) => r.id === 'disclosure-log').evidence,
+    /none have been sent/i,
+  );
+  assert.equal(code, 0);
+});

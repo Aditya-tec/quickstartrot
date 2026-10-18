@@ -47,4 +47,4 @@ A canary that misbehaves makes the whole cycle invalid and ignored, so a broken 
 
 ## Records
 
-A heads-up is sent by a person and recorded by that person: who was contacted, when, how, and what they said. Nothing in this repository sends an email, opens an issue on another repository, or posts anywhere; the template is a file. Disclosure tracking inside the admin page is planned and not built yet, so until it is, the launch checklist asks for the record by hand.
+A heads-up is sent by a person and recorded by that person, in [docs/disclosure-log.md](disclosure-log.md): who was contacted, when, how, and what they said. Nothing in this repository sends an email, opens an issue on another repository, or posts anywhere; the template is a file. The log is empty on purpose: none have been sent. The launch check reads it: it passes only if every entry has a date sent and a status, and it fails while any heads-up is still inside its wait. Disclosure tracking inside the admin page is not built; the log is what stands in for it.

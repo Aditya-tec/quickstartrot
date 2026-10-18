@@ -7,11 +7,15 @@ import {
   judgeCacheControl,
   judgeCi,
   judgeColdStart,
+  judgeDisclosureLog,
+  judgeDisclosureWindow,
   judgeEdgeCache,
+  judgeL3Count,
   judgeLicense,
   judgeRateLimitHeaders,
   judgeRateLimit,
   judgeUnfurl,
+  parseDisclosureLog,
   parseMeta,
   parseRateHeaders,
   pauseBefore,
@@ -319,4 +323,115 @@ test('pauses: a pause between phases, longer before the burst', () => {
   assert.equal(pauseBefore('site-reachable', { pauseMs: 1500 }), 1500);
   assert.ok(pauseBefore('rate-limit-api', { pauseMs: 1500 }) >= 5000);
   assert.equal(pauseBefore('site-reachable', { pauseMs: 0 }), 0);
+});
+
+// docs/disclosure-log.md: a record, kept by hand, of every private heads-up sent to a vendor. Disclosure tracking inside the admin page is
+// not built, so the launch check reads this file. An empty log passes (none have been sent); every entry needs a date sent and a status.
+const HEADER = `# Disclosure log
+
+None have been sent.
+
+<!-- an example row, not an entry:
+| Acme | acme-node | API_DRIFT | support form | 2026-10-01 | sent | | |
+-->
+
+| Vendor | Tool (slug) | Failure class | Sent to (channel) | Date sent (UTC) | Status | Reply | Notes |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+`;
+const NOW = Date.parse('2026-10-20T12:00:00Z');
+const WAIT_H = 48;
+const log = (...rows) =>
+  HEADER.replace(
+    'None have been sent.\n',
+    rows.length > 0 ? 'Some have been sent.\n' : 'None have been sent.\n',
+  ) +
+  rows.join('\n') +
+  '\n';
+
+test('parseDisclosureLog reads the table, ignores comments and the separator row, and notes whether it says none were sent', () => {
+  const empty = parseDisclosureLog(log());
+  assert.deepEqual(empty.entries, []);
+  assert.equal(empty.saysNoneSent, true);
+  const two = parseDisclosureLog(
+    log(
+      '| Acme | acme-node | API_DRIFT | support form | 2026-10-01 | sent | | |',
+      '| Beta | beta-python | DOCS_SNIPPET_ERROR | docs email | 2026-10-05 | fixed | fixed in 3 h | |',
+    ),
+  );
+  assert.equal(two.entries.length, 2);
+  assert.equal(two.entries[0].vendor, 'Acme');
+  assert.equal(two.entries[1].status, 'fixed');
+  assert.equal(two.saysNoneSent, false);
+});
+
+test('an empty log passes, and says so', () => {
+  const r = judgeDisclosureLog(parseDisclosureLog(log()));
+  assert.equal(r.status, 'PASS');
+  assert.match(r.evidence, /none have been sent/i);
+});
+
+test('every entry with a date sent and a status passes', () => {
+  const r = judgeDisclosureLog(
+    parseDisclosureLog(
+      log(
+        '| Acme | acme-node | API_DRIFT | support form | 2026-10-01 | sent | | |',
+        '| Beta | beta-python | API_DRIFT | email | 2026-10-05T09:30:00Z | no reply | | asked twice |',
+      ),
+    ),
+  );
+  assert.equal(r.status, 'PASS');
+  assert.match(r.evidence, /2 entries/);
+});
+
+test('an entry without a date sent, with a date that is not one, in the future, without a status, with an unknown one, or without a vendor fails and is named', () => {
+  const bad = (row, expected) => {
+    const r = judgeDisclosureLog(parseDisclosureLog(log(row)), { now: NOW });
+    assert.equal(r.status, 'FAIL', row);
+    assert.match(r.evidence, expected, row);
+  };
+  bad('| Acme | acme-node | API_DRIFT | form | | sent | | |', /Acme.*date sent/i);
+  bad('| Acme | acme-node | API_DRIFT | form | last week | sent | | |', /Acme.*date sent/i);
+  bad('| Acme | acme-node | API_DRIFT | form | 2026-13-45 | sent | | |', /Acme.*date sent/i);
+  bad('| Acme | acme-node | API_DRIFT | form | 2027-01-01 | sent | | |', /Acme.*future/i);
+  bad('| Acme | acme-node | API_DRIFT | form | 2026-10-01 | | | |', /Acme.*status/i);
+  bad('| Acme | acme-node | API_DRIFT | form | 2026-10-01 | maybe | | |', /Acme.*status.*maybe/i);
+  bad('| | acme-node | API_DRIFT | form | 2026-10-01 | sent | | |', /vendor/i);
+});
+
+test('a log that says none were sent but has entries contradicts itself', () => {
+  const md = HEADER + '| Acme | acme-node | API_DRIFT | form | 2026-10-01 | sent | | |\n';
+  const r = judgeDisclosureLog(parseDisclosureLog(md));
+  assert.equal(r.status, 'FAIL');
+  assert.match(r.evidence, /says none have been sent/i);
+});
+
+test('judgeDisclosureWindow fails for a heads-up still inside its wait, whatever its status, and passes once the wait has passed', () => {
+  const hoursAgo = (h) => new Date(NOW - h * 3_600_000).toISOString().slice(0, 19) + 'Z';
+  const row = (h, status) =>
+    `| Acme | acme-node | API_DRIFT | form | ${hoursAgo(h)} | ${status} | | |`;
+  const w = (h, status) =>
+    judgeDisclosureWindow(parseDisclosureLog(log(row(h, status))), { now: NOW, waitHours: WAIT_H });
+  assert.equal(w(10, 'sent').status, 'FAIL');
+  assert.match(w(10, 'sent').evidence, /Acme.*38 h/);
+  assert.equal(w(1, 'replied').status, 'FAIL'); // a reply does not shorten the wait
+  assert.equal(w(48, 'sent').status, 'PASS'); // exactly the wait has passed
+  assert.equal(w(60, 'sent').status, 'PASS');
+  assert.equal(w(5, 'withdrawn').status, 'PASS'); // withdrawn: nothing is pending
+  assert.equal(
+    judgeDisclosureWindow(parseDisclosureLog(log()), { now: NOW, waitHours: WAIT_H }).status,
+    'PASS',
+  );
+});
+
+test('judgeL3Count passes when the site tests as many quickstarts at L3 as the target files say reach it, and names the difference otherwise', () => {
+  const ok = judgeL3Count({
+    testedAtL3: 3,
+    production: ['anthropic-node', 'anthropic-python', 'resend-node'],
+  });
+  assert.equal(ok.status, 'PASS');
+  assert.match(ok.evidence, /3/);
+  const off = judgeL3Count({ testedAtL3: 2, production: ['a', 'b', 'c'] });
+  assert.equal(off.status, 'FAIL');
+  assert.match(off.evidence, /site says 2.*3 reach L3/);
+  assert.equal(judgeL3Count({ testedAtL3: 0, production: [] }).status, 'PASS');
 });

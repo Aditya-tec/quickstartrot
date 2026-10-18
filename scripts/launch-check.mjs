@@ -23,11 +23,15 @@ import {
   findLeaks,
   judgeCi,
   judgeColdStart,
+  judgeDisclosureLog,
+  judgeDisclosureWindow,
+  judgeL3Count,
   judgeEdgeCache,
   judgeLicense,
   judgeRateLimit,
   judgeRateLimitHeaders,
   judgeUnfurl,
+  parseDisclosureLog,
   parseMeta,
   parseRateHeaders,
   pauseBefore,
@@ -46,6 +50,7 @@ const { values } = parseArgs({
     'max-ms': { type: 'string', default: '5000' },
     'pause-ms': { type: 'string', default: '1500' },
     'no-burst': { type: 'boolean', default: false },
+    'disclosure-log': { type: 'string', default: 'docs/disclosure-log.md' },
     json: { type: 'boolean', default: false },
   },
 });
@@ -54,6 +59,7 @@ const API = values.api.replace(/\/+$/, '');
 const SITE_HOST = new URL(SITE).host;
 const MAX_MS = Number(values['max-ms']);
 const PAUSE_MS = Number(values['pause-ms']);
+const LOG_FILE = path.resolve(ROOT, values['disclosure-log']);
 const TOKEN = process.env.ADMIN_TOKEN ?? '';
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -119,6 +125,15 @@ async function slugList() {
   if (slugs.length === 0) slugs = slugsFromSitemap(textOf(await timed(`${SITE}/sitemap.xml`)));
   return slugs;
 }
+
+/** The disclosure log, parsed, or null when the file is missing. */
+function readDisclosureLog() {
+  return existsSync(LOG_FILE) ? parseDisclosureLog(readFileSync(LOG_FILE, 'utf8')) : null;
+}
+const missingLog = () => ({
+  status: 'FAIL',
+  evidence: `${values['disclosure-log']} is missing: the disclosure log must exist, empty if nothing has been sent`,
+});
 
 const PAGES = ['/', '/methodology', '/bot', '/incidents', '/submit', '/robots.txt', '/sitemap.xml'];
 const pipeline = async () => {
@@ -215,6 +230,23 @@ const CHECKS = [
     },
   },
   {
+    id: 'l3-count-matches',
+    title:
+      'The number of quickstarts the README and /methodology say reach L3 in production is what the site shows',
+    async run() {
+      const api = await timed(`${SITE}/api/status`);
+      if (api.status !== 200)
+        return { status: 'FAIL', evidence: `/api/status answers ${api.status}` };
+      const summary = JSON.parse(
+        readFileSync(path.join(ROOT, 'apps/web/src/data/detection-power.json'), 'utf8'),
+      );
+      return judgeL3Count({
+        testedAtL3: JSON.parse(textOf(api)).headline.testedAtL3,
+        production: summary.l3Production,
+      });
+    },
+  },
+  {
     id: 'cycle-valid',
     title: 'The latest finished cycle was valid and recent',
     async run() {
@@ -284,27 +316,35 @@ const CHECKS = [
   },
   {
     id: 'disclosures-48h',
-    title: 'No vendor heads-up is inside its wait window (the part that can be seen from here)',
+    title: 'No vendor heads-up is inside its wait (read from the disclosure log)',
     async run() {
+      const parsed = readDisclosureLog();
+      if (parsed === null) return missingLog();
+      const p = await pipeline();
+      const wait = p?.disclosureWaitHours ?? 48;
+      const inWindow = judgeDisclosureWindow(parsed, { waitHours: wait });
+      if (inWindow.status !== 'PASS') return inWindow;
+      // the review queue, when there is a token: a vendor-class incident waiting for review should have a heads-up logged first
       const queue = await admin('/admin/queue');
-      if (queue === null) return needAdmin();
+      if (queue === null)
+        return {
+          status: 'PASS',
+          evidence: `${inWindow.evidence}; the review queue was not read (no ADMIN_TOKEN)`,
+        };
       const vendor = queue.pendingIncidents.filter((i) =>
         ['DEPENDENCY_RESOLUTION', 'API_DRIFT', 'DOCS_SNIPPET_ERROR', 'RUNTIME_VERSION'].includes(
           i.failureClass,
         ),
       );
-      const p = await pipeline();
-      const wait = p?.disclosureWaitHours ?? 48;
-      const recent = vendor.filter((i) => Date.now() - Date.parse(i.openedAt) < wait * 3_600_000);
-      if (vendor.length === 0)
+      const unlogged = vendor.filter((i) => !parsed.entries.some((e) => e.tool === i.toolSlug));
+      if (unlogged.length > 0)
         return {
-          status: 'PASS',
-          evidence:
-            'no vendor-class incident is waiting for review, so no heads-up can be due; the by-hand log still decides',
+          status: 'WARN',
+          evidence: `${inWindow.evidence}; ${unlogged.length} vendor-class incident(s) wait for review with no heads-up logged: ${unlogged.map((i) => `${i.toolSlug} ${i.failureClass}`).join(', ')}`,
         };
       return {
-        status: 'MANUAL',
-        evidence: `${vendor.length} vendor-class incident(s) wait for review (${recent.length} opened inside ${wait} h): ${vendor.map((i) => `${i.toolSlug} ${i.failureClass}`).join(', ')}. Check the disclosure log: each needs a heads-up sent at least ${wait} h ago, or stays unconfirmed`,
+        status: 'PASS',
+        evidence: `${inWindow.evidence}; ${vendor.length === 0 ? 'no vendor-class incident waits for review' : `${vendor.length} vendor-class incident(s) wait for review, each with a heads-up logged`}`,
       };
     },
   },
@@ -597,12 +637,11 @@ const CHECKS = [
   },
   {
     id: 'disclosure-log',
-    title: 'By hand: the disclosure log is complete and no heads-up is inside its wait',
-    run: async () => ({
-      status: 'MANUAL',
-      evidence:
-        'read your log of vendor heads-ups: each one sent at least the wait before the post, replies recorded, nothing named without them',
-    }),
+    title: 'Every entry of the disclosure log has a date sent and a status (an empty log passes)',
+    async run() {
+      const parsed = readDisclosureLog();
+      return parsed === null ? missingLog() : judgeDisclosureLog(parsed);
+    },
   },
   {
     id: 'post-claims',

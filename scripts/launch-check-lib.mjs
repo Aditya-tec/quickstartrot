@@ -242,6 +242,99 @@ export const shallowHealth = (body) => body !== null && typeof body === 'object'
 export const pauseBefore = (id, { pauseMs }) =>
   pauseMs === 0 ? 0 : id === 'rate-limit-api' ? Math.max(5000, pauseMs * 4) : pauseMs;
 
+// ---- docs/disclosure-log.md: a record of every private heads-up sent to a vendor, kept by hand (the admin-page tracker is not built)
+
+export const DISCLOSURE_STATUSES = [
+  'sent',
+  'replied',
+  'fixed',
+  'disputed',
+  'no reply',
+  'withdrawn',
+];
+
+/** The table of the log as entries, ignoring HTML comments (an example row lives in one) and the separator row. */
+export function parseDisclosureLog(md) {
+  const text = md.replaceAll(/<!--[\s\S]*?-->/g, '');
+  const entries = [];
+  let seenHeader = false;
+  for (const line of text.split('\n')) {
+    const t = line.trim();
+    if (!t.startsWith('|')) continue;
+    const cells = t
+      .replace(/^\||\|$/g, '')
+      .split('|')
+      .map((c) => c.trim());
+    if (!seenHeader) {
+      seenHeader = cells.some((c) => /^vendor$/i.test(c));
+      continue;
+    }
+    if (cells.every((c) => /^:?-{2,}:?$/.test(c) || c === '')) continue;
+    const [
+      vendor = '',
+      tool = '',
+      failureClass = '',
+      channel = '',
+      sent = '',
+      status = '',
+      reply = '',
+      notes = '',
+    ] = cells;
+    entries.push({ vendor, tool, failureClass, channel, sent, status, reply, notes });
+  }
+  return { entries, saysNoneSent: /none have been sent/i.test(text) };
+}
+
+const validDate = (s) =>
+  /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?Z?)?$/.test(s) &&
+  !Number.isNaN(Date.parse(s.length === 10 ? `${s}T00:00:00Z` : s));
+const sentAt = (s) =>
+  Date.parse(s.length === 10 ? `${s}T00:00:00Z` : s.endsWith('Z') ? s : `${s}Z`);
+
+/** PASS only if every entry has a vendor, a valid date sent (not in the future) and a known status. An empty log passes. */
+export function judgeDisclosureLog(parsed, { now = Date.now() } = {}) {
+  const { entries, saysNoneSent } = parsed;
+  if (entries.length === 0)
+    return { status: 'PASS', evidence: 'the log is empty: none have been sent' };
+  const problems = [];
+  if (saysNoneSent) problems.push('the log says none have been sent but has entries');
+  for (const [i, e] of entries.entries()) {
+    const who = e.vendor || `entry ${i + 1}`;
+    if (!e.vendor) problems.push(`entry ${i + 1} has no vendor`);
+    if (!validDate(e.sent)) problems.push(`${who}: no valid date sent ("${e.sent}")`);
+    else if (sentAt(e.sent) > now + 24 * 3_600_000)
+      problems.push(`${who}: the date sent is in the future (${e.sent})`);
+    if (e.status === '') problems.push(`${who}: no status`);
+    else if (!DISCLOSURE_STATUSES.includes(e.status))
+      problems.push(`${who}: unknown status "${e.status}" (use ${DISCLOSURE_STATUSES.join(', ')})`);
+  }
+  return problems.length === 0
+    ? {
+        status: 'PASS',
+        evidence: `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'}, each with a date sent and a status`,
+      }
+    : { status: 'FAIL', evidence: problems.join('; ') };
+}
+
+/** FAIL while any heads-up (other than a withdrawn one) is still inside its wait: a reply does not shorten it. */
+export function judgeDisclosureWindow(parsed, { now = Date.now(), waitHours }) {
+  const waiting = parsed.entries
+    .filter((e) => e.status !== 'withdrawn' && validDate(e.sent))
+    .map((e) => ({ e, ageH: (now - sentAt(e.sent)) / 3_600_000 }))
+    .filter((x) => x.ageH < waitHours);
+  if (waiting.length === 0)
+    return { status: 'PASS', evidence: `no heads-up is inside its ${waitHours} h wait` };
+  return {
+    status: 'FAIL',
+    evidence: waiting
+      .map(
+        (x) =>
+          `${x.e.vendor} (${x.e.tool}): sent ${Math.floor(x.ageH)} h ago, ${Math.ceil(waitHours - x.ageH)} h of the wait left`,
+      )
+      .join('; '),
+  };
+}
+
 /** The licence is the owner's decision; the README must say what the LICENSE file says. */
 export function judgeLicense({ license, readmeSection }) {
   const none = /no licen[cs]e has been chosen/i.test(readmeSection);
@@ -275,4 +368,17 @@ export function summarise(results) {
     STATUSES.map((s) => [s, results.filter((r) => r.status === s).length]),
   );
   return { counts, exitCode: counts.FAIL > 0 ? 1 : 0 };
+}
+
+/** The site tests as many quickstarts at L3 as the target files say reach it in production (the README and /methodology print that number). */
+export function judgeL3Count({ testedAtL3, production }) {
+  return testedAtL3 === production.length
+    ? {
+        status: 'PASS',
+        evidence: `${testedAtL3} tested at L3 on the site, ${production.length} in the target files (${production.join(', ') || 'none'})`,
+      }
+    : {
+        status: 'FAIL',
+        evidence: `the site says ${testedAtL3} tested at L3 but the target files say ${production.length} reach L3 in production (${production.join(', ') || 'none'})`,
+      };
 }

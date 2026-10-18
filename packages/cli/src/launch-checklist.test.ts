@@ -60,11 +60,8 @@ describe('docs/LAUNCH-CHECKLIST.md', () => {
     expect(md).toMatch(/a FAIL blocks the launch/i);
   });
 
-  it('marks the two items only a person can do', () => {
-    expect(rows.filter((r) => r.how === 'By hand').map((r) => r.id)).toEqual([
-      'disclosure-log',
-      'post-claims',
-    ]);
+  it('marks the one item only a person can do (the disclosure log is read by the script)', () => {
+    expect(rows.filter((r) => r.how === 'By hand').map((r) => r.id)).toEqual(['post-claims']);
   });
 
   it('states what the check sends: nothing to any vendor, nothing posted, no data created', () => {
