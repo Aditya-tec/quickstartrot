@@ -9,4 +9,4 @@ runtime:
 extract:
   root: '#content'
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step: npm install @ngrok/ngrok, npm install dotenv and mkdir passed; then 'Create a file (e.g., service.js) with the following' was planned as manual. Reached L1 of L2. Needs a person; kept disabled."
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step: npm install @ngrok/ngrok, npm install dotenv and mkdir passed; then 'Create a file (e.g., service.js) with the following' was planned as manual. Reached L1 of L2. Needs a person; kept disabled. Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, SKIPPED at L1, a manual step. Stays disabled."

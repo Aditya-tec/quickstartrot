@@ -10,4 +10,4 @@ extract:
   root: '#content'
   tab: Python
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at step s1, 'pip install chromadb' killed after 180 s (exit 124) while still downloading wheels (onnxruntime, uvloop and others): the dependency tree is large and the step limit is 180 s. Explained by size and the step limit, not by the docs. Disabled until the install step may be longer (P9b)."
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at step s1, 'pip install chromadb' killed after 180 s (exit 124) while still downloading wheels (onnxruntime, uvloop and others): the dependency tree is large and the step limit is 180 s. Explained by size and the step limit, not by the docs. Disabled until the install step may be longer (P9b). Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, FAIL at L0, the install step killed after 180 s while downloading wheels. Stays disabled."

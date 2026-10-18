@@ -10,4 +10,4 @@ extract:
   root: main article
   tab: Node.js
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at the first step, a manual step ('Run npm init to create a package.json as in...'); nothing ran, reached L0. The page is a setup guide with tabs (new or existing Cloud project) rather than a runnable snippet. Needs a person; kept disabled."
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at the first step, a manual step ('Run npm init to create a package.json as in...'); nothing ran, reached L0. The page is a setup guide with tabs (new or existing Cloud project) rather than a runnable snippet. Needs a person; kept disabled. Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, SKIPPED at L0, a manual step (a setup guide, not a runnable snippet). Stays disabled."

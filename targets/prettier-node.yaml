@@ -9,4 +9,4 @@ runtime:
 extract:
   root: .markdown
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step after 5 steps passed (npm install prettier, .prettierrc, .prettierignore, husky and lint-staged, npx husky init): 'Create the .husky/pre-commit file with the following content' has no code block to copy. Reached L1 of L2. A deliberate stop, not a failure; kept disabled so it does not add noise to the Needs a person group."
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED at a manual step after 5 steps passed (npm install prettier, .prettierrc, .prettierignore, husky and lint-staged, npx husky init): 'Create the .husky/pre-commit file with the following content' has no code block to copy. Reached L1 of L2. A deliberate stop, not a failure; kept disabled so it does not add noise to the Needs a person group. Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, SKIPPED at L1, a manual step (no code block to copy). Stays disabled."

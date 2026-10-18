@@ -10,4 +10,4 @@ extract:
   root: .prose
   tab: npm
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L0 of L2. The plan (a cache hit, no model call) follows the page's default pnpm tab: mkdir, cd, then 'pnpm init' failed with exit 127 (pnpm: command not found). Retrying with extract.tab 'npm' gave the same page content. The docs are not wrong, our image has no pnpm, and a real run would report BROKEN for that, so the target stays disabled until the harness plan can use the npm form or the image gains pnpm."
+notes: "Run 2026-10-17 (qsr run, local Docker): FAIL at L0 of L2. The plan (a cache hit, no model call) follows the page's default pnpm tab: mkdir, cd, then 'pnpm init' failed with exit 127 (pnpm: command not found). Retrying with extract.tab 'npm' gave the same page content. The docs are not wrong, our image has no pnpm, and a real run would report BROKEN for that, so the target stays disabled until the harness plan can use the npm form or the image gains pnpm. Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, FAIL at L0, pnpm is not in the sandbox image. Stays disabled."

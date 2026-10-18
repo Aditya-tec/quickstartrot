@@ -9,4 +9,4 @@ runtime:
 extract:
   root: main article
 enabled: false
-notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED, manual_step. The page has 56 code blocks; the prompt budget showed the model 29 of them. The model's first plan cited a prose block for the install step (source.not_code), and after the one grounding retry the install became a manual step, so nothing ran. Not docs rot. Retry with a narrower extract.root or the larger model once there is quota."
+notes: "Run 2026-10-17 (qsr run, local Docker): SKIPPED, manual_step. The page has 56 code blocks; the prompt budget showed the model 29 of them. The model's first plan cited a prose block for the install step (source.not_code), and after the one grounding retry the install became a manual step, so nothing ran. Not docs rot. Retry with a narrower extract.root or the larger model once there is quota. Re-checked 2026-10-18 (harness v3, qsr run in real Docker): the same result as on 2026-10-17, SKIPPED at L0, a manual step (the plan could not cite the install command within the prompt budget). Stays disabled."
