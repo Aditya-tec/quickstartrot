@@ -96,3 +96,27 @@ export const TARGET_GOAL = Object.freeze({
   librariesPercent: 40,
   vendorsPercent: 60,
 });
+
+/**
+ * What happens when a vendor opts out (the owner's decision of 2026-10-19). Probing stops within `PIPELINE.optOutHours`; the vendor's page stays
+ * up, labelled `pageLabel`; past results stay visible and are hidden only on request. One definition: /bot, /methodology, the README block, the
+ * vendor form, the disclosure policy, the traffic note, the email template and docs/CLAIMS.md all say exactly `optOutSentences()`, each
+ * generated from it or pinned to it by a test. The label is what the page shows (apps/web tool page).
+ */
+export const OPT_OUT = Object.freeze({
+  pageLabel: "No longer monitored at the vendor's request",
+});
+
+/** The three sentences. `hours` defaults to the pipeline's; a page passes its own facts so a test can prove it quotes them. */
+export function optOutSentences(hours: number = PIPELINE.optOutHours): {
+  probing: string;
+  label: string;
+  history: string;
+} {
+  const label = OPT_OUT.pageLabel.charAt(0).toLowerCase() + OPT_OUT.pageLabel.slice(1);
+  return {
+    probing: `Probing stops within ${hours} hours of an opt-out request.`,
+    label: `The quickstart's page stays up, labelled "${label}".`,
+    history: 'Past results stay visible and are hidden only if the vendor asks for that.',
+  };
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { CANARY_SLUGS } from './canary.js';
-import { PIPELINE, TARGET_GOAL, TRAFFIC } from './pipeline-facts.js';
+import { OPT_OUT, optOutSentences, PIPELINE, TARGET_GOAL, TRAFFIC } from './pipeline-facts.js';
 import { PASSES_TO_RECOVER, RECURRENCE_WINDOW_DAYS, TRANSIENT_INCIDENT_STREAK } from './status.js';
 
 // The numbers the pipeline really uses, in one place. The public methodology page is built from this object, so a
@@ -67,5 +67,34 @@ describe('TRAFFIC (what we send to the services we test)', () => {
     expect(new Set(targets).size).toBe(targets.length);
     for (const t of targets) expect(t).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);
     expect(TRAFFIC.termsReviewedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+// What happens when a vendor opts out (the owner's decision of 2026-10-19): probing stops within 24 hours; the vendor's page stays up, labelled
+// "no longer monitored at the vendor's request"; past results stay visible and are hidden only on request. One definition: the site, the README,
+// the vendor form, the docs and the email template all say exactly this, each generated from it or tested against it.
+describe('OPT_OUT', () => {
+  it('has the label the vendor’s page carries', () => {
+    expect(OPT_OUT.pageLabel).toBe("No longer monitored at the vendor's request");
+  });
+
+  it('says the three things, in the words every page, form and document uses', () => {
+    expect(optOutSentences()).toEqual({
+      probing: 'Probing stops within 24 hours of an opt-out request.',
+      label:
+        'The quickstart\'s page stays up, labelled "no longer monitored at the vendor\'s request".',
+      history: 'Past results stay visible and are hidden only if the vendor asks for that.',
+    });
+  });
+
+  it('takes the hours from the pipeline constant, and a page can pass its own to prove it quotes them', () => {
+    expect(optOutSentences().probing).toContain(`${PIPELINE.optOutHours} hours`);
+    expect(optOutSentences(77).probing).toBe(
+      'Probing stops within 77 hours of an opt-out request.',
+    );
+  });
+
+  it('is read-only', () => {
+    expect(Object.isFrozen(OPT_OUT)).toBe(true);
   });
 });
