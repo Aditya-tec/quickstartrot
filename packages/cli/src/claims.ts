@@ -7,6 +7,7 @@ import {
   l2Findings,
   l3ProductionSentence,
   LaunchExport,
+  optOutSentences,
   PIPELINE,
   PublicStatusSummary,
   StatsResponse,
@@ -977,10 +978,10 @@ export function buildClaims(i: ClaimsInputs): Claim[] {
   );
   constant(
     'optOutHours',
-    'Hours within which probing stops, and the history is hidden, after an opt-out request',
+    'Hours within which probing stops after an opt-out request; the page stays up, labelled; past results are hidden on request only',
     `${p.optOutHours} hours`,
-    `Probing stops within ${p.optOutHours} hours of an opt-out request.`,
-    'We stop when we get round to it.',
+    `${optOutSentences(p.optOutHours).probing} ${optOutSentences(p.optOutHours).label} ${optOutSentences(p.optOutHours).history}`,
+    'Opting out hides a vendor’s history. We stop when we get round to it.',
   );
   constant(
     'vendorReplyBusinessDays',

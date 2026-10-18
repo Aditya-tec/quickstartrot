@@ -75,9 +75,7 @@ describe('issue template: Vendor: question or opt-out', () => {
     expect(f.description).toContain(`Probing stops within ${hours} of an opt-out request`);
     expect(f.description).toContain(`written reply within ${days}`);
     const intro = f.body.find((b) => b.type === 'markdown')?.attributes?.value ?? '';
-    expect(intro).toContain(
-      `Probing of your quickstart stops within ${hours} of an opt-out request`,
-    );
+    expect(intro).toContain(`Probing stops within ${hours} of an opt-out request`);
     expect(intro).toContain(`We reply in writing within ${days}`);
     // the old promise, a reply in 24 hours, is gone
     expect(JSON.stringify(f)).not.toMatch(/reply[^.]*within 24 hours/i);
@@ -215,7 +213,7 @@ describe('docs/templates/disclosure-email.md', () => {
     expect(md).toMatch(/nothing about this is public/i);
     expect(md).toContain(`${PIPELINE.disclosureWaitHours} hours`);
     expect(md).toContain(
-      `probing stops, and the history is hidden, within ${PIPELINE.optOutHours} hours of an opt-out request`,
+      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request`,
     );
     expect(md).toContain(`written reply within ${PIPELINE.vendorReplyBusinessDays} business days`);
     expect(md).toMatch(/you do not need to reply/i);

@@ -30,6 +30,8 @@ Usage:
   qsr retention [--apply]
   qsr shadow-report [--days 7]
   qsr l3-shadow-report [--days 7]
+  qsr opt-out <slug> [--hide-history]
+  qsr hide-history <slug>
   qsr detection-summary [--check]
   qsr readme [--check] [--site <url>]
   qsr claims [--check] [--no-admin] [--site <url>]
@@ -53,6 +55,8 @@ Commands (phase that implements them):
   calibration-report  Markdown report of the last N days from GET /admin/stats   (P9a)
   shadow-report  What the export check said in shadow mode, per target            (P9d)
   l3-shadow-report  What the L3 step of shadow-L3 targets said, per target        (P9d)
+  opt-out   A vendor asked us to stop: probing stops, the page is labelled; --hide-history on request only (admin)
+  hide-history  The vendor that opted out asks for its past results to be hidden (admin)
   detection-summary  The file /methodology reads, from docs/detection-power.json  (P10a)
   readme    Keep the live counts and the level wording of README.md true       (P10a)
   claims    docs/CLAIMS.md: every figure a public post could use, with safe wording (P10a)

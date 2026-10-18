@@ -41,7 +41,7 @@ describe('docs/ABOUT-OUR-TRAFFIC.md', () => {
       `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request`,
     );
     expect(doc).toContain(
-      `we reply in writing within ${WORDS[PIPELINE.vendorReplyBusinessDays]} business days`,
+      `We reply in writing within ${WORDS[PIPELINE.vendorReplyBusinessDays]} business days`,
     );
   });
 

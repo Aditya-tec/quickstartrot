@@ -126,7 +126,7 @@ The badge is a small self-contained SVG and is cached, so it can lag the page. A
 
 <!-- qsr:promise:start -->
 
-Probing stops within 24 hours of an opt-out request, and we reply in writing within 3 business days.
+Probing stops within 24 hours of an opt-out request. The quickstart's page stays up, labelled "no longer monitored at the vendor's request". Past results stay visible and are hidden only if the vendor asks for that. We reply in writing within 3 business days.
 <!-- qsr:promise:end -->
 
 ## Development

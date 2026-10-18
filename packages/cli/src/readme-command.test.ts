@@ -107,9 +107,9 @@ describe('renderDetectionBlock', () => {
 });
 
 describe('renderPromiseBlock', () => {
-  it('states the promise to vendors from the constants: probing stops within a day of an opt-out request, a written reply within three business days', () => {
+  it('states the promise to vendors from the constants: probing stops within a day, the page is labelled, history is hidden on request only, a written reply within three business days', () => {
     expect(renderPromiseBlock()).toBe(
-      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request, and we reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`,
+      `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request. The quickstart's page stays up, labelled "no longer monitored at the vendor's request". Past results stay visible and are hidden only if the vendor asks for that. We reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`,
     );
   });
 });

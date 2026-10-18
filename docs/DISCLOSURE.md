@@ -36,7 +36,7 @@ A canary that misbehaves makes the whole cycle invalid and ignored, so a broken 
 
 - **Reply, fix, or do nothing.** A fix within the wait is the best outcome: the quickstart passes again, the incident resolves, and nothing was ever shown.
 - **Dispute it.** If the vendor disagrees, they tell us why and we look again. A false alarm is a bug in our monitor; we fix the classification and record it.
-- **Ask us to stop.** Use the [Vendor: question or opt-out](../.github/ISSUE_TEMPLATE/opt-out.yml) form or write to the address on the bot page. Probing stops within 24 hours of an opt-out request, and the tool's history is hidden at the same time; the figure is `PIPELINE.optOutHours`. Whatever you write to us, we send a written reply within 3 business days (`PIPELINE.vendorReplyBusinessDays`).
+- **Ask us to stop.** Use the [Vendor: question or opt-out](../.github/ISSUE_TEMPLATE/opt-out.yml) form or write to the address on the bot page. Probing stops within 24 hours of an opt-out request. The quickstart's page stays up, labelled "no longer monitored at the vendor's request". Past results stay visible and are hidden only if the vendor asks for that. The figure is `PIPELINE.optOutHours`, and the sentences are `optOutSentences()` in `packages/core/src/pipeline-facts.ts`. Whatever you write to us, we send a written reply within 3 business days (`PIPELINE.vendorReplyBusinessDays`).
 - **Ask what we send.** [docs/ABOUT-OUR-TRAFFIC.md](ABOUT-OUR-TRAFFIC.md) says which services receive a request from some of our checks, and how often.
 
 ## What we do not do

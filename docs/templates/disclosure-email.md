@@ -30,7 +30,7 @@ We will wait 48 hours from this message before anything is public. A person at o
 
 - You do not need to reply. A fix is the best outcome.
 - If we are wrong, tell us how and we will look again. It might be wrong: a failure in our monitor is a bug in our monitor.
-- If you would rather we did not test your quickstart at all, reply or use the opt-out form at https://github.com/Aditya-tec/quickstartrot/issues/new?template=opt-out.yml. If you do, probing stops, and the history is hidden, within 24 hours of an opt-out request, and we send a written reply within 3 business days.
+- If you would rather we did not test your quickstart at all, reply or use the opt-out form at https://github.com/Aditya-tec/quickstartrot/issues/new?template=opt-out.yml. If you do: Probing stops within 24 hours of an opt-out request. The quickstart's page stays up, labelled "no longer monitored at the vendor's request". Past results stay visible and are hidden only if the vendor asks for that. We send a written reply within 3 business days.
 
 What our requests look like and how we decide what to publish: https://quickstartrot.vercel.app/bot and https://quickstartrot.vercel.app/methodology.
 

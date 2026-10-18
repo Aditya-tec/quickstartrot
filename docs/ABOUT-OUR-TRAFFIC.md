@@ -22,7 +22,7 @@ GitHub Actions runners (shared GitHub address ranges). The request is made by th
 
 ## To ask us to stop
 
-Use the opt-out form on the `/bot` page, or write to the address shown there. Probing stops within 24 hours of an opt-out request, and we reply in writing within three business days.
+Use the opt-out form on the `/bot` page, or write to the address shown there. Probing stops within 24 hours of an opt-out request. The quickstart's page stays up, labelled "no longer monitored at the vendor's request". Past results stay visible and are hidden only if the vendor asks for that. We reply in writing within three business days.
 
 ## Terms
 

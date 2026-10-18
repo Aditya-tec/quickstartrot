@@ -5,6 +5,7 @@ import {
   badgeParagraph,
   l3ProductionSentence,
   levelStatements,
+  optOutSentences,
   PIPELINE,
   PublicStatusSummary,
   type DetectionSummary,
@@ -82,9 +83,13 @@ export function renderStatusBlock(s: PublicStatusSummary, site: string = DEFAULT
   return out.join('\n');
 }
 
-/** What we promise a vendor, from the pipeline constants: probing stops within a day of an opt-out request, a written reply within business days. */
+/**
+ * What we promise a vendor, from the pipeline constants: probing stops within a day of an opt-out request, the page stays up labelled as no longer
+ * monitored at the vendor's request, past results are hidden only on request, and a written reply follows within business days.
+ */
 export function renderPromiseBlock(): string {
-  return `Probing stops within ${PIPELINE.optOutHours} hours of an opt-out request, and we reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`;
+  const s = optOutSentences();
+  return `${s.probing} ${s.label} ${s.history} We reply in writing within ${PIPELINE.vendorReplyBusinessDays} business days.`;
 }
 
 /** What each level proves: the approved wording, with the figures of the measurement. */

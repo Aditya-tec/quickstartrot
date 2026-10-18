@@ -19,6 +19,7 @@ import { readmeCommand } from './readme-command.js';
 import { runCommand } from './run.js';
 import { detectionSummaryCommand } from './detection-summary-command.js';
 import { l3ShadowReportCommand } from './l3-shadow-report.js';
+import { hideHistoryCommand, optOutCommand } from './opt-out-command.js';
 import { shadowReportCommand } from './shadow-report.js';
 import { TargetFileError } from './targets.js';
 
@@ -59,6 +60,10 @@ async function main(argv: string[]): Promise<number> {
       return shadowReportCommand(rest, log);
     case 'l3-shadow-report':
       return l3ShadowReportCommand(rest, log);
+    case 'opt-out':
+      return optOutCommand(rest, log);
+    case 'hide-history':
+      return hideHistoryCommand(rest, log);
     case 'detection-summary':
       return detectionSummaryCommand(rest, log);
     case 'readme':
