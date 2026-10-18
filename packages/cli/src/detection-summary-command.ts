@@ -14,11 +14,16 @@ const RESULTS_FILE = path.join('docs', 'detection-power.json');
 
 export async function buildSummaryFromRepo(root: string): Promise<DetectionSummary> {
   const raw = JSON.parse(await readFile(path.join(root, RESULTS_FILE), 'utf8')) as unknown;
-  // An enabled target whose level 3 step is recorded and not counted (spec of the shadow mode: docs/NOTES.md).
-  const shadow = (await loadAllTargets(path.join(root, 'targets')))
-    .filter((t) => t.enabled !== false && t.l3?.mode === 'shadow')
+  const targets = (await loadAllTargets(path.join(root, 'targets'))).filter(
+    (t) => t.enabled !== false,
+  );
+  // An enabled target whose level 3 step is recorded and not counted (the shadow mode: docs/NOTES.md).
+  const shadow = targets.filter((t) => t.l3?.mode === 'shadow').map((t) => t.slug);
+  // The enabled targets that reach level 3 in production: level 3 in the file and not in shadow (the API shows a shadow target at level 2).
+  const production = targets
+    .filter((t) => t.level >= 3 && t.l3?.mode !== 'shadow')
     .map((t) => t.slug);
-  return summariseDetection(raw, shadow);
+  return summariseDetection(raw, shadow, production);
 }
 
 const text = (s: DetectionSummary): string => `${JSON.stringify(s, null, 2)}\n`;

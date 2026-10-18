@@ -11,6 +11,9 @@
     "local": 3
   },
   "l3Targets": ["anthropic-node", "resend-node"],
+  "l3Production": ["anthropic-node", "anthropic-python", "resend-node"],
+  "l3NotMeasured": ["anthropic-python"],
+  "l3NotMeasuredVendorCallsOff": true,
   "shadowTargets": ["cerebras-python", "openrouter-node", "resend-python", "slack-node"],
   "install": {
     "L1": {

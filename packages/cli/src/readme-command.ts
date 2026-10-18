@@ -3,6 +3,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import {
   badgeParagraph,
+  l3ProductionSentence,
   levelStatements,
   PIPELINE,
   PublicStatusSummary,
@@ -95,6 +96,8 @@ export function renderDetectionBlock(d: DetectionSummary): string {
       : null;
   return [
     badgeParagraph(d),
+    '',
+    l3ProductionSentence(d),
     '',
     `- **L1:** ${statements.L1}`,
     `- **L2:** ${statements.L2}`,

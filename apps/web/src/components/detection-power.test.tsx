@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { DetectionSummary } from '@qsr/core/public';
+import { l3ProductionSentence } from '@qsr/core/public';
 import { DETECTION } from '@/lib/detection';
 import { DetectionPower } from './detection-power';
 
@@ -68,6 +69,8 @@ describe('the numbers are the data’s', () => {
     other.targetsConsidered += 207;
     other.harnessVersion += 305;
     other.l3Targets = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+    other.l3Production = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
+    other.l3NotMeasured = ['h', 'i', 'j', 'k'];
     other.shadowTargets = ['h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p'];
     other.generatedAt = '2031-03-07T01:02:03.000Z';
 
@@ -83,6 +86,26 @@ describe('the numbers are the data’s', () => {
     // a figure that appears the same number of times in both renderings was typed into the page, not read from the data
     const stuck = [...a.entries()].filter(([f, n]) => b.get(f) === n).map(([f]) => f);
     expect(stuck, `hand-typed figures: ${stuck.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('level 3 in production', () => {
+  it('says how many quickstarts reach L3 in production and how many of them the measurement covers, in the generated sentence', () => {
+    expect(text(DETECTION)).toContain(l3ProductionSentence(DETECTION));
+  });
+
+  it('follows the data: the figures and the reason change with it, and nothing is typed', () => {
+    const d = clone();
+    d.l3Production = ['a', 'b', 'c', 'd', 'e'];
+    d.l3Targets = ['a', 'b'];
+    d.l3NotMeasured = ['c', 'd', 'e'];
+    d.l3NotMeasuredVendorCallsOff = true;
+    expect(text(d)).toContain(
+      '5 quickstarts reach L3 in production; the detection measurement covers 2 of them, because vendor calls are off during mutation runs.',
+    );
+    d.l3NotMeasuredVendorCallsOff = false;
+    expect(text(d)).toContain('the detection measurement covers 2 of them.');
+    expect(text(d)).not.toContain('because vendor calls are off');
   });
 });
 

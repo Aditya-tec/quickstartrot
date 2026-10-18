@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PublicStatusSummary } from '@qsr/core';
-import { badgeParagraph, PIPELINE } from '@qsr/core';
+import { badgeParagraph, l3ProductionSentence, PIPELINE } from '@qsr/core';
 import {
   extractBlock,
   readmeCommand,
@@ -97,6 +97,7 @@ describe('renderDetectionBlock', () => {
     const summary = await buildSummaryFromRepo(ROOT);
     const t = renderDetectionBlock(summary);
     expect(t).toContain(badgeParagraph(summary));
+    expect(t).toContain(l3ProductionSentence(summary));
     expect(t).toContain('- **L1:**');
     expect(t).toContain('- **L2:**');
     expect(t).toContain('- **L3:**');

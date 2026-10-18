@@ -48,6 +48,12 @@ export const DetectionSummary = z.object({
   levelTargets: z.object({ L1: Count, L2: Count, L3: Count, local: Count }),
   /** The targets level 3 rests on. */
   l3Targets: z.array(z.string()),
+  /** Every enabled target that reaches level 3 in production (from the target files). Shadow targets are not among them. */
+  l3Production: z.array(z.string()),
+  /** Of those, the ones the measurement does not cover. */
+  l3NotMeasured: z.array(z.string()),
+  /** True when every uncovered one is recorded as excluded because vendor calls are off during mutation runs. */
+  l3NotMeasuredVendorCallsOff: z.boolean(),
   /** Targets whose level 3 step runs in shadow mode: recorded, not counted. Never also in `l3Targets`. */
   shadowTargets: z.array(z.string()),
   install: ByLevel,
@@ -83,7 +89,11 @@ const RawResults = z.object({
   generatedAt: z.string().min(1),
   method: z.object({ harnessVersion: z.number().int().min(1).optional() }),
   summary: z.object({
-    controls: z.object({ total: Count, included: Count }),
+    controls: z.object({
+      total: Count,
+      included: Count,
+      excluded: z.array(z.object({ slug: z.string(), reason: z.string() })),
+    }),
     levelTargets: z.object({ L1: Count, L2: Count, L3: Count, local: Count }),
     l3Targets: z.array(z.string()),
     byKind: z.object({ install: RawByLevel, code: RawByLevel }),
@@ -103,13 +113,19 @@ function toCell(c: z.infer<typeof RawCell>): DetectionCell {
   };
 }
 
-/** Parses the parsed content of docs/detection-power.json and the slugs of the shadow-L3 targets. Throws on any other shape. */
+/**
+ * Parses the parsed content of docs/detection-power.json, the slugs of the shadow-L3 targets and the slugs that reach level 3 in
+ * production (both from the target files). Throws on any other shape.
+ */
 export function summariseDetection(
   raw: unknown,
   shadowTargets: readonly string[],
+  productionL3: readonly string[],
 ): DetectionSummary {
   const r = RawResults.parse(raw);
-  const both = shadowTargets.filter((t) => r.summary.l3Targets.includes(t));
+  const both = shadowTargets.filter(
+    (t) => r.summary.l3Targets.includes(t) || productionL3.includes(t),
+  );
   if (both.length > 0)
     throw new Error(
       `${both.join(', ')} is both counted at level 3 and a shadow target: it cannot be both`,
@@ -120,6 +136,15 @@ export function summariseDetection(
     L3: toCell(b.L3),
     local: toCell(b.local),
   });
+  const l3NotMeasured = [...productionL3].filter((t) => !r.summary.l3Targets.includes(t)).sort();
+  // vendor calls were the reason only if every uncovered quickstart is recorded as excluded for it
+  const excludedBecauseVendorCallsOff = new Set(
+    r.summary.controls.excluded
+      .filter((e) => e.reason.startsWith('vendor calls are off'))
+      .map((e) => e.slug),
+  );
+  const l3NotMeasuredVendorCallsOff =
+    l3NotMeasured.length > 0 && l3NotMeasured.every((t) => excludedBecauseVendorCallsOff.has(t));
   const codeL2ByOperator: DetectionSummary['codeL2ByOperator'] = {};
   for (const op of CODE_OPERATORS) {
     const c = r.summary.byOperatorLevel[op]?.['L2'];
@@ -134,6 +159,9 @@ export function summariseDetection(
     targetsMeasured: r.summary.controls.included,
     levelTargets: r.summary.levelTargets,
     l3Targets: [...r.summary.l3Targets],
+    l3Production: [...productionL3].sort(),
+    l3NotMeasured,
+    l3NotMeasuredVendorCallsOff,
     shadowTargets: [...shadowTargets].sort(),
     install: level(r.summary.byKind.install),
     code: level(r.summary.byKind.code),

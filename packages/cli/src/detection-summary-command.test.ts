@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { badgeParagraph, DetectionSummary, levelStatements } from '@qsr/core';
+import { badgeParagraph, DetectionSummary, l3ProductionSentence, levelStatements } from '@qsr/core';
 import {
   buildSummaryFromRepo,
   detectionSummaryCommand,
@@ -49,6 +49,24 @@ describe('the committed summary the website reads', () => {
     expect(summary.shadowTargets).toEqual(shadow);
     expect(shadow.length).toBeGreaterThan(0);
     for (const slug of shadow) expect(summary.l3Targets).not.toContain(slug);
+  });
+
+  it('lists as reaching L3 in production exactly the enabled targets at level 3 that are not in shadow, and says which the measurement leaves out', async () => {
+    const summary = await buildSummaryFromRepo(ROOT);
+    const expected = (await loadAllTargets(path.join(ROOT, 'targets')))
+      .filter((t) => t.enabled !== false && t.level >= 3 && t.l3?.mode !== 'shadow')
+      .map((t) => t.slug)
+      .sort();
+    expect(expected.length).toBeGreaterThan(0);
+    expect(summary.l3Production).toEqual(expected);
+    // every measured L3 target is a production one, and the rest are listed as not measured
+    for (const slug of summary.l3Targets) expect(summary.l3Production).toContain(slug);
+    expect(summary.l3NotMeasured).toEqual(
+      expected.filter((slug) => !summary.l3Targets.includes(slug)),
+    );
+    const sentence = l3ProductionSentence(summary);
+    expect(sentence).toContain(String(expected.length));
+    expect(sentence).toMatch(/reach(?:es)? L3 in production/);
   });
 
   it('says level 3 rests on the targets that were measured at level 3, and counts them', async () => {

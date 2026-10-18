@@ -33,6 +33,8 @@ A pass means different things at different levels, so the site counts them separ
 
 A green L2 badge means the quickstart installs, parses and its imports resolve. In our own tests, planting broken code in 35 quickstarts, L2 noticed 64 of 121 planted breakages, all of them syntax errors and import paths that do not exist; it noticed none of the 55 renamed names, renamed methods or misnamed options, because those only exist at run time. Level 3, where the snippet reaches the vendor, rests on 2 quickstarts so far and we quote no rate for it. (Broken install commands are caught by npm and pip, 90 of 90, and say nothing about the code.)
 
+3 quickstarts reach L3 in production; the detection measurement covers 2 of them, because vendor calls are off during mutation runs.
+
 - **L1:** A pass at L1 means the package named in the install command exists and installs on a clean machine today. It does not say the code works.
 - **L2:** A pass at L2 means the install works, the code parses, and the packages it imports resolve. It does not mean the names the code uses still exist: at L2 our planted renamed imports were noticed 0 of 16 times, renamed methods 0 of 15 and misnamed options 0 of 24.
 - **L3:** A pass at L3 means the snippet ran against the vendor's own client library and the vendor's answer, an authentication error for a made-up key, shows it was reached. It does not show the options are right. It rests on 2 quickstarts (anthropic-node, resend-node), so we quote no detection rate for it.

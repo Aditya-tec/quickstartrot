@@ -76,3 +76,19 @@ export function levelStatements(d: DetectionSummary): Record<DetectionLevel, str
     local: `Some quickstarts are libraries with no service behind them. ${local} ${noun(local, 'target is', 'targets are')} of that kind here. Their snippet runs on our machine and counts as such; it never counts as Level 3.`,
   };
 }
+
+/**
+ * One sentence about level 3: how many quickstarts reach it in production and how many of them the detection measurement covers. Every
+ * figure is read from the summary (the target files and the recorded exclusions); the reason is given only when the data says so.
+ */
+export function l3ProductionSentence(d: DetectionSummary): string {
+  const total = d.l3Production.length;
+  if (total === 0) return 'No quickstart reaches L3 in production yet.';
+  const covered = d.l3Production.filter((t) => d.l3Targets.includes(t)).length;
+  const head = `${total} ${noun(total, 'quickstart reaches', 'quickstarts reach')} L3 in production`;
+  if (covered === total) return `${head}, and the detection measurement covers all of them.`;
+  const gap = d.l3NotMeasuredVendorCallsOff
+    ? ', because vendor calls are off during mutation runs'
+    : '';
+  return `${head}; the detection measurement covers ${covered} of them${gap}.`;
+}

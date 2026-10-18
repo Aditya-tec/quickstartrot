@@ -2,6 +2,7 @@ import { REPO_URL } from '@/components/site-footer';
 import {
   badgeParagraph,
   DETECTION_LEVELS,
+  l3ProductionSentence,
   levelStatements,
   type DetectionCell,
   type DetectionLevel,
@@ -146,6 +147,7 @@ export function DetectionPower({ data }: { data: DetectionSummary }) {
       <p className="mt-3 max-w-3xl rounded-lg border border-border bg-surface p-4 text-[15px] leading-7">
         {badgeParagraph(d)}
       </p>
+      <p className="mt-3 max-w-3xl text-[15px] leading-7">{l3ProductionSentence(d)}</p>
       <p className="mt-3 max-w-3xl text-[15px] leading-7">
         Install-level and code-level results are reported apart and never added together: a typo in
         a package name is stopped by npm or pip whatever our checks do, and counting it would credit
