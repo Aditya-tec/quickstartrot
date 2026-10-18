@@ -4,6 +4,8 @@ import {
   type ConfirmBody,
   type FalsePositiveBody,
   type Logger,
+  type OptOutBody,
+  type OptOutResponse,
 } from '@qsr/core';
 import { adminQueueItems, incidentEvents, incidents, runs, tools } from '@qsr/db';
 import type { Ctx } from '../deps.js';
@@ -115,7 +117,50 @@ export async function markFalsePositive(
   return { id };
 }
 
-/** POST /admin/tools/:slug/disable: a vendor opt-out or a robots change. A re-sync never undoes it. */
+/**
+ * POST /admin/tools/:slug/opt-out: a vendor asked us to stop. Probing stops (the tool leaves the next cycle) and a re-sync never
+ * undoes it. The tool's page stays up, labelled as no longer monitored at the vendor's request, and its past results stay visible
+ * unless `hideHistory` says the vendor asked for them to be hidden. Idempotent: the first date stands, and a repeat never brings a
+ * hidden history back.
+ */
+export async function optOutTool(
+  ctx: Ctx,
+  slug: string,
+  body: OptOutBody,
+  log: Logger,
+): Promise<OptOutResponse> {
+  const [current] = await ctx.db.select().from(tools).where(eq(tools.slug, slug));
+  if (!current) throw new HttpError(404, 'Not Found', 'No such tool.');
+  const optedOutAt = current.optedOutAt ?? ctx.deps.now();
+  const historyHidden = current.historyHidden || body.hideHistory;
+  await ctx.db
+    .update(tools)
+    .set({ enabled: false, disabledReason: 'opt_out', optedOutAt, historyHidden })
+    .where(eq(tools.id, current.id));
+  await notifyWeb(ctx.deps, `tool:${slug}`, log);
+  return { slug, optedOutAt: optedOutAt.toISOString(), historyHidden };
+}
+
+/** POST /admin/tools/:slug/hide-history: the vendor that opted out asks, later, for its past results to be hidden. */
+export async function hideToolHistory(
+  ctx: Ctx,
+  slug: string,
+  log: Logger,
+): Promise<OptOutResponse> {
+  const [current] = await ctx.db.select().from(tools).where(eq(tools.slug, slug));
+  if (!current) throw new HttpError(404, 'Not Found', 'No such tool.');
+  if (current.disabledReason !== 'opt_out' || !current.optedOutAt)
+    throw new HttpError(
+      409,
+      'Conflict',
+      'Past results are hidden only for a tool that opted out, and only when the vendor asks for it.',
+    );
+  await ctx.db.update(tools).set({ historyHidden: true }).where(eq(tools.id, current.id));
+  await notifyWeb(ctx.deps, `tool:${slug}`, log);
+  return { slug, optedOutAt: current.optedOutAt.toISOString(), historyHidden: true };
+}
+
+/** POST /admin/tools/:slug/disable: an admin pause (a robots change, a broken target). A re-sync never undoes it. Not an opt-out. */
 export async function disableTool(ctx: Ctx, slug: string, log: Logger): Promise<{ slug: string }> {
   const updated = await ctx.db
     .update(tools)

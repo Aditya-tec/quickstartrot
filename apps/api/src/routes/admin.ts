@@ -7,13 +7,21 @@ import {
   FalsePositiveBody,
   L3ShadowReportResponse,
   LaunchExport,
+  OptOutBody,
+  OptOutResponse,
   PlanImportBody,
   PlanImportResponse,
   ShadowReportResponse,
   StatsResponse,
 } from '@qsr/core';
 import type { Ctx } from '../deps.js';
-import { confirmIncident, disableTool, markFalsePositive } from '../services/admin-actions.js';
+import {
+  confirmIncident,
+  disableTool,
+  hideToolHistory,
+  markFalsePositive,
+  optOutTool,
+} from '../services/admin-actions.js';
 import { loadQueue } from '../services/admin.js';
 import { registerReadyRoute } from './health.js';
 import { importPlan } from '../services/plans-import.js';
@@ -103,6 +111,20 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: Ctx): void {
       schema: { body: PlanImportBody, response: { 200: PlanImportResponse } },
     },
     async (request) => importPlan(ctx, request.body, request.log),
+  );
+
+  const Slug = z.object({ slug: z.string().min(1).max(64) });
+  r.post(
+    '/admin/tools/:slug/opt-out',
+    { schema: { params: Slug, body: OptOutBody.nullish(), response: { 200: OptOutResponse } } },
+    async (request) =>
+      optOutTool(ctx, request.params.slug, request.body ?? { hideHistory: false }, request.log),
+  );
+
+  r.post(
+    '/admin/tools/:slug/hide-history',
+    { schema: { params: Slug, response: { 200: OptOutResponse } } },
+    async (request) => hideToolHistory(ctx, request.params.slug, request.log),
   );
 
   r.post(

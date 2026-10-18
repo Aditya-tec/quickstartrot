@@ -233,6 +233,13 @@ export const ConfirmBody = z.object({
   suggestedFix: z.string().max(4000).default(''),
 });
 export const FalsePositiveBody = z.object({ reason: z.string().min(1).max(2000) });
+// A vendor opt-out (owner decision 2026-10-19): the body is optional; history is hidden only when the vendor asks for it.
+export const OptOutBody = z.object({ hideHistory: z.boolean().default(false) });
+export const OptOutResponse = z.object({
+  slug: z.string(),
+  optedOutAt: z.iso.datetime(),
+  historyHidden: z.boolean(),
+});
 export const AdminQueueResponse = z.object({
   pendingIncidents: z.array(
     z.object({
@@ -672,3 +679,5 @@ export type ClassificationPayload = z.infer<typeof ClassificationPayload>;
 export type GcResponse = z.infer<typeof GcResponse>;
 export type ConfirmBody = z.infer<typeof ConfirmBody>;
 export type FalsePositiveBody = z.infer<typeof FalsePositiveBody>;
+export type OptOutBody = z.infer<typeof OptOutBody>;
+export type OptOutResponse = z.infer<typeof OptOutResponse>;

@@ -50,6 +50,10 @@ export const tools = pgTable(
     // Why a tool is off: its target file was removed (a re-sync may bring it back) or an admin paused it
     // (a re-sync must NOT re-enable it: vendor opt-out). Null while enabled.
     disabledReason: text('disabled_reason'),
+    // A vendor asked us to stop (disabled_reason = 'opt_out'): when we stopped. The tool's page stays up, labelled as no longer
+    // monitored at the vendor's request; its past results stay visible unless the vendor also asked for them to be hidden.
+    optedOutAt: tstz('opted_out_at'),
+    historyHidden: boolean('history_hidden').notNull().default(false),
     status: toolStatus('status').notNull().default('UNKNOWN'),
     statusSince: tstz('status_since'),
     consecutiveFailures: integer('consecutive_failures').notNull().default(0),

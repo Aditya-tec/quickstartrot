@@ -3,10 +3,13 @@ import { hashJson, type SyncResponse, type Target } from '@qsr/core';
 import { tools, type Db } from '@qsr/db';
 import { HttpError } from '../problem.js';
 
+/** A tool a person switched off (an admin pause, a vendor opt-out): a sync never switches it back on. */
+const isHeldOff = (reason: string | null): boolean => reason === 'admin' || reason === 'opt_out';
+
 /**
  * POST /internal/targets/sync: upsert every target by slug, disable tools whose file was removed or whose
- * target says `enabled: false`. A tool an admin paused (`disabled_reason = 'admin'`, a vendor opt-out) is NEVER
- * re-enabled by a sync. A tool that is switched off keeps all its runs, plans and incidents; it only stops
+ * target says `enabled: false`. A tool an admin paused (`disabled_reason = 'admin'`) or a vendor opted out
+ * (`'opt_out'`) is NEVER re-enabled by a sync. A tool that is switched off keeps all its runs, plans and incidents; it only stops
  * appearing in new cycles (createCycle lists enabled tools). When a tool is switched back on, the streaks and the
  * last failure signature of its old life are forgotten, so a failure weeks ago cannot combine with one today
  * into an incident. All or nothing: one transaction.
@@ -44,7 +47,7 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
       if (target.enabled === false) {
         if (!current) {
           result.skipped.push(target.slug);
-        } else if (current.disabledReason === 'admin') {
+        } else if (isHeldOff(current.disabledReason)) {
           if (current.configHash !== configHash)
             await tx.update(tools).set(fields).where(eq(tools.id, current.id));
           result.keptDisabled.push(target.slug);
@@ -65,7 +68,7 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
       if (!current) {
         await tx.insert(tools).values({ slug: target.slug, ...fields });
         result.created.push(target.slug);
-      } else if (current.disabledReason === 'admin') {
+      } else if (isHeldOff(current.disabledReason)) {
         if (current.configHash !== configHash)
           await tx.update(tools).set(fields).where(eq(tools.id, current.id));
         result.keptDisabled.push(target.slug);

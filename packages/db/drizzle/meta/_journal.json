@@ -64,6 +64,13 @@
       "when": 1792318628169,
       "tag": "0008_shadow_l3",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792350374453,
+      "tag": "0009_opt_out",
+      "breakpoints": true
     }
   ]
 }
