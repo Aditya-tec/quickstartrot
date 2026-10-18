@@ -236,9 +236,14 @@ async function runTool(
 ): Promise<RunResult> {
   const first = await runAttempt(file, 1, outDir, options, deps);
   const watchdogKilled = first.runnerEnv['watchdog'] === 'true';
+  // A failure at a run step is never retried: that step already made its one request to a vendor this cycle (at most one per target).
+  const failedAtRunStep = first.steps.some(
+    (s) => s.stepId === first.failedStepId && s.kind === 'run',
+  );
   if (
     first.outcome === 'FAIL' &&
     !watchdogKilled &&
+    !failedAtRunStep &&
     isTransient(await deps.classify(first, file.target, outDir))
   ) {
     deps.log.info({ toolSlug: file.toolSlug, attempt: 1 }, 'transient failure; retrying once');

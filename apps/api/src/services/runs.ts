@@ -150,6 +150,8 @@ export async function ingestRun(ctx: Ctx, body: RunBody): Promise<RunResponse> {
           harnessVersion: result.harnessVersion,
           // Shadow mode: stored for the shadow report and read by nothing else (not the classifier, not the status engine).
           shadowExportCheck: s.shadowExportCheck ?? null,
+          // Shadow-L3: same rule, stored for `GET /admin/l3-shadow` and read by nothing else.
+          shadowL3: s.shadowL3 ?? null,
         })),
       );
     if (classification?.source === 'llm') {
@@ -287,6 +289,7 @@ async function existingRun(
       matchedAuthPattern: null,
       skipReason: s.kind === 'manual' && row.skipReason === 'manual_step' ? 'manual_step' : null,
       shadowExportCheck: null, // a replay needs only what the classifier reads
+      shadowL3: null,
     }));
   const failed = steps.find((s) => s.stepId === row.failedStepId);
   const input = inputFromRunResult(

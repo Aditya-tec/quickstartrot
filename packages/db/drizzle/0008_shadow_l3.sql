@@ -1,0 +1,1 @@
+ALTER TABLE "step_results" ADD COLUMN "shadow_l3" jsonb;

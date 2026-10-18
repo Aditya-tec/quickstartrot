@@ -12,6 +12,7 @@ import {
   type Logger,
   type RunOutcome,
   type ShadowExportCheck,
+  type ShadowL3,
   type Step,
   type StepIR,
   type StepResult,
@@ -33,6 +34,7 @@ import {
 import { evaluateExpect } from './expect.js';
 import { isInstallCommand } from './install.js';
 import { clip as clipShadowText, parseShadowOutput } from './shadow.js';
+import { shadowL3FromStep, shadowL3Skipped } from './shadow-l3.js';
 import { StepOutput } from './sink.js';
 
 export { isInstallCommand };
@@ -50,7 +52,10 @@ export { isInstallCommand };
 //       proved, and runner_env.l3 says why.
 
 export interface ExecuteInput {
-  target: Pick<Target, 'slug' | 'language' | 'level' | 'placeholders' | 'expect' | 'harness'>;
+  target: Pick<
+    Target,
+    'slug' | 'language' | 'level' | 'placeholders' | 'expect' | 'harness' | 'l3'
+  >;
   ir: StepIR;
   /** Image reference to run, e.g. `ghcr.io/owner/qsr-node:22` or one pinned by digest. */
   image: string;
@@ -543,6 +548,39 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     }
   };
 
+  const shadowL3 = target.l3?.mode === 'shadow';
+  let deferredRun: Extract<Step, { kind: 'run' }> | null = null;
+
+  /**
+   * Shadow-L3. Runs the held-back run step ONCE, after every normal step and check, and writes what it said on the LAST step as
+   * shadowL3. Whatever happens (evidence or none, a failure, a timeout, plumbing that throws) is recorded there and nowhere else: it never
+   * throws out of here and never touches the outcome, the failed step, the level or any other step. At most one vendor request per run.
+   */
+  const recordShadowL3 = async (step: Extract<Step, { kind: 'run' }>): Promise<void> => {
+    const at = steps.length - 1;
+    if (at < 0) return;
+    const write = (record: ShadowL3): void => {
+      const safe: ShadowL3 = {
+        ...record,
+        observed: record.observed === null ? null : clipShadowText(record.observed, 300),
+        note: record.note === null ? null : clipShadowText(record.note, 300),
+      };
+      steps[at] = { ...(steps[at] as StepResult), shadowL3: safe };
+    };
+    const began = clock();
+    try {
+      write(shadowL3FromStep(await runCommand(step, steps.length)));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      write(
+        shadowL3Skipped(
+          redact(`the step could not run: ${message}`, { secrets }),
+          Math.round(clock() - began),
+        ),
+      );
+    }
+  };
+
   const installIds = new Set(
     ir.steps.flatMap((s) => (s.kind === 'shell' && isInstallCommand(s.command) ? [s.id] : [])),
   );
@@ -589,6 +627,11 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
     }
 
     for (const [index, step] of ir.steps.entries()) {
+      // Shadow-L3: the L3 step is not part of the run. It is held back and run once, last, by recordShadowL3 (zero effect on the run).
+      if (shadowL3 && step.kind === 'run') {
+        deferredRun ??= step;
+        continue;
+      }
       const ordinal = steps.length;
       current = { id: step.id, kind: step.kind, ordinal };
       if (signal?.aborted) throw new HarnessError('aborted');
@@ -655,6 +698,7 @@ export async function executePlan(input: ExecuteInput, deps: ExecuteDeps): Promi
       checkPlan !== null
     )
       await recordShadowExportCheck();
+    if (shadowL3 && deferredRun !== null && outcome === 'PASS') await recordShadowL3(deferredRun);
     if (!resolvedCaptured) await captureResolved();
   } catch (err) {
     outcome = 'HARNESS_ERROR';

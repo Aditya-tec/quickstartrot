@@ -80,6 +80,17 @@ export function formatRunResult({
     );
   }
 
+  // Shadow-L3: what the held-back L3 step said. Recorded, not counted: it is not a step of the run.
+  const shadow = result.steps.find((s) => s.shadowL3)?.shadowL3;
+  if (shadow) {
+    lines.push(
+      '',
+      `shadow L3 (recorded, not counted): ${shadow.verdict}${shadow.pattern ? ` (${shadow.pattern})` : ''}, ${shadow.exitCode === null ? 'no exit code' : `exit ${shadow.exitCode}`}, ${seconds(shadow.durationMs)}`,
+    );
+    if (shadow.observed) lines.push(`  observed: ${shadow.observed}`);
+    if (shadow.note) lines.push(`  note: ${shadow.note}`);
+  }
+
   const failed = result.steps.find((s) => s.stepId === result.failedStepId);
   if (failed?.kind === 'manual') {
     lines.push(

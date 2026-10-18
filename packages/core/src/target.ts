@@ -136,6 +136,18 @@ export const Target = z.object({
       localOnly: z.literal(true).optional(),
     })
     .default({ authErrorIsPass: false, timeoutSec: 300 }),
+  /**
+   * Shadow-L3: the L3 step of the plan runs once per cycle and its result is RECORDED, with zero effect on the level, status, incidents,
+   * badges or public pages (the level shown for the target is capped at 2 while this is set). A reason is required. Promotion out of
+   * shadow is a person's decision after `qsr l3-shadow-report`; it does not recompile the plan (this field is not in the cache key).
+   */
+  l3: z
+    .object({
+      mode: z.literal('shadow'),
+      reason: z.string().trim().min(10).max(300),
+    })
+    .strict()
+    .optional(),
   owners: z
     .object({
       x: z.string().optional(),

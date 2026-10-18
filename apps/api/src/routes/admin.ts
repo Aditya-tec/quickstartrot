@@ -5,6 +5,7 @@ import {
   AdminQueueResponse,
   ConfirmBody,
   FalsePositiveBody,
+  L3ShadowReportResponse,
   LaunchExport,
   PlanImportBody,
   PlanImportResponse,
@@ -16,6 +17,7 @@ import { confirmIncident, disableTool, markFalsePositive } from '../services/adm
 import { loadQueue } from '../services/admin.js';
 import { importPlan } from '../services/plans-import.js';
 import { loadLaunchExport } from '../services/launch-export.js';
+import { loadL3ShadowReport } from '../services/l3-shadow.js';
 import { loadShadowReport } from '../services/shadow.js';
 import { loadStats } from '../services/stats.js';
 
@@ -70,6 +72,18 @@ export function registerAdminRoutes(app: FastifyInstance, ctx: Ctx): void {
       },
     },
     async (request) => loadShadowReport(ctx, request.query.days),
+  );
+
+  // What the L3 step of each shadow-L3 target said (see services/l3-shadow.ts): recorded, never acted on.
+  r.get(
+    '/admin/l3-shadow',
+    {
+      schema: {
+        querystring: z.object({ days: z.coerce.number().int().min(1).max(90).default(7) }),
+        response: { 200: L3ShadowReportResponse },
+      },
+    },
+    async (request) => loadL3ShadowReport(ctx, request.query.days),
   );
 
   // The numbers a launch post needs: confirmed incidents only (see services/launch-export.ts).

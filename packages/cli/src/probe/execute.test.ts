@@ -290,6 +290,36 @@ describe('the transient retry (spec section 10): once, after 60 s, and only the 
     },
   );
 
+  it('a transient failure AT A RUN STEP is not retried: the run step already made its one vendor request this cycle (request budget)', async () => {
+    await writePlans([readyPlan(target('a-node'), 0)]);
+    const atRun: Behaviour = (input, attempt) =>
+      runResultFor(input.target.slug, {
+        attempt,
+        outcome: 'FAIL',
+        reachedLevel: 2,
+        failedStepId: 's3',
+        steps: [
+          {
+            stepId: 's3',
+            ordinal: 0,
+            kind: 'run',
+            outcome: 'FAIL',
+            exitCode: 1,
+            durationMs: 100,
+            stdoutTail: null,
+            stderrTail: 'Error: connect ETIMEDOUT',
+            logFile: null,
+            matchedAuthPattern: null,
+            skipReason: null,
+          },
+        ],
+      });
+    const h = harness({ classify: async () => 'NETWORK_TRANSIENT' }, { 'a-node': atRun });
+    await run(h);
+    expect(h.calls).toHaveLength(1);
+    expect(h.sleeps).toEqual([]);
+  });
+
   it('a PASS is never retried, and the classifier is not even asked', async () => {
     await writePlans([readyPlan(target('a-node'), 0)]);
     const classify = vi.fn(async () => 'TIMEOUT' as const);

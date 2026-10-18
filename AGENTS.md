@@ -97,6 +97,12 @@ A new classifier rule starts with a fixture (`packages/classifier/fixtures/`; `n
 - An L3 claim needs an auth pattern in the run step's output (`ALL_AUTH_PATTERNS` in `packages/core/src/output-patterns.ts`: the spec patterns, then registered vendor patterns). A vendor pattern is added ONLY from output a real run produced, with a fixture in `packages/core/fixtures/vendor-output/<vendor>.txt` (a test fails without one). Exit code 0 with no evidence passes the run but caps the level and records `runner_env.l3`.
 - A target with no vendor API (a library) declares `expect.localOnly: true` and is level 2. The run page says "Snippet executed locally (no vendor involved)" for it; that line never affects a level, status or badge. Level is part of the plan cache key, so changing a target's level means re-registering its plan (`qsr plans push <slug>`) before the next cycle.
 
+## Shadow-L3 and the request budget
+
+- `l3: { mode: shadow, reason }` (Zod, reason required) in a target file runs the L3 step in shadow: recorded on the last step as `shadowL3` (`step_results.shadow_l3`), read only by `GET /admin/l3-shadow` and `qsr l3-shadow-report`, zero effect on level, status, incidents, badges and public pages (tests pin it, as for the export check). A shadow target has `level: 3` in its file so the compiler emits the run step; the API stores and shows level 2. **Never promote one without the owner's approval**: promotion is removing `l3:` from the file, and `qsr l3-shadow-report` only says whether the evidence is there (at least 8 cycles with a record, all with the same evidence, none without).
+- At most one vendor request per L3 or shadow target per cycle: the probe does not retry a failure at a run step, and `qsr mutate` does not make vendor calls for these targets unless `--allow-vendor-calls` is given.
+- A new vendor pattern is added to `VENDOR_AUTH_PATTERNS` ONLY from real output captured with a dummy key, with its fixture in `packages/core/fixtures/vendor-output/`.
+
 ## Harness versions and the shadow export check (P9d)
 
 - `HARNESS_VERSION` (`packages/core/src/run-result.ts`) is the version of the executor checks, stored on every run and step result (`runs.harness_version`, `step_results.harness_version`; 1 is everything before versioning, 2 added the module and dotted-import fixes, 3 is the current: L3 needs evidence) and shown on the run page. **Bump it whenever a change to a check (`check-scripts.ts`) can change a verdict.** Do not bump it for a change that only touches wording or logging.

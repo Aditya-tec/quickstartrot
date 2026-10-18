@@ -34,7 +34,8 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
         name: target.name,
         docsUrl: target.docsUrl,
         language: target.language,
-        level: target.level,
+        // A shadow-L3 target is compiled at its own level (so its plan has the L3 step) but SHOWN at 2 until it is promoted.
+        level: target.l3?.mode === 'shadow' ? Math.min(target.level, 2) : target.level,
         config: target,
         configHash,
       };

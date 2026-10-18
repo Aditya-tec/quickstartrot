@@ -490,6 +490,40 @@ export const ShadowReportResponse = z.object({
 });
 export type ShadowReportResponse = z.infer<typeof ShadowReportResponse>;
 
+// ---- GET /admin/l3-shadow?days=N: what the L3 step of each shadow-L3 target said. Read by `qsr l3-shadow-report` and by nothing that decides a
+// level or status. Promotion needs a person; the verdict here only says whether the evidence is there.
+/** Clean cycles (the same evidence every time) before a shadow target is promotion-ready. */
+export const L3_SHADOW_CLEAN_CYCLES = 8;
+export const L3ShadowToolRow = z.object({
+  slug: z.string(),
+  /** Why the target is in shadow (its target file). */
+  reason: z.string().nullable(),
+  /** Valid cycles in the window in which the tool ran. */
+  cycles: z.number().int(),
+  /** Of those, cycles that recorded a shadow L3 result. */
+  withRecord: z.number().int(),
+  verdicts: z.record(z.string(), z.number().int()),
+  patterns: z.array(z.object({ pattern: z.string(), cycles: z.number().int() })),
+  /** The exact observed text (truncated), with the number of cycles that produced it. */
+  observed: z.array(z.object({ text: z.string(), cycles: z.number().int() })),
+  /** Records that are not clean evidence: no_evidence, error_no_evidence, vetoed, timeout, skipped. */
+  ambiguous: z.number().int(),
+  lastAt: z.iso.datetime().nullable(),
+  promotion: z.object({
+    ready: z.boolean(),
+    cleanCycles: z.number().int(),
+    blockers: z.array(z.string()),
+  }),
+});
+export type L3ShadowToolRow = z.infer<typeof L3ShadowToolRow>;
+export const L3ShadowReportResponse = z.object({
+  generatedAt: z.iso.datetime(),
+  days: z.number().int(),
+  since: z.iso.datetime(),
+  tools: z.array(L3ShadowToolRow),
+});
+export type L3ShadowReportResponse = z.infer<typeof L3ShadowReportResponse>;
+
 // ---- GET /admin/export/launch (P9a): the numbers a launch post needs, from reviewed and confirmed material only.
 // The schema admits ONLY incidents whose review is CONFIRMED: a response that carries anything else does not parse,
 // so neither the API nor the CLI can publish an unreviewed failure by mistake.

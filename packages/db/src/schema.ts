@@ -196,6 +196,8 @@ export const stepResults = pgTable(
     // Shadow mode (P9d): the experimental export check's result, kept on the L2 imports-check step it follows. It is NEVER
     // read by the status engine, the classifier or the public views.
     shadowExportCheck: jsonb('shadow_export_check'),
+    // Shadow-L3: what the L3 step of a shadow target said (verdict, pattern, observed text). Recorded, never read into a verdict.
+    shadowL3: jsonb('shadow_l3'),
   },
   (t) => [index('step_results_run_id_ordinal_idx').on(t.runId, t.ordinal)],
 );

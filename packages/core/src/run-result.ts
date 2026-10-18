@@ -60,6 +60,32 @@ export const ShadowExportCheck = z.object({
 });
 export type ShadowExportCheck = z.infer<typeof ShadowExportCheck>;
 
+/**
+ * Shadow-L3: what the L3 step of a shadow target said. Recorded, never acted on. `verdict` says how it came out against the evidence rule
+ * (an auth pattern in the output): evidence; vetoed (evidence beside a drift error); no_evidence (exit 0, nothing that shows a vendor was
+ * reached: ambiguous); error_no_evidence (failed with no auth pattern: a break or the network); timeout; skipped (it could not run).
+ */
+export const SHADOW_L3_VERDICTS = [
+  'evidence',
+  'vetoed',
+  'no_evidence',
+  'error_no_evidence',
+  'timeout',
+  'skipped',
+] as const;
+export const ShadowL3 = z.object({
+  verdict: z.enum(SHADOW_L3_VERDICTS),
+  /** The auth pattern that matched (spec or registered vendor pattern), or null. */
+  pattern: z.string().max(100).nullable(),
+  exitCode: z.number().int().nullable(),
+  /** The line that decided it (the evidence line, else the last error line), redacted and cut short. Never the vendor's secrets: none are held. */
+  observed: z.string().max(300).nullable(),
+  durationMs: z.number().int().min(0),
+  /** Why it was skipped or anything else worth knowing. */
+  note: z.string().max(300).nullable(),
+});
+export type ShadowL3 = z.infer<typeof ShadowL3>;
+
 export const StepResult = z.object({
   stepId: z.string(),
   ordinal: z.number().int().min(0),
@@ -75,6 +101,8 @@ export const StepResult = z.object({
   skipReason: SkipReason.nullable().default(null),
   // Shadow mode (P9d): present only on the L2 imports-check step the export check follows. It changes nothing else.
   shadowExportCheck: ShadowExportCheck.nullable().optional(),
+  // Shadow-L3: present only on the last step of a run of a shadow-L3 target. It changes nothing else.
+  shadowL3: ShadowL3.nullable().optional(),
 });
 export type StepResult = z.infer<typeof StepResult>;
 

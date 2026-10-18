@@ -259,3 +259,34 @@ describe('formatRunResult', () => {
     expect(text).toMatch(/#1 m\s+manual.*SKIPPED\s+exit -/);
   });
 });
+
+describe('formatRunResult: a shadow L3 record', () => {
+  const withShadow = base({
+    reachedLevel: 2,
+    steps: [
+      step('s1', 0, 'shell'),
+      step('s2', 1, 'write_file'),
+      step('qsr-check-imports', 2, 'harness_check', {
+        shadowL3: {
+          verdict: 'evidence',
+          pattern: 'http_401_403',
+          exitCode: 1,
+          observed: 'AuthenticationError: Request failed with status code 401',
+          durationMs: 812,
+          note: null,
+        },
+      }),
+    ],
+  });
+
+  it('prints what the shadow step said, and says it is recorded and not counted', () => {
+    const out = fmt(withShadow);
+    expect(out).toContain('shadow L3 (recorded, not counted): evidence (http_401_403), exit 1');
+    expect(out).toContain('observed: AuthenticationError: Request failed with status code 401');
+  });
+
+  it('prints nothing about it when there is no record', () => {
+    const out = fmt(base());
+    expect(out).not.toContain('shadow L3');
+  });
+});

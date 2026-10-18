@@ -57,6 +57,13 @@
       "when": 1792291990413,
       "tag": "0007_harness_version_and_shadow",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792318628169,
+      "tag": "0008_shadow_l3",
+      "breakpoints": true
     }
   ]
 }
