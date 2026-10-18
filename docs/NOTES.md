@@ -900,3 +900,12 @@ those tests with Docker required.
   pulls the pinned bases from Docker Hub once.)
 - **The fixture server needs a free port 4177 for canaries**; `qsr run canary-*` reports a busy port
   instead of crashing.
+
+## Findings from P10a (the launch kit)
+
+- **A transient incident could have been published.** Four `NETWORK_TRANSIENT` or `TIMEOUT` failures in a row open an internal incident (spec section 14), and `confirmIncident` did not look at its class, so a reviewer could have made it public as the vendor's failure. It now refuses any class outside `VENDOR_FAILURE_CLASSES` (409); the methodology page and `docs/DISCLOSURE.md` say so. This is stricter than the spec, not in conflict with it.
+- **A comment named a test that did not exist.** `pipeline-facts.ts` listed an "issue-templates test" for `optOutHours`; none existed, so the 24 hours in the opt-out form were unpinned. `packages/cli/src/launch-docs.test.ts` now pins both issue forms, CONTRIBUTING, the disclosure policy and its email, and the walkthrough to the constants.
+- **The hand-written recommendation in `DETECTION-POWER.md` was stale** (three shadow targets; it is four since `slack-node`, whose results predate its shadow step). Corrected. The approved Candidate B wording is now compared by a test with what the site and the README print, so they cannot drift apart.
+- **Cold start.** The Render API took 42.5 s and 52.5 s to answer `/health` after it had slept; warm it took under a second. In the same runs every public page answered normally (static pages 17-35 ms from the CDN, tool and incidents pages about 0.3 s, the home page 1.6 s the first time and 0.6 s after: it is rendered on demand because of its filters), because the pages read the public database views and never the API. Only `/submit` waits for the API; it now wakes it when the page opens. The home page is the slowest first visit; making it static with client-side filters is a possible later change.
+- **Made-up slugs.** The badge, the share image and the tool page used a per-slug cached lookup, so each unknown slug cost its own queries and cache entry; they now check one cached list of tracked slugs first.
+- **Not built:** disclosure tracking in the admin page (spec section 16); a licence (owner's decision); `/runs/<id>` still looks an id up per request (a made-up id costs one cached lookup).

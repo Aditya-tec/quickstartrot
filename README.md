@@ -40,8 +40,10 @@ flowchart LR
   classify --> status["Status engine: a pure state machine"]
   canary["Canaries with known outcomes"] -.->|"wrong answer: cycle ignored"| status
   status --> api["API: the only writer to the database"]
-  api --> review{"A person reviews the incident"}
-  review -->|confirmed| views["Public database views"]
+  api -->|"passes, and failures still being checked (shown as verifying, no cause)"| views["Public database views"]
+  api -->|"the same failure repeats in valid cycles"| review{"A person reviews the incident"}
+  review -->|confirmed| views
+  review -->|"false alarm"| closed["Closed, never shown"]
   views --> site["Website and README badge"]
 ```
 

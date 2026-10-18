@@ -515,7 +515,6 @@ const CHECKS = [
     async run() {
       if (API === '') return needAdmin();
       const statuses = [];
-      const p = await pipeline();
       const cap = 400;
       for (let i = 0; i < cap && !statuses.includes(429); i += 20) {
         const batch = await Promise.all(
@@ -525,7 +524,6 @@ const CHECKS = [
         );
         statuses.push(...batch.map((r) => r.status));
       }
-      void p;
       return judgeRateLimit(statuses, { allowedBeforeLimit: cap });
     },
   },
