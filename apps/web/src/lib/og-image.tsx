@@ -8,9 +8,9 @@ import { homeCopy } from './home-copy';
 // error line cannot inject anything. The font is the one bundled with next/og: no request to a font host.
 
 const SIZE = { width: 1200, height: 630 } as const;
-const BG = '#0d0e0f';
-const FG = '#ecece9';
-const MUTED = '#a4a49d';
+const BG = '#121110';
+const FG = '#efece6';
+const MUTED = '#a8a399';
 const CACHE = 'public, s-maxage=600, stale-while-revalidate=86400';
 
 function respond(element: React.ReactElement): ImageResponse {
@@ -102,7 +102,7 @@ export function methodologyImage(card: MethodologyCard): ImageResponse {
             display: 'flex',
             fontSize: 150,
             fontWeight: 700,
-            color: '#66cdc5',
+            color: '#f0b429',
             lineHeight: 1,
           }}
         >
@@ -150,7 +150,7 @@ export function homeImage(headline: Headline): ImageResponse {
             display: 'flex',
             fontSize: 150,
             fontWeight: 700,
-            color: '#66cdc5',
+            color: '#f0b429',
             lineHeight: 1,
           }}
         >
