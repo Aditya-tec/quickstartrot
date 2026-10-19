@@ -6,16 +6,17 @@
 */
 :root {
   color-scheme: light;
-  --background: #faf9f7;
+  --background: #ffffff;
   --surface: #ffffff;
-  --surface-2: #f0eee9;
-  --foreground: #1b1a17;
-  --muted: #5e5a52;
-  --border: #e3dfd6;
-  --border-strong: #c9c4b8;
-  --accent: #8a5a00;
+  --surface-2: #f1f5f9;
+  --foreground: #0f172a;
+  --muted: hsl(215 25% 32%);
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --accent: #0f172a;
   --accent-foreground: #ffffff;
-  --ring: #8a5a00;
+  --ring: #0f172a;
+  --hero-fallback: hsl(201 100% 13%);
   --gold: #f0b429;
 
   --pass: #17663a;
@@ -78,8 +79,8 @@
   --color-unknown-bg: var(--unknown-bg);
   --color-person: var(--person);
   --color-person-bg: var(--person-bg);
-  --font-display: ui-serif, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument), ui-serif, 'Iowan Old Style', Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -88,10 +89,10 @@ html {
 }
 
 body {
+  overflow-x: clip; /* the full-width hero breaks out of the page column */
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
-  font-feature-settings: 'ss01', 'cv11';
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -119,5 +120,58 @@ body {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* The pill button: black with white text, the one primary action style (also in dark mode, with a hairline so it shows). */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1;
+  padding: 10px 24px;
+  transition: transform 200ms ease-in-out;
+}
+:root[data-theme='dark'] .btn-pill {
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+.btn-pill:hover {
+  transform: scale(1.03);
+}
+.btn-pill-lg {
+  font-size: 16px;
+  padding: 20px 56px;
+}
+
+/* Hero entrance: fade and rise, staggered by 200 ms. */
+@keyframes fade-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-rise {
+  animation: fade-rise 0.8s ease-out both;
+}
+.fade-rise-1 {
+  animation-delay: 0.2s;
+}
+.fade-rise-2 {
+  animation-delay: 0.4s;
+}
+
+/* Visitors who ask for less motion get the still frame, not the video. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-video {
+    display: none;
   }
 }

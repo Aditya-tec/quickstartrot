@@ -5,7 +5,6 @@ import { FACTS, type Facts } from '@/lib/facts';
 import { homeCopy } from '@/lib/home-copy';
 import { tierBreakdown } from '@/lib/headline';
 import type { ToolSummary } from '@/lib/model';
-import { HeroArt } from '@/components/hero-art';
 import { cn } from '@/lib/utils';
 
 // The home page headline. A single "X of Y" would overstate what was proven: an L2 pass shows the quickstart
@@ -53,21 +52,43 @@ export function Headline({
   });
   const tiers = tierBreakdown(tested);
   return (
-    <section aria-labelledby="headline" className="mb-10">
-      <div className="relative isolate overflow-hidden rounded-3xl bg-black px-6 py-16 text-center text-white sm:px-12 sm:py-24">
-        <HeroArt />
+    <section aria-labelledby="headline" className="-mt-8 mb-10">
+      <div
+        className="relative isolate ml-[calc(50%-50vw)] flex min-h-[34rem] w-screen items-center justify-center overflow-hidden px-8 py-20 text-center text-[#0f172a] md:min-h-[calc(100svh-6rem)]"
+        style={{
+          backgroundColor: 'var(--hero-fallback)',
+          backgroundImage: 'url(/hero-poster.jpg)',
+          backgroundPosition: 'center',
+          backgroundSize: 'cover',
+        }}
+      >
+        {/* Decorative loop, self-hosted (the CSP allows no other media host). Still frame for reduced motion. */}
+        <video
+          aria-hidden="true"
+          className="hero-video absolute inset-0 -z-20 size-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/hero-poster.jpg"
+        >
+          <source src="/hero.mp4" type="video/mp4" />
+        </video>
+        {/* A pale veil behind the text keeps the navy readable over the busier parts of the picture. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.66),rgba(0,0,0,0.05)_78%)]"
+          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.72),rgba(255,255,255,0.18)_75%)]"
         />
-        <div className="relative mx-auto max-w-3xl">
+        <div className="mx-auto flex max-w-[1280px] flex-col items-center">
           <h1
             id="headline"
-            className="font-display text-balance text-4xl font-medium italic leading-tight tracking-tight text-gold sm:text-6xl"
+            className="fade-rise font-display text-balance text-5xl font-normal leading-[0.95] tracking-[-2.46px] sm:text-[80px]"
           >
-            <span className="tabular">{copy.lead}</span> {copy.rest}
+            <em className="tabular font-normal not-italic">{copy.lead}</em>{' '}
+            <span className="text-muted">{copy.rest}</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-6 text-white/90 sm:text-base">
+          <p className="fade-rise fade-rise-1 mx-auto mt-6 max-w-[670px] text-pretty text-lg leading-relaxed text-muted">
             {asOf ? (
               <>
                 As of <time dateTime={asOf}>{formatDateTime(asOf)}</time>
@@ -83,6 +104,9 @@ export function Headline({
               </>
             ) : null}
           </p>
+          <a href="#leaderboard" className="btn-pill btn-pill-lg fade-rise fade-rise-2 mt-12">
+            See the leaderboard
+          </a>
         </div>
       </div>
 

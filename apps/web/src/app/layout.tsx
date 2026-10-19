@@ -1,12 +1,22 @@
 import type { Metadata, Viewport } from 'next';
 import { GeistMono } from 'geist/font/mono';
-import { GeistSans } from 'geist/font/sans';
+import { Inter, Instrument_Serif } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { siteUrl } from '@/lib/env';
 import { HOME_META } from '@/lib/home-copy';
 import './globals.css';
+
+// Both families are self-hosted by next/font at build time: the page makes no request to a font host (font-src 'self').
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
+const instrumentSerif = Instrument_Serif({
+  subsets: ['latin'],
+  weight: '400',
+  style: ['normal', 'italic'],
+  display: 'swap',
+  variable: '--font-instrument',
+});
 
 const TITLE = 'QuickstartRot';
 const DESCRIPTION = HOME_META.description;
@@ -32,12 +42,15 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#faf9f7',
+  themeColor: '#ffffff',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${instrumentSerif.variable} ${GeistMono.variable}`}
+    >
       <body className="min-h-screen antialiased">
         <a
           href="#main"
