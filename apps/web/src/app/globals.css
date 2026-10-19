@@ -2,14 +2,13 @@
 
 /*
   Design tokens. Calm and restrained: warm neutrals, one teal accent, and five status colours that are always
-  paired with an icon and a word (colour is never the only signal). Light by default, dark by the system
-  preference or the toggle (data-theme). Contrast is checked by axe in both themes on every page.
+  paired with an icon and a word (colour is never the only signal). White (light) by default whatever the system prefers; dark only when the visitor picks it (the toggle sets data-theme). Contrast is checked by axe in both themes on every page.
 */
 :root {
   color-scheme: light;
-  --background: #f4f1ec;
-  --surface: #fcfbf9;
-  --surface-2: #ece8e1;
+  --background: #faf9f7;
+  --surface: #ffffff;
+  --surface-2: #f0eee9;
   --foreground: #1b1a17;
   --muted: #5e5a52;
   --border: #e3dfd6;
@@ -29,34 +28,6 @@
   --unknown-bg: #ebedef;
   --person: #1f4a9a;
   --person-bg: #e7edfa;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --gold: #f0b429;
-    --background: #121110;
-    --surface: #1a1917;
-    --surface-2: #232220;
-    --foreground: #efece6;
-    --muted: #a8a399;
-    --border: #2e2c28;
-    --border-strong: #45423b;
-    --accent: #f0b429;
-    --accent-foreground: #1a1300;
-    --ring: #f0b429;
-
-    --pass: #6fd69a;
-    --pass-bg: #12291c;
-    --fail: #ff948e;
-    --fail-bg: #301817;
-    --verify: #f3c868;
-    --verify-bg: #2b2208;
-    --unknown: #b0bac3;
-    --unknown-bg: #20252a;
-    --person: #9bbaff;
-    --person-bg: #16213b;
-  }
 }
 
 :root[data-theme='dark'] {

@@ -16,7 +16,11 @@ const VIEWPORTS = [
 for (const theme of ['light', 'dark'] as const) {
   for (const viewport of VIEWPORTS) {
     test.describe(`${theme} ${viewport.width}`, () => {
-      test.use({ colorScheme: theme, viewport, deviceScaleFactor: 1 });
+      test.use({ viewport, deviceScaleFactor: 1 });
+      test.beforeEach(async ({ page }) => {
+        if (theme === 'dark')
+          await page.addInitScript(() => localStorage.setItem('qsr-theme', 'dark'));
+      });
       const dir = path.join(OUT, `${theme}-${viewport.width}`);
       test.beforeAll(() => mkdirSync(dir, { recursive: true }));
 

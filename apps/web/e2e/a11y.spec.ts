@@ -22,7 +22,10 @@ async function violations(page: Page) {
 
 for (const theme of THEMES) {
   test.describe(`axe, ${theme} theme`, () => {
-    test.use({ colorScheme: theme });
+    test.beforeEach(async ({ page }) => {
+      if (theme === 'dark')
+        await page.addInitScript(() => localStorage.setItem('qsr-theme', 'dark'));
+    });
 
     for (const p of PAGES) {
       test(p.name, async ({ page }) => {
