@@ -8,6 +8,7 @@ import {
   judgeCi,
   judgeColdStart,
   judgeDisclosureLog,
+  headlineFigures,
   judgeProbation,
   judgeDisclosureWindow,
   judgeEdgeCache,
@@ -456,4 +457,22 @@ test('judgeProbation: passes while every target on probation is still held back,
   assert.match(released.evidence, /c-node/);
   assert.doesNotMatch(released.evidence, /b-node/);
   assert.match(released.evidence, /remove/i);
+});
+
+// The home headline is read from the h1 itself (its text), not from the class names around its figure, so a restyle cannot break the check.
+test('headlineFigures reads "X of Y" from the headline h1, whatever its markup', () => {
+  const html = (inner) =>
+    `<body><h1 id="headline" class="a b">${inner}</h1><p>1 of 9 elsewhere</p></body>`;
+  assert.deepEqual(
+    headlineFigures(
+      html('<span class="tabular">58 of 58</span> quickstarts pass their checks today'),
+    ),
+    { passing: 58, tested: 58 },
+  );
+  assert.deepEqual(
+    headlineFigures(html('<span class="x text-accent">6 of 8</span> developer quickstarts')),
+    { passing: 6, tested: 8 },
+  );
+  assert.equal(headlineFigures(html('No quickstarts have been tested yet')), null);
+  assert.equal(headlineFigures('<h1>3 of 4 not the headline</h1>'), null);
 });

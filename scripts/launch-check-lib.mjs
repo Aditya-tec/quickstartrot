@@ -403,3 +403,11 @@ export function judgeProbation(rows) {
     evidence: `the site now shows ${released.map((r) => r.slug).join(', ')}: remove the probation block from its target file, then run qsr claims, qsr readme and node scripts/render-target-selection.mjs`,
   };
 }
+
+/** "X of Y" from the text of the home page's headline h1 (id="headline"), or null when it has none. Reads text, not class names. */
+export function headlineFigures(html) {
+  const h1 = /<h1[^>]*\bid="headline"[^>]*>([\s\S]*?)<\/h1>/.exec(html);
+  if (!h1) return null;
+  const m = /(\d+)\s+of\s+(\d+)/.exec(h1[1].replace(/<[^>]*>/g, ' '));
+  return m ? { passing: Number(m[1]), tested: Number(m[2]) } : null;
+}

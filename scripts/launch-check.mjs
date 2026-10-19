@@ -26,6 +26,7 @@ import {
   judgeDisclosureLog,
   judgeDisclosureWindow,
   judgeL3Count,
+  headlineFigures,
   judgeProbation,
   judgeEdgeCache,
   judgeLicense,
@@ -234,12 +235,12 @@ const CHECKS = [
       if (api.status !== 200)
         return { status: 'FAIL', evidence: `/api/status answers ${api.status}` };
       const s = JSON.parse(textOf(api));
-      const m = /class="tabular text-accent">(\d+) of (\d+)</.exec(textOf(home));
+      const m = headlineFigures(textOf(home));
       if (!m) return { status: 'FAIL', evidence: 'the home page has no "X of Y" headline' };
-      const same = Number(m[1]) === s.headline.passing && Number(m[2]) === s.headline.tested;
+      const same = m.passing === s.headline.passing && m.tested === s.headline.tested;
       return {
         status: same ? 'PASS' : 'WARN',
-        evidence: `home says ${m[1]} of ${m[2]}; /api/status says ${s.headline.passing} of ${s.headline.tested}${same ? '' : ' (the two caches may differ by a few minutes; run again)'}`,
+        evidence: `home says ${m.passing} of ${m.tested}; /api/status says ${s.headline.passing} of ${s.headline.tested}${same ? '' : ' (the two caches may differ by a few minutes; run again)'}`,
       };
     },
   },
