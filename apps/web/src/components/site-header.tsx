@@ -13,17 +13,13 @@ export function SiteHeader() {
     <header>
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-5 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <svg width="30" height="30" viewBox="0 0 22 22" aria-hidden="true" focusable="false">
-            <rect x="1.5" y="1.5" width="19" height="19" rx="6" fill="var(--gold)" />
-            <path
-              d="M6.2 11.4 9.6 14.6 15.8 7.8"
-              fill="none"
-              stroke="#1a1300"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <img
+            src="/logo.png"
+            alt=""
+            width={24}
+            height={30}
+            className="h-[30px] w-auto rounded-md [[data-theme=dark]_&]:bg-[#faf7ec] [[data-theme=dark]_&]:p-0.5"
+          />
           <span className="font-display text-2xl italic leading-none tracking-tight">
             QuickstartRot
           </span>
