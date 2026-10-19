@@ -41,10 +41,10 @@ function Chip({
       scroll={false}
       aria-current={active ? 'true' : undefined}
       className={cn(
-        'inline-flex h-8 items-center rounded-full border px-3 text-sm',
+        'inline-flex h-10 items-center rounded-full border px-4 text-sm font-medium',
         active
-          ? 'border-accent bg-accent text-accent-foreground'
-          : 'border-border-strong bg-surface text-foreground hover:bg-surface-2',
+          ? 'border-foreground bg-foreground text-background'
+          : 'border-border bg-surface text-foreground hover:bg-surface-2',
       )}
     >
       {children}

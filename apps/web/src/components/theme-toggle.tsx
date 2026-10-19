@@ -31,6 +31,7 @@ export function ThemeToggle() {
   return (
     <Button
       variant="ghost"
+      className="size-10 rounded-full bg-surface"
       size="icon"
       aria-label={`Switch to ${next} theme`}
       onClick={() => {

@@ -7,16 +7,17 @@
 */
 :root {
   color-scheme: light;
-  --background: #fbfbfa;
-  --surface: #ffffff;
-  --surface-2: #f4f3f0;
-  --foreground: #1a1a19;
-  --muted: #5b5a56;
-  --border: #e2e1dc;
-  --border-strong: #c9c8c2;
-  --accent: #0b6767;
+  --background: #f4f1ec;
+  --surface: #fcfbf9;
+  --surface-2: #ece8e1;
+  --foreground: #1b1a17;
+  --muted: #5e5a52;
+  --border: #e3dfd6;
+  --border-strong: #c9c4b8;
+  --accent: #8a5a00;
   --accent-foreground: #ffffff;
-  --ring: #0b6767;
+  --ring: #8a5a00;
+  --gold: #f0b429;
 
   --pass: #17663a;
   --pass-bg: #e5f3ea;
@@ -33,16 +34,17 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --background: #0d0e0f;
-    --surface: #151718;
-    --surface-2: #1b1e20;
-    --foreground: #ecece9;
-    --muted: #a4a49d;
-    --border: #2a2d2f;
-    --border-strong: #3d4144;
-    --accent: #66cdc5;
-    --accent-foreground: #07201e;
-    --ring: #66cdc5;
+    --gold: #f0b429;
+    --background: #121110;
+    --surface: #1a1917;
+    --surface-2: #232220;
+    --foreground: #efece6;
+    --muted: #a8a399;
+    --border: #2e2c28;
+    --border-strong: #45423b;
+    --accent: #f0b429;
+    --accent-foreground: #1a1300;
+    --ring: #f0b429;
 
     --pass: #6fd69a;
     --pass-bg: #12291c;
@@ -59,16 +61,17 @@
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --background: #0d0e0f;
-  --surface: #151718;
-  --surface-2: #1b1e20;
-  --foreground: #ecece9;
-  --muted: #a4a49d;
-  --border: #2a2d2f;
-  --border-strong: #3d4144;
-  --accent: #66cdc5;
-  --accent-foreground: #07201e;
-  --ring: #66cdc5;
+  --gold: #f0b429;
+  --background: #121110;
+  --surface: #1a1917;
+  --surface-2: #232220;
+  --foreground: #efece6;
+  --muted: #a8a399;
+  --border: #2e2c28;
+  --border-strong: #45423b;
+  --accent: #f0b429;
+  --accent-foreground: #1a1300;
+  --ring: #f0b429;
 
   --pass: #6fd69a;
   --pass-bg: #12291c;
@@ -93,6 +96,7 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-ring: var(--ring);
+  --color-gold: var(--gold);
   --color-pass: var(--pass);
   --color-pass-bg: var(--pass-bg);
   --color-fail: var(--fail);
@@ -103,6 +107,7 @@
   --color-unknown-bg: var(--unknown-bg);
   --color-person: var(--person);
   --color-person-bg: var(--person-bg);
+  --font-display: ui-serif, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 }

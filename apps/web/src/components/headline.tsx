@@ -4,6 +4,7 @@ import { formatDateTime } from '@/lib/format';
 import { FACTS, plural, words, type Facts } from '@/lib/facts';
 import { headlineText, tierBreakdown } from '@/lib/headline';
 import type { ToolSummary } from '@/lib/model';
+import { HeroArt } from '@/components/hero-art';
 import { cn } from '@/lib/utils';
 
 // The home page headline. A single "X of Y" would overstate what was proven: an L2 pass shows the quickstart
@@ -45,32 +46,41 @@ export function Headline({
   const tiers = tierBreakdown(tested);
   return (
     <section aria-labelledby="headline" className="mb-10">
-      <h1
-        id="headline"
-        className="max-w-3xl text-balance text-3xl font-semibold leading-tight tracking-tight sm:text-5xl"
-      >
-        <span className="tabular text-accent">{text.lead}</span> {text.rest}
-      </h1>
-      <p className="mt-3 text-sm text-muted">
-        {asOf ? (
-          <>
-            As of <time dateTime={asOf}>{formatDateTime(asOf)}</time>
-            {'. '}
-          </>
-        ) : null}
-        Every quickstart is run on a fresh machine every {words(facts.cycleHours)}{' '}
-        {plural(facts.cycleHours, 'hour')}.
-        {headline.failing > 0 || headline.verifying > 0 ? (
-          <>
-            {' '}
-            <span className="tabular">{headline.failing}</span> confirmed failing,{' '}
-            <span className="tabular">{headline.verifying}</span> being verified.
-          </>
-        ) : null}
-      </p>
+      <div className="relative isolate overflow-hidden rounded-3xl bg-black px-6 py-16 text-center text-white sm:px-12 sm:py-24">
+        <HeroArt />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.72),rgba(0,0,0,0.12)_75%)]"
+        />
+        <div className="relative mx-auto max-w-3xl">
+          <h1
+            id="headline"
+            className="font-display text-balance text-4xl font-medium italic leading-tight tracking-tight text-gold sm:text-6xl"
+          >
+            <span className="tabular">{text.lead}</span> {text.rest}
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-6 text-white/90 sm:text-base">
+            {asOf ? (
+              <>
+                As of <time dateTime={asOf}>{formatDateTime(asOf)}</time>
+                {'. '}
+              </>
+            ) : null}
+            Every quickstart is run on a fresh machine every {words(facts.cycleHours)}{' '}
+            {plural(facts.cycleHours, 'hour')}.
+            {headline.failing > 0 || headline.verifying > 0 ? (
+              <>
+                {' '}
+                <span className="tabular">{headline.failing}</span> confirmed failing,{' '}
+                <span className="tabular">{headline.verifying}</span> being verified.
+              </>
+            ) : null}
+          </p>
+        </div>
+      </div>
 
       {tiers.length > 0 ? (
-        <div className="mt-6 grid max-w-3xl gap-3 rounded-lg border border-border bg-surface p-4 sm:p-5">
+        <div className="mx-auto mt-6 grid max-w-3xl gap-3 rounded-2xl border border-border bg-surface p-4 shadow-sm sm:p-5">
           <h2 className="text-sm font-semibold">How far each quickstart was tested</h2>
           <ul className="grid gap-4">
             {tiers.map((t) => (
