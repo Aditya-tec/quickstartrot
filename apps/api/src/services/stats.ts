@@ -17,6 +17,7 @@ import {
   tools,
 } from '@qsr/db';
 import type { Ctx } from '../deps.js';
+import { toolsInProbation } from './probation.js';
 
 // GET /admin/stats?days=N (P9a): the numbers the calibration review reads. Everything here is read-only and
 // computed from the tables the pipeline already fills; nothing is stored. Per-tool counts use only VALID cycles
@@ -97,11 +98,14 @@ export async function loadStats(ctx: Ctx, days: number): Promise<StatsResponse> 
   const preflight = (f: (typeof finals)[number]): boolean => f.classifierRule === 'preflight';
 
   const real = finals.filter((f) => !isCanary(f.toolId));
+  // The harness error rate is a number a post could quote, so a target on probation is not in it; the per-tool table below still lists it.
+  const onProbation = await toolsInProbation(db);
+  const counted = real.filter((f) => !onProbation.has(f.toolId));
   const finished = (cycleId: string): boolean => cycleById.get(cycleId)?.finishedAt != null;
   const inValidCycle = (cycleId: string): boolean => cycleById.get(cycleId)?.valid === true;
 
   // ---- the harness error rate: real tools that ran, in every finished cycle
-  const ran = real.filter((f) => finished(f.cycleId) && !preflight(f));
+  const ran = counted.filter((f) => finished(f.cycleId) && !preflight(f));
   const harnessErrors = ran.filter((f) => f.outcome === 'HARNESS_ERROR').length;
   const byVersion = new Map<number, { runs: number; firstAt: Date; lastAt: Date }>();
   for (const f of ran) {

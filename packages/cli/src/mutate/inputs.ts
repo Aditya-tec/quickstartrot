@@ -59,6 +59,7 @@ export function groundingReport(pair: Pair, target: Target): GroundingReport {
     blocks,
     placeholders: target.placeholders,
     language: target.language,
+    installFromComment: target.grounding?.installFromComment === true,
   });
 }
 

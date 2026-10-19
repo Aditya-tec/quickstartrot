@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { summariseDetection, type DetectionSummary, type Logger } from '@qsr/core';
+import { countsPublicly, summariseDetection, type DetectionSummary, type Logger } from '@qsr/core';
 import { processIo, type CliIo } from './commands.js';
 import { loadAllTargets } from './targets.js';
 
@@ -14,9 +14,8 @@ const RESULTS_FILE = path.join('docs', 'detection-power.json');
 
 export async function buildSummaryFromRepo(root: string): Promise<DetectionSummary> {
   const raw = JSON.parse(await readFile(path.join(root, RESULTS_FILE), 'utf8')) as unknown;
-  const targets = (await loadAllTargets(path.join(root, 'targets'))).filter(
-    (t) => t.enabled !== false,
-  );
+  // a target on probation is in no count until it leaves probation
+  const targets = (await loadAllTargets(path.join(root, 'targets'))).filter(countsPublicly);
   // An enabled target whose level 3 step is recorded and not counted (the shadow mode: docs/NOTES.md).
   const shadow = targets.filter((t) => t.l3?.mode === 'shadow').map((t) => t.slug);
   // The enabled targets that reach level 3 in production: level 3 in the file and not in shadow (the API shows a shadow target at level 2).

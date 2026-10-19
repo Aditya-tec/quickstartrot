@@ -20,14 +20,18 @@ const cell = (s) =>
     .replaceAll('|', '/')
     .replaceAll('\n', ' ')
     .trim();
-const ORDER = { enabled: 0, disabled: 1, excluded: 2, 'not-attempted': 3 };
+const ORDER = { enabled: 0, disabled: 1, excluded: 2, 'not-attempted': 3, probation: 4 };
 const LABEL = {
   enabled: 'enabled',
   disabled: 'disabled',
   excluded: 'excluded',
   'not-attempted': 'not run',
+  probation: 'on probation',
 };
 const byStatus = Object.groupBy(candidates, (c) => c.status);
+// A target on probation (enabled, probed, in no public number until it has two valid cycles) is in none of the counts below; it is listed apart.
+const probation = byStatus.probation ?? [];
+const counted = candidates.filter((c) => c.status !== 'probation');
 const n = (s) => (byStatus[s] ?? []).length;
 const enabled = byStatus.enabled ?? [];
 const groups = Object.groupBy(enabled, (c) => c.group);
@@ -60,7 +64,7 @@ function runLine(slug) {
 
 const out = [HEADING, ''];
 out.push(
-  `Looked at: **${candidates.length}** candidates. **${n('enabled')} enabled**, ${n('disabled')} written and run but disabled with a reason, ${n('excluded')} excluded before or after a probe, ${n('not-attempted')} passed the probe but were not run in P9a (the 50-target goal was met). Status as of ${values.date}.`,
+  `Looked at: **${counted.length}** candidates. **${n('enabled')} enabled**, ${n('disabled')} written and run but disabled with a reason, ${n('excluded')} excluded before or after a probe, ${n('not-attempted')} passed the probe but were not run in P9a (the 50-target goal was met). Status as of ${values.date}.`,
   '',
   `Mix of the ${n('enabled')} enabled: ${groups.library?.length ?? 0} libraries and frameworks, ${groups.vendor?.length ?? 0} vendor SDKs and API clients, ${groups.calibration?.length ?? 0} calibration targets. Without the calibration targets the sample is ${libShare}% libraries and ${100 - libShare}% vendors (goal: 40 and 60). Levels: ${enabled.filter((c) => c.level === 3).length} at L3 (the vendor's API is reached), ${enabled.filter((c) => c.level === 2).length} at L2 (installed and built; many docs pages show only an install command, so those runs reach L1 and the public page says so). Most vendor quickstarts need an account to go beyond that, and the harness never signs up for one.`,
   '',
@@ -86,7 +90,7 @@ out.push(
   '| Candidate | Group | Language | Level | Status | Why |',
   '|---|---|---|---|---|---|',
 );
-const sorted = [...candidates].sort(
+const sorted = [...counted].sort(
   (a, b) =>
     ORDER[a.status] - ORDER[b.status] ||
     a.group.localeCompare(b.group) ||
@@ -101,13 +105,30 @@ for (const c of sorted) {
     `| ${c.slug} | ${c.group} | ${c.language} | ${c.level ? 'L' + c.level : '-'} | ${LABEL[c.status] ?? c.status} | ${reason} |`,
   );
 }
+if (probation.length > 0) {
+  out.push(
+    '### On probation',
+    '',
+    'Enabled and probed every cycle, but in none of the counts above and not on the site until each has two valid cycles. The result is the local `qsr run` that decided they could be enabled.',
+    '',
+    '| Target | Group | Target level | Local run | Model tokens |',
+    '|---|---|---|---|---|',
+  );
+  for (const c of [...probation].sort((a, b) => a.slug.localeCompare(b.slug))) {
+    const r = runLine(c.slug);
+    out.push(`| ${c.slug} | ${c.group} | L${c.level} | ${cell(r.text)} | ${r.tokens} |`);
+  }
+  out.push('');
+}
 out.push('');
 
 const doc = readFileSync(docPath, 'utf8');
 const at = doc.indexOf(HEADING);
 if (at < 0) throw new Error(`${HEADING} not found in docs/TARGET-SELECTION.md`);
 writeFileSync(docPath, doc.slice(0, at) + out.join('\n'));
-console.log(`rendered ${candidates.length} candidates, ${enabled.length} enabled`);
+console.log(
+  `rendered ${candidates.length} candidates, ${enabled.length} enabled, ${probation.length} on probation`,
+);
 
 // the repository's format check covers docs/*.md, so leave the file exactly as prettier writes it
 const { spawnSync } = await import('node:child_process');

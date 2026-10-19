@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { z } from 'zod';
 import {
+  countsPublicly,
   l2Findings,
   l3ProductionSentence,
   LaunchExport,
@@ -168,12 +169,15 @@ export function extractMeasurement(raw: unknown): MeasurementFacts {
   };
 }
 
-/** The target counts, from the target files (canaries are not in the list). */
+/**
+ * The target counts, from the target files (canaries are not in the list). A target on probation is in none of them: it is enabled and
+ * probed, and public after two valid cycles.
+ */
 export function extractTargetFacts(targets: readonly Target[]): TargetFacts {
-  const enabled = targets.filter((t) => t.enabled !== false);
+  const enabled = targets.filter(countsPublicly);
   return {
     enabled: enabled.length,
-    disabled: targets.length - enabled.length,
+    disabled: targets.filter((t) => t.enabled === false).length,
     shadow: enabled
       .filter((t) => t.l3?.mode === 'shadow')
       .map((t) => t.slug)

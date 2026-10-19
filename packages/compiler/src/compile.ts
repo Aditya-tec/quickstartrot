@@ -12,6 +12,7 @@ import { DEFAULT_COMPILER_CONFIG, type CompilerConfig } from './config.js';
 import { fillFileContent } from './fill.js';
 import { finalizePlan } from './finalize.js';
 import {
+  markCommentInstalls,
   quarantineDestructive,
   quarantineInteractive,
   validateGrounding,
@@ -102,7 +103,12 @@ function interpret(
   // harness-owned fields are fixed, and then the deterministic grounding validator decides.
   const { ir: safe } = quarantineDestructive(parsed.data, ctx);
   const { ir: stopped } = quarantineInteractive(safe, ctx);
-  const ir = finalizePlan(fillFileContent(stopped, ctx), target, truncation);
+  // A target that declares installFromComment: the compiler (not the model) records which install steps were taken from a comment.
+  const ir = finalizePlan(
+    markCommentInstalls(fillFileContent(stopped, ctx), ctx),
+    target,
+    truncation,
+  );
   return { kind: 'checked', ir, report: validateGrounding(ir, ctx) };
 }
 
@@ -155,6 +161,7 @@ export async function compile(
     blocks: extraction.blocks,
     placeholders: target.placeholders,
     language: target.language,
+    installFromComment: target.grounding?.installFromComment === true,
   };
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM_PROMPT },

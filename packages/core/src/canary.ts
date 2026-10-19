@@ -61,7 +61,7 @@ export function checkCanaries(observations: readonly CanaryObservation[]): {
 
 /**
  * Hash of the target fields that change a compiled plan: what the model is told (placeholders, level,
- * language) and what the crawler keeps (extract.variants). Editing the name, notes, owners, URL or timeouts
+ * language), what the crawler keeps (extract.variants) and whether the validator accepts an install taken from a comment. Editing the name, notes, owners, URL or timeouts
  * must NOT recompile, so none of those are in it. Part of the plan cache key (migration 0003).
  */
 export function compileConfigHash(target: Target): string {
@@ -70,6 +70,8 @@ export function compileConfigHash(target: Target): string {
     level: target.level,
     language: target.language,
     variants: target.extract.variants ?? null,
+    // Only when set, so the hash of every target that does not opt in is exactly what it was before the field existed.
+    ...(target.grounding?.installFromComment === true ? { installFromComment: true } : {}),
   };
   return hashJson(relevant);
 }

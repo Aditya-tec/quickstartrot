@@ -117,6 +117,7 @@ export async function importPlan(
         : extraction.blocks.map((b) => ({ ...b, text: applyHashIgnore(b.text, rules) })),
     placeholders: target.placeholders,
     language: target.language,
+    installFromComment: target.grounding?.installFromComment === true,
   };
   const checked =
     rules === undefined ? plan.ir : mapStrings(plan.ir, (s) => applyHashIgnore(s, rules));
@@ -148,6 +149,8 @@ export async function importPlan(
         configHash: hashJson(target),
         enabled: target.enabled !== false,
         disabledReason: target.enabled === false ? 'target_disabled' : null,
+        // a tool the push creates is held back from the public views from this moment, not from the next sync
+        probation: target.probation !== undefined,
       })
       .onConflictDoNothing();
     [tool] = await db.select().from(tools).where(eq(tools.slug, target.slug));

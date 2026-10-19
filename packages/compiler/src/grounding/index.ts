@@ -7,6 +7,8 @@ import type {
   Step,
   StepIR,
 } from '@qsr/core';
+import { isInstallCommand } from '@qsr/core';
+import { commentHint, commentPayload } from './comment.js';
 import { findDestructive } from './denylist.js';
 import { toWorkPath } from './paths.js';
 import {
@@ -21,6 +23,7 @@ import {
   describeFirstDifference,
 } from './text.js';
 
+export { commentPayload, markCommentInstalls } from './comment.js';
 export { findDestructive } from './denylist.js';
 export { toWorkPath } from './paths.js';
 
@@ -30,6 +33,11 @@ export interface GroundingContext {
   /** docs placeholder -> dummy replacement (the target's `placeholders`). */
   placeholders: Readonly<Record<string, string>>;
   language: Language;
+  /**
+   * The target declares that its docs show the install command only inside a code comment (`grounding.installFromComment`). Absent means
+   * no: a command cited from a comment is then refused like any command that is not in the cited lines.
+   */
+  installFromComment?: boolean;
 }
 
 // Spec section 8, "Grounding validator (deterministic, no LLM)". Every rule id below is stored in
@@ -181,15 +189,68 @@ export function validateGrounding(ir: StepIR, ctx: GroundingContext): GroundingR
   const seen = new Set<string>();
   const written = new Set<string>();
 
+  /**
+   * A command taken from a code comment (`source.commentOnly`): only for a target that allows it, only a shell step, only an install
+   * command, and only the comment with its marker removed (or a whole sub-command of it). Everything else about the step is checked as
+   * for any command (denylist, hidden characters).
+   */
+  const checkCommentCommand = (step: Step & { command: string }, source: SourceRef): void => {
+    if (step.kind !== 'shell') {
+      return add(
+        step.id,
+        'command.comment_not_install',
+        'only a shell step may take its command from a comment',
+      );
+    }
+    if (ctx.installFromComment !== true) {
+      return add(
+        step.id,
+        'command.comment_not_allowed',
+        'this target does not allow a command to be taken from a code comment',
+      );
+    }
+    const cited = resolveSource(source, ctx, true);
+    if (!cited.ok) return add(step.id, cited.rule, cited.detail);
+    const payload = commentPayload(cited.text);
+    if (payload === null) {
+      return add(
+        step.id,
+        'command.comment_flag_wrong',
+        `lines ${source.lineStart}-${source.lineEnd} of block ${source.blockIndex} are not a comment; the cited lines read "${clip(cited.text, 160)}"`,
+      );
+    }
+    const asWritten = normalizeCommand(step.command);
+    if (asWritten === '') return add(step.id, 'command.empty', 'the command is empty');
+    if (!isInstallCommand(step.command)) {
+      return add(
+        step.id,
+        'command.comment_not_install',
+        `"${clip(step.command)}" is not an install command; only an install command may be taken from a comment`,
+      );
+    }
+    const docs = normalizeCommand(mapped(payload));
+    if (
+      !commandMatches(asWritten, docs) &&
+      !commandMatches(normalizeCommand(mapped(step.command)), docs)
+    ) {
+      add(
+        step.id,
+        'command.mismatch',
+        `"${clip(step.command)}" is not the comment in lines ${source.lineStart}-${source.lineEnd} of block ${source.blockIndex}; the comment reads "${clip(payload, 160)}"`,
+      );
+    }
+  };
+
   /** Rules 1-4: a command must be the cited lines or a whole sub-command of them. */
   const checkCommand = (step: Step & { command: string }, source: SourceRef): void => {
+    if (source.commentOnly === true) return checkCommentCommand(step, source);
     const cited = resolveSource(source, ctx, true);
     if (!cited.ok) return add(step.id, cited.rule, cited.detail);
     if (cited.block.lang !== null && NOT_SHELL.has(cited.block.lang)) {
       return add(
         step.id,
         'command.source_not_shell',
-        `block ${source.blockIndex} is ${cited.block.lang}, not shell`,
+        `block ${source.blockIndex} is ${cited.block.lang}, not shell${commentHint(cited.block, step.command, ctx, mapped)}`,
       );
     }
     const docs = normalizeCommand(mapped(cited.text));
@@ -202,7 +263,7 @@ export function validateGrounding(ir: StepIR, ctx: GroundingContext): GroundingR
       add(
         step.id,
         'command.mismatch',
-        `"${clip(step.command)}" is not in lines ${source.lineStart}-${source.lineEnd} of block ${source.blockIndex}; the cited lines read "${clip(cited.text, 160)}"${ENV_ASSIGNMENT.test(cited.text) ? '; an environment variable is set with a set_env step, not a shell command, so use a set_env step' : ''}`,
+        `"${clip(step.command)}" is not in lines ${source.lineStart}-${source.lineEnd} of block ${source.blockIndex}; the cited lines read "${clip(cited.text, 160)}"${ENV_ASSIGNMENT.test(cited.text) ? '; an environment variable is set with a set_env step, not a shell command, so use a set_env step' : ''}${commentHint(cited.block, step.command, ctx, mapped)}`,
       );
     }
   };

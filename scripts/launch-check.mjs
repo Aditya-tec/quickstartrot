@@ -14,7 +14,7 @@
 // nothing on another repository and creates no data: its only writes to our own services are GET requests, plus a burst of GET /health to
 // see the rate limit.
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -26,6 +26,7 @@ import {
   judgeDisclosureLog,
   judgeDisclosureWindow,
   judgeL3Count,
+  judgeProbation,
   judgeEdgeCache,
   judgeLicense,
   judgeRateLimit,
@@ -593,6 +594,31 @@ const CHECKS = [
             status: 'FAIL',
             evidence: open.map((i) => `#${i.number} ${clip(i.title, 60)}`).join('; '),
           };
+    },
+  },
+  {
+    id: 'probation-released',
+    title: 'A target on probation that the site now shows has its probation block removed',
+    async run() {
+      const dir = path.join(ROOT, 'targets');
+      const slugs = readdirSync(dir)
+        .filter(
+          (f) =>
+            f.endsWith('.yaml') && /^probation:/m.test(readFileSync(path.join(dir, f), 'utf8')),
+        )
+        .map((f) => f.slice(0, -'.yaml'.length))
+        .sort();
+      const rows = [];
+      for (const slug of slugs) {
+        const res = await timed(`${SITE}/api/badge/${slug}`);
+        rows.push({
+          slug,
+          badge: textOf(res)
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/s+/g, ' '),
+        });
+      }
+      return judgeProbation(rows);
     },
   },
   {

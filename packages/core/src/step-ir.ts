@@ -5,6 +5,12 @@ export const SourceRef = z.object({
   blockIndex: z.number().int(),
   lineStart: z.number().int(),
   lineEnd: z.number().int(),
+  /**
+   * The cited lines are a code comment (`// npm install x`, `# pip install x`) and the command was taken from it with the comment marker
+   * removed. Set by the compiler, only for a target that declares `grounding.installFromComment`, and checked again by the validator.
+   * Absent for every other step; absent stays absent, so a stored plan parses and hashes as before.
+   */
+  commentOnly: z.literal(true).optional(),
 });
 export type SourceRef = z.infer<typeof SourceRef>;
 

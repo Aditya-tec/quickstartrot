@@ -8,6 +8,7 @@ import {
   judgeCi,
   judgeColdStart,
   judgeDisclosureLog,
+  judgeProbation,
   judgeDisclosureWindow,
   judgeEdgeCache,
   judgeL3Count,
@@ -434,4 +435,25 @@ test('judgeL3Count passes when the site tests as many quickstarts at L3 as the t
   assert.equal(off.status, 'FAIL');
   assert.match(off.evidence, /site says 2.*3 reach L3/);
   assert.equal(judgeL3Count({ testedAtL3: 0, production: [] }).status, 'PASS');
+});
+
+// A target on probation is held back by the site until it has two valid cycles. When the badge of such a target shows a status, the site
+// has released it and its `probation` block should come out of the target file, so the counts made from the files catch up.
+test('judgeProbation: passes while every target on probation is still held back, warns for each one the site now shows', () => {
+  assert.equal(judgeProbation([]).status, 'PASS');
+  const held = judgeProbation([
+    { slug: 'a-node', badge: 'quickstart: not tracked' },
+    { slug: 'b-node', badge: 'quickstart: not tracked' },
+  ]);
+  assert.equal(held.status, 'PASS');
+  const released = judgeProbation([
+    { slug: 'a-node', badge: 'quickstart: passing' },
+    { slug: 'b-node', badge: 'quickstart: not tracked' },
+    { slug: 'c-node', badge: 'quickstart: verifying' },
+  ]);
+  assert.equal(released.status, 'WARN');
+  assert.match(released.evidence, /a-node/);
+  assert.match(released.evidence, /c-node/);
+  assert.doesNotMatch(released.evidence, /b-node/);
+  assert.match(released.evidence, /remove/i);
 });

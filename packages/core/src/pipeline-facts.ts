@@ -122,3 +122,10 @@ export function optOutSentences(hours: number = PIPELINE.optOutHours): {
     history: 'Past results stay visible and are hidden only if the vendor asks for that.',
   };
 }
+
+/**
+ * A new target is on probation (target file: `probation`): enabled and probed every cycle, but in no public number until it has this many
+ * valid cycles (cycles that ran it and whose canaries behaved). The public views release it by themselves (migration 0010 says the same
+ * number, and a test compares them); the flag is removed from the file afterwards.
+ */
+export const PROBATION = Object.freeze({ validCycles: 2 });

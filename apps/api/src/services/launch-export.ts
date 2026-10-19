@@ -2,6 +2,7 @@ import { desc, eq, inArray } from 'drizzle-orm';
 import type { LaunchExport } from '@qsr/core';
 import { incidents, probeCycles, runs, tools } from '@qsr/db';
 import type { Ctx } from '../deps.js';
+import { toolsInProbation } from './probation.js';
 
 // GET /admin/export/launch (P9a): the numbers a launch post needs. The only incidents it reads are the ones a
 // person REVIEWED AND CONFIRMED (the query selects review = 'CONFIRMED', and the LaunchExport schema admits nothing
@@ -30,7 +31,9 @@ export async function loadLaunchExport(ctx: Ctx): Promise<LaunchExport> {
   const { db, deps } = ctx;
 
   const toolRows = await db.select().from(tools);
-  const real = toolRows.filter((t) => t.isCanary !== true);
+  // A target on probation is in no number a post could quote until it has two valid cycles.
+  const onProbation = await toolsInProbation(db);
+  const real = toolRows.filter((t) => t.isCanary !== true && !onProbation.has(t.id));
   const bySlug = new Map(toolRows.map((t) => [t.id, t]));
 
   const cycles = await db.select().from(probeCycles);
@@ -55,7 +58,8 @@ export async function loadLaunchExport(ctx: Ctx): Promise<LaunchExport> {
     (f) =>
       validIds.has(f.cycleId) &&
       f.classifierRule !== 'preflight' &&
-      bySlug.get(f.toolId)?.isCanary !== true,
+      bySlug.get(f.toolId)?.isCanary !== true &&
+      !onProbation.has(f.toolId),
   );
 
   // the level each enabled tool's latest run reached

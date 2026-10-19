@@ -167,6 +167,30 @@ export const Target = z.object({
     .strict()
     .optional(),
   /**
+   * The docs show the install command ONLY inside a code comment (`// npm install x`, `# pip install x`). With this set, the grounding
+   * validator accepts an install command cited from a comment line of this target's page (and nowhere else), and the plan records that the
+   * command was taken from a comment (`source.commentOnly`). It is part of the plan cache key (compileConfigHash), so no other target's
+   * plan is affected. A reason is required. Absent for every target but the few whose page needs it; absent stays absent.
+   */
+  grounding: z
+    .object({
+      installFromComment: z.literal(true),
+      reason: z.string().trim().min(10).max(300),
+    })
+    .strict()
+    .optional(),
+  /**
+   * The target is enabled and probed every cycle, but it is on probation: it is not in any public count, in the headline or in a number a
+   * post could quote until it has two valid cycles (the public views hide it by themselves; this marks it for the counts made from the
+   * files). Remove the field once the site shows the target. Not part of the plan cache key. Absent stays absent.
+   */
+  probation: z
+    .object({
+      reason: z.string().trim().min(10).max(300),
+    })
+    .strict()
+    .optional(),
+  /**
    * false: the file stays in the repository (with its notes) but the target is not run. A target that is absent
    * here counts as enabled, and stays absent after parsing, so the config hash of every existing target is unchanged.
    */
@@ -174,3 +198,10 @@ export const Target = z.object({
 });
 export type Target = z.infer<typeof Target>;
 export type TargetInput = z.input<typeof Target>;
+
+/**
+ * Whether a target is in the public counts made from the target files (the claims sheet, the methodology summary, the candidates table):
+ * enabled, and not on probation. A target on probation is probed like any other and appears in no number until it leaves probation.
+ */
+export const countsPublicly = (target: Pick<Target, 'enabled' | 'probation'>): boolean =>
+  target.enabled !== false && target.probation === undefined;

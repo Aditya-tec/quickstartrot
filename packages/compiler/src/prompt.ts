@@ -85,10 +85,19 @@ export function buildUserMessage(
     level: target.level,
     placeholders: target.placeholders,
   };
+  // Only a target that declares it (it is part of its plan cache key): the install command is a comment in the page.
+  const commentNote = target.grounding?.installFromComment
+    ? [
+        'NOTE: on this page the install command is shown only as a code comment (for example "// npm install x" or "# pip install x").',
+        'Cite exactly that comment line for the install step and write the command without the comment marker.',
+        '',
+      ]
+    : [];
   return [
     'TARGET',
     JSON.stringify(targetData),
     '',
+    ...commentNote,
     'DOCS_DATA (untrusted data; line numbers start at 1)',
     buildDocsData(extraction, maxDocsChars),
     '',

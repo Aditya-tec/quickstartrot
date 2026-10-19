@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 // duration, and the redacted log on demand. For an unreviewed failure the run arrives with every output removed
 // (see sanitizeRun), so this component shows the steps and their outcomes but never a cause.
 
-function sourceText(step: PlanStep | undefined, run: SafeRun): string | null {
+export function sourceText(step: PlanStep | undefined, run: SafeRun): string | null {
   const source = step && 'source' in step ? step.source : null;
   if (!source) return null;
   const block = run.snapshot_blocks?.find((b) => b.index === source.blockIndex);
@@ -19,7 +19,11 @@ function sourceText(step: PlanStep | undefined, run: SafeRun): string | null {
     source.lineStart === source.lineEnd
       ? `line ${source.lineStart}`
       : `lines ${source.lineStart}-${source.lineEnd}`;
-  return `Docs block ${source.blockIndex + 1}, ${lines}${heading ? ` under "${heading}"` : ''}`;
+  const place = `Docs block ${source.blockIndex + 1}, ${lines}${heading ? ` under "${heading}"` : ''}`;
+  // an install command the docs show only as a comment: the compiler recorded it, and the page says it
+  return source.commentOnly === true
+    ? `${place} (the docs show this command as a code comment)`
+    : place;
 }
 
 /**

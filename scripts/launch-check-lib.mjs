@@ -382,3 +382,24 @@ export function judgeL3Count({ testedAtL3, production }) {
         evidence: `the site says ${testedAtL3} tested at L3 but the target files say ${production.length} reach L3 in production (${production.join(', ') || 'none'})`,
       };
 }
+
+/**
+ * Targets on probation (their file has a `probation` block) are held back by the site until they have two valid cycles. A badge that shows
+ * anything but "not tracked" means the site now shows the target: the block should come out of the file so the counts made from the files
+ * (claims, the methodology summary, the candidates table) include it. A warning, never a failure: nothing public is wrong.
+ */
+export function judgeProbation(rows) {
+  const released = rows.filter((r) => !/not tracked/i.test(r.badge));
+  if (released.length === 0)
+    return {
+      status: 'PASS',
+      evidence:
+        rows.length === 0
+          ? 'no target is on probation'
+          : `${rows.length} on probation, all still held back by the site`,
+    };
+  return {
+    status: 'WARN',
+    evidence: `the site now shows ${released.map((r) => r.slug).join(', ')}: remove the probation block from its target file, then run qsr claims, qsr readme and node scripts/render-target-selection.mjs`,
+  };
+}

@@ -41,6 +41,8 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
         level: target.l3?.mode === 'shadow' ? Math.min(target.level, 2) : target.level,
         config: target,
         configHash,
+        // on probation while the target file says so; the public views release the tool at its second valid cycle
+        probation: target.probation !== undefined,
       };
       const current = bySlug.get(target.slug);
 

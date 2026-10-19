@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { CANARY_SLUGS } from './canary.js';
-import { OPT_OUT, optOutSentences, PIPELINE, TARGET_GOAL, TRAFFIC } from './pipeline-facts.js';
+import {
+  OPT_OUT,
+  optOutSentences,
+  PIPELINE,
+  PROBATION,
+  TARGET_GOAL,
+  TRAFFIC,
+} from './pipeline-facts.js';
 import { PASSES_TO_RECOVER, RECURRENCE_WINDOW_DAYS, TRANSIENT_INCIDENT_STREAK } from './status.js';
 
 // The numbers the pipeline really uses, in one place. The public methodology page is built from this object, so a
@@ -101,5 +108,12 @@ describe('OPT_OUT', () => {
 
   it('is read-only', () => {
     expect(Object.isFrozen(OPT_OUT)).toBe(true);
+  });
+});
+
+describe('PROBATION', () => {
+  it('is two valid cycles, and read-only', () => {
+    expect(PROBATION.validCycles).toBe(2);
+    expect(Object.isFrozen(PROBATION)).toBe(true);
   });
 });

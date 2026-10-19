@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql as dsql } from 'drizzle-orm';
 import { afterAll, beforeAll, beforeEach, describe, expect, inject, it } from 'vitest';
 import {
   COMPILER_VERSION,
@@ -250,5 +250,120 @@ d('POST /admin/plans/import', () => {
       );
     expect(found).toHaveLength(1);
     expect(contentHash(docsExtraction().blocks)).toBe(plan.contentHash);
+  });
+});
+
+// A target whose docs show the install command only as a code comment (`grounding.installFromComment`): the server re-runs the validator
+// with the same permission, for that target and no other, so a plan whose install step is a comment is imported for it and refused otherwise.
+d('a target that takes its install from a code comment', () => {
+  const COMMENT_BLOCKS = [
+    {
+      index: 0,
+      kind: 'code' as const,
+      lang: 'js',
+      text: "// npm install acme-sdk\n\nimport { Acme } from 'acme-sdk';\nconst client = new Acme();",
+      filenameHint: null,
+      headingPath: ['Quickstart'],
+    },
+  ];
+  const withComment = {
+    level: 2,
+    grounding: {
+      installFromComment: true as const,
+      reason: 'The page shows its install command only as a comment in the first code block.',
+    },
+  };
+  const commentPlan = (commentOnly: boolean) => ({
+    irVersion: 1 as const,
+    language: 'node' as const,
+    projectInit: 'npm_init' as const,
+    steps: [
+      {
+        kind: 'shell' as const,
+        id: 's1',
+        command: 'npm install acme-sdk',
+        source: {
+          blockIndex: 0,
+          lineStart: 1,
+          lineEnd: 1,
+          ...(commentOnly ? { commentOnly: true as const } : {}),
+        },
+        expect: { exitCode: 0, authErrorIsPass: false, stdoutIncludes: [], timeoutSec: 180 },
+      },
+      {
+        kind: 'write_file' as const,
+        id: 's2',
+        path: 'index.js',
+        content: "import { Acme } from 'acme-sdk';\nconst client = new Acme();",
+        source: { blockIndex: 0, lineStart: 3, lineEnd: 4 },
+      },
+    ],
+    maxLevelReachable: 2,
+    notes: 'Installs from the comment.',
+  });
+  const send = (tgt: Target, commentOnly: boolean) => {
+    const extraction = docsExtraction({ blocks: COMMENT_BLOCKS });
+    return importPlan({
+      target: tgt,
+      extraction,
+      plan: {
+        contentHash: extraction.contentHash,
+        compilerVersion: COMPILER_VERSION,
+        model: 'local-model',
+        ir: commentPlan(commentOnly),
+      },
+    });
+  };
+
+  it('is imported, and the stored plan keeps the record that the install came from a comment', async () => {
+    const res = await send(Target.parse(targetInput(SLUG, withComment)), true);
+    expect(res.statusCode, res.body).toBe(200);
+    const [row] = await rows();
+    expect(JSON.stringify(row?.ir)).toContain('"commentOnly":true');
+  });
+
+  it('is refused when the target does not declare it: the same plan, the same page', async () => {
+    const res = await send(Target.parse(targetInput(SLUG, { level: 2 })), true);
+    expect(res.statusCode).toBe(422);
+    expect(res.json().detail).toContain('command.comment_not_allowed');
+    expect(await rows()).toHaveLength(0);
+  });
+
+  it('is refused when the install step does not say it came from a comment: the plan has to record it', async () => {
+    const res = await send(Target.parse(targetInput(SLUG, withComment)), false);
+    expect(res.statusCode).toBe(422);
+    expect(res.json().detail).toMatch(/command\.(source_not_shell|mismatch)/);
+  });
+
+  it('has its own plan cache key: its config hash differs from the same target without the declaration', () => {
+    expect(compileConfigHash(Target.parse(targetInput(SLUG, withComment)))).not.toBe(
+      compileConfigHash(Target.parse(targetInput(SLUG, { level: 2 }))),
+    );
+  });
+});
+
+// A tool that `qsr plans push` creates is on probation from its first moment when its target file says so: it is never visible in the public
+// views, not even as "not yet tested", between the push and the first sync.
+d('a target on probation', () => {
+  const probation = { reason: 'New target: public after two valid cycles.' };
+
+  it('is created with the flag, so the public views hold it back from the push on', async () => {
+    const tgt = Target.parse(targetInput(SLUG, { level: 3, probation }));
+    const plan = await localPlan(docsExtraction(), tgt);
+    const res = await importPlan(body(plan, docsExtraction(), tgt));
+    expect(res.statusCode, res.body).toBe(200);
+    const [row] = await toolRows();
+    expect(row?.probation).toBe(true);
+    const seen = await t.handle.db.transaction(async (tx) => {
+      await tx.execute(dsql`set local role anon`);
+      return (await tx.execute(dsql`select slug from public_tools`)) as unknown as unknown[];
+    });
+    expect(seen).toEqual([]);
+  });
+
+  it('a tool without the flag is created without it', async () => {
+    const plan = await localPlan();
+    await importPlan(body(plan));
+    expect((await toolRows())[0]?.probation).toBe(false);
   });
 });

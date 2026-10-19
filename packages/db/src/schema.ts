@@ -54,6 +54,9 @@ export const tools = pgTable(
     // monitored at the vendor's request; its past results stay visible unless the vendor also asked for them to be hidden.
     optedOutAt: tstz('opted_out_at'),
     historyHidden: boolean('history_hidden').notNull().default(false),
+    // The target file puts the tool on probation: enabled and probed, but hidden from every public view until it has two valid cycles
+    // (PROBATION in @qsr/core; migration 0010). Synced from the target file.
+    probation: boolean('probation').notNull().default(false),
     status: toolStatus('status').notNull().default('UNKNOWN'),
     statusSince: tstz('status_since'),
     consecutiveFailures: integer('consecutive_failures').notNull().default(0),
