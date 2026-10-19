@@ -1,0 +1,16 @@
+slug: langfuse-node
+name: Langfuse (Node.js)
+docsUrl: https://langfuse.com/docs/observability/sdk/python/overview
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main article
+  tab: JS/TS SDK
+  ignoreBlocksMatching:
+    - LANGFUSE_SECRET_KEY
+probation:
+  reason: 'New target (2026-10-19): enabled and probed, in no public number until it has two valid cycles.'
+notes: 'Run 2026-10-19 (qsr run, local Docker, qsr-node:22, tab "JS/TS SDK"): PASS, reached L2 of L2 in 12.2 s of steps. Plan: shell npm install @langfuse/tracing @langfuse/otel @opentelemetry/sdk-node > write instrumentation.ts > write index.ts, then the harness checks. 3,799 model tokens, 1 call. The two blocks that set the keys (written NAME = "value") are left out of the extraction (extract.ignoreBlocksMatching): with them the compiled plan became a manual step and stopped at L1 (SKIPPED, 9,206 tokens), or was rejected on env.not_grounded (8,866 tokens). Level 2 never uses the keys. The Python target, whose model plan used the dummy-key placeholders, needed no exclusion.'

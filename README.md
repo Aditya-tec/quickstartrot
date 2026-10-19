@@ -22,7 +22,7 @@ Live site: <https://quickstartrot.vercel.app>. It reports what happened and does
 
 1 more needs a person (a sign-up or an interactive step); they are not counted above.
 
-As of 2026-10-18 16:02 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
+As of 2026-10-18 20:57 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
 <!-- qsr:status:end -->
 
 ## What each level proves

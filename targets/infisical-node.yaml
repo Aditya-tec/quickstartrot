@@ -1,0 +1,13 @@
+slug: infisical-node
+name: Infisical (Node.js)
+docsUrl: https://infisical.com/docs/sdks/languages/node
+language: node
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-node:22
+  nodeVersion: '22'
+extract:
+  root: main
+probation:
+  reason: 'New target (2026-10-19): enabled and probed, in no public number until it has two valid cycles.'
+notes: 'Run 2026-10-19 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 14.5 s of steps. Plan: shell npm install @infisical/sdk > write index.js, then the harness syntax and import checks. Resolved @infisical/sdk@5.0.2. 4,622 model tokens, 1 call. The page needs a machine identity to run the example, which L2 never does.'

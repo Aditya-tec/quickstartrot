@@ -492,8 +492,9 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://replicate.com/docs/get-started/nodejs",
-    "status": "not-attempted",
-    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+    "status": "probation",
+    "reason": "Run explained: see the notes in the target file",
+    "level": 2
   },
   {
     "slug": "replicate-python",
@@ -575,8 +576,8 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://www.inngest.com/docs/getting-started/nextjs-quick-start",
-    "status": "not-attempted",
-    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+    "status": "excluded",
+    "reason": "Terms bar automated extraction from the site and name the documentation (criterion 5)."
   },
   {
     "slug": "trigger-dev-node",
@@ -584,8 +585,8 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://trigger.dev/docs/quick-start",
-    "status": "not-attempted",
-    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+    "status": "excluded",
+    "reason": "The quickstart starts with an interactive CLI (init) that logs in and asks questions."
   },
   {
     "slug": "ably-node",
@@ -1260,8 +1261,9 @@
     "group": "vendor",
     "language": "python",
     "docsUrl": "https://www.assemblyai.com/docs/getting-started/transcribe-an-audio-file",
-    "status": "not-attempted",
-    "reason": "Passed the probe (robots allow, install command, code blocks); not run in P9a because the 50-target goal was met and the model quota was spent"
+    "status": "probation",
+    "reason": "Run explained: see the notes in the target file",
+    "level": 2
   },
   {
     "slug": "elevenlabs-python",
@@ -1412,12 +1414,12 @@
   },
   {
     "slug": "novu-node",
-    "name": "Novu (Node.js)",
+    "name": "Novu",
     "group": "vendor",
     "language": "node",
-    "docsUrl": "https://docs.novu.co/platform/quickstart/nodejs",
+    "docsUrl": "https://docs.novu.co/platform/sdks/server/typescript",
     "status": "excluded",
-    "reason": "No code root the crawler can select; the quickstart is account-bound (signup)"
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
   },
   {
     "slug": "knock-node",
@@ -1521,5 +1523,227 @@
     "docsUrl": "https://resend.com/docs/send-with-nodejs",
     "status": "enabled",
     "level": 3
+  },
+  {
+    "slug": "langfuse-python",
+    "name": "Langfuse (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://langfuse.com/docs/observability/sdk/python/overview",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "langfuse-node",
+    "name": "Langfuse (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://langfuse.com/docs/observability/sdk/python/overview",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "infisical-node",
+    "name": "Infisical (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://infisical.com/docs/sdks/languages/node",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "infisical-python",
+    "name": "Infisical (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://infisical.com/docs/sdks/languages/python",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "firecrawl-node",
+    "name": "Firecrawl (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.firecrawl.dev/sdks/node",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "firecrawl-python",
+    "name": "Firecrawl (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.firecrawl.dev/sdks/python",
+    "status": "probation",
+    "level": 2,
+    "reason": "Run explained: see the notes in the target file"
+  },
+  {
+    "slug": "zep-python",
+    "name": "Zep (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://help.getzep.com/quickstart",
+    "status": "excluded",
+    "reason": "Deferred by the owner (2026-10-19): the website terms cover getzep.com and the docs sit on help.getzep.com."
+  },
+  {
+    "slug": "zep-node",
+    "name": "Zep (TypeScript)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://help.getzep.com/quickstart",
+    "status": "excluded",
+    "reason": "Deferred by the owner (2026-10-19), as zep-python."
+  },
+  {
+    "slug": "autumn-node",
+    "name": "Autumn (Node.js)",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.useautumn.com/documentation/getting-started/setup",
+    "status": "excluded",
+    "reason": "Deferred by the owner (2026-10-19): the page leads with an interactive CLI."
+  },
+  {
+    "slug": "autumn-python",
+    "name": "Autumn (Python)",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.useautumn.com/documentation/getting-started/setup",
+    "status": "excluded",
+    "reason": "Deferred by the owner (2026-10-19), as autumn-node."
+  },
+  {
+    "slug": "seam-node",
+    "name": "Seam",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://www.seam.co/docs/quickstart",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "retell-node",
+    "name": "Retell AI",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.retellai.com/get-started/sdk",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "dub-node",
+    "name": "Dub",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://dub.co/docs/sdks/typescript",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "vapi-node",
+    "name": "Vapi",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://docs.vapi.ai/server-sdks",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "browser-use-python",
+    "name": "Browser Use",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.browser-use.com/quickstart",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "workos-node",
+    "name": "WorkOS",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://workos.com/docs/authkit/vanilla/nodejs",
+    "status": "excluded",
+    "reason": "Terms bar automated access to the service or website and do not say whether the public docs are covered: unclear, so skipped (criterion 5)."
+  },
+  {
+    "slug": "mem0-python",
+    "name": "Mem0",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.mem0.ai/quickstart",
+    "status": "excluded",
+    "reason": "Terms bar automated extraction from the vendor technology, which they define to include its documentation (criterion 5)."
+  },
+  {
+    "slug": "hatchet-python",
+    "name": "Hatchet",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.hatchet.run/v1/quickstart",
+    "status": "excluded",
+    "reason": "The quickstart is CLI-first and needs a Hatchet Cloud sign-up and token."
+  },
+  {
+    "slug": "nango-node",
+    "name": "Nango",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://nango.dev/docs/getting-started/quickstart",
+    "status": "excluded",
+    "reason": "The install command is in prose, not in a code block, and the steps need a sign-up and a third-party OAuth connection."
+  },
+  {
+    "slug": "laminar-python",
+    "name": "Laminar",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://laminar.sh/docs/getting-started",
+    "status": "excluded",
+    "reason": "The only command is an authenticating CLI (npx lmnr-cli setup); no code-first install on the page."
+  },
+  {
+    "slug": "mastra-node",
+    "name": "Mastra",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://mastra.ai/docs",
+    "status": "excluded",
+    "reason": "The quickstart is a project scaffolder; the manual install command is inline text, not a code block."
+  },
+  {
+    "slug": "openmeter-node",
+    "name": "OpenMeter",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://openmeter.io/docs/api",
+    "status": "excluded",
+    "reason": "No Python install command and no complete code-first quickstart on the page."
+  },
+  {
+    "slug": "vellum-python",
+    "name": "Vellum",
+    "group": "vendor",
+    "language": "python",
+    "docsUrl": "https://docs.vellum.ai/developers/workflows-sdk/quickstart",
+    "status": "excluded",
+    "reason": "The quickstart page has no code blocks to extract."
+  },
+  {
+    "slug": "lago-node",
+    "name": "Lago",
+    "group": "vendor",
+    "language": "node",
+    "docsUrl": "https://getlago.com/docs/guide/introduction/welcome",
+    "status": "excluded",
+    "reason": "No quickstart page with an install command; the docs open on a product overview."
   }
 ]

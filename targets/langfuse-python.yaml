@@ -1,0 +1,17 @@
+slug: langfuse-python
+name: Langfuse (Python)
+docsUrl: https://langfuse.com/docs/observability/sdk/python/overview
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main article
+  tab: Python SDK
+placeholders:
+  sk-lf-...: qsr_dummy_key
+  pk-lf-...: qsr_dummy_key
+probation:
+  reason: 'New target (2026-10-19): enabled and probed, in no public number until it has two valid cycles.'
+notes: 'Run 2026-10-19 (qsr run, local Docker, qsr-python:3.12, tab "Python SDK"): PASS, reached L2 of L2 in 21.2 s of steps. Plan: shell pip install langfuse > write main.py, then the harness checks. 7,563 model tokens in 2 calls (the first plan failed the grounding check on its environment-variable steps, the retry passed). The page lists its keys in a block written NAME = "value" (spaces and quotes), which the environment grounding does not take as NAME=value, so the two key placeholders are mapped to the dummy key in placeholders. Before that mapping the compile was rejected twice (8,187 tokens, env.not_grounded).'

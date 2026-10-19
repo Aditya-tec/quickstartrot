@@ -1,5 +1,5 @@
 slug: replicate-node
-name: 'Replicate (Node.js)'
+name: Replicate (Node.js)
 docsUrl: https://replicate.com/docs/get-started/nodejs
 language: node
 level: 2
@@ -7,6 +7,7 @@ runtime:
   image: ghcr.io/aditya-tec/qsr-node:22
   nodeVersion: '22'
 extract:
-  root: 'main'
-enabled: false
-notes: 'DRAFT, not yet run. Candidate from docs/TARGET-SELECTION.md (group: vendor).'
+  root: main
+probation:
+  reason: 'New target (2026-10-19): enabled and probed, in no public number until it has two valid cycles.'
+notes: 'Run 2026-10-19 (qsr run, local Docker, qsr-node:22): PASS, reached L2 of L2 in 3.1 s of steps. Plan: mkdir, cd, npm init -y, npm pkg set type=module, npm install replicate, set_env REPLICATE_API_TOKEN (dummy), write index.js, then the harness checks. 7,750 model tokens in 2 calls. No run step and no request to the vendor: replicate-python is disabled because its L3 run step got a 500 for a dummy token, which an L2 target cannot reach.'

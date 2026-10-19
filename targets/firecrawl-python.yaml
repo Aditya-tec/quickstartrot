@@ -1,0 +1,16 @@
+slug: firecrawl-python
+name: Firecrawl (Python)
+docsUrl: https://docs.firecrawl.dev/sdks/python
+language: python
+level: 2
+runtime:
+  image: ghcr.io/aditya-tec/qsr-python:3.12
+  pythonVersion: '3.12'
+extract:
+  root: main
+grounding:
+  installFromComment: true
+  reason: The page shows its install command only as a comment in the first code block.
+probation:
+  reason: 'New target (2026-10-19): enabled and probed, in no public number until it has two valid cycles.'
+notes: 'Run 2026-10-19 (qsr run, local Docker, qsr-python:3.12): PASS, reached L2 of L2 in 8.5 s of steps. Plan: shell pip install firecrawl-py > write main.py > append main.py, then the harness checks. The install command exists on the page only as a comment in the first code block ("# pip install firecrawl-py"): grounding.installFromComment lets the validator take it from there, and the plan records it (source.commentOnly). 4,858 model tokens, 1 call; the page is truncated to 24 of 62 blocks. The first run stalled before any step (the harness container sat idle); the re-run used the cached plan and passed.'
