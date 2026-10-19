@@ -88,3 +88,27 @@ test.describe('on the home page and in the badge', () => {
     }
   });
 });
+
+test.describe('what this check does not cover', () => {
+  test('a tool whose config leaves something out says so on its page, in the generated sentence', async ({
+    page,
+  }) => {
+    const noted = (await source.listTools()).find((t) => t.coverage_notes.length > 0);
+    expect(noted).toBeDefined();
+    await page.goto(`/tools/${noted?.slug}`);
+    const section = page.getByRole('region', { name: 'What this check does not cover' });
+    await expect(section).toBeVisible();
+    for (const sentence of noted?.coverage_notes ?? [])
+      await expect(section).toContainText(sentence);
+  });
+
+  test('a tool that leaves nothing out has no such section', async ({ page }) => {
+    const plain = (await source.listTools()).find(
+      (t) => t.coverage_notes.length === 0 && t.slug === FIXTURE_SLUGS.manyRuns,
+    );
+    await page.goto(`/tools/${plain?.slug}`);
+    await expect(page.getByRole('region', { name: 'What this check does not cover' })).toHaveCount(
+      0,
+    );
+  });
+});

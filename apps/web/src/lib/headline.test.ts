@@ -24,6 +24,7 @@ const tool = (slug: string, status: PublicStatus, level: number): ToolSummary =>
   strip: [],
   optedOutAt: null,
   historyHidden: false,
+  coverageNotes: [],
   openIncidentId: null,
 });
 

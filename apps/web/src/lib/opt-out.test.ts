@@ -185,3 +185,17 @@ describe('a row from a database that has not applied the migration', () => {
     });
   });
 });
+
+describe('what this check does not cover', () => {
+  it('the view model carries the notes of the row, none by default', async () => {
+    const tools = await source.listTools();
+    const noted = tools.find((t) => t.coverage_notes.length > 0);
+    expect(noted, 'a fixture tool has notes').toBeDefined();
+    const [summary] = buildToolSummaries([noted as NonNullable<typeof noted>], [], []);
+    expect(summary?.coverageNotes).toEqual(noted?.coverage_notes);
+    const plain = tools.find((t) => t.coverage_notes.length === 0);
+    expect(
+      buildToolSummaries([plain as NonNullable<typeof plain>], [], [])[0]?.coverageNotes,
+    ).toEqual([]);
+  });
+});

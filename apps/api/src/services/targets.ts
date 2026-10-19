@@ -1,5 +1,5 @@
 import { eq, inArray } from 'drizzle-orm';
-import { hashJson, type SyncResponse, type Target } from '@qsr/core';
+import { coverageNotes, hashJson, type SyncResponse, type Target } from '@qsr/core';
 import { tools, type Db } from '@qsr/db';
 import { HttpError } from '../problem.js';
 
@@ -43,6 +43,7 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
         configHash,
         // on probation while the target file says so; the public views release the tool at its second valid cycle
         probation: target.probation !== undefined,
+        coverageNotes: coverageNotes(target),
       };
       const current = bySlug.get(target.slug);
 
@@ -75,6 +76,12 @@ export async function syncTargets(db: Db, targets: readonly Target[]): Promise<S
           await tx.update(tools).set(fields).where(eq(tools.id, current.id));
         result.keptDisabled.push(target.slug);
       } else if (current.configHash === configHash && current.enabled) {
+        // nothing in the file changed, but the notes are filled in for a tool synced before they existed
+        if (JSON.stringify(current.coverageNotes) !== JSON.stringify(fields.coverageNotes))
+          await tx
+            .update(tools)
+            .set({ coverageNotes: fields.coverageNotes })
+            .where(eq(tools.id, current.id));
         result.unchanged.push(target.slug);
       } else {
         await tx

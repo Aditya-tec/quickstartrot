@@ -3,11 +3,17 @@
 // by scripts/batch-run.mjs). The prose above the heading is hand-written and is left alone.
 //
 //   node scripts/render-target-selection.mjs [--date 2026-10-17]
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 
 const root = path.resolve(import.meta.dirname, '..');
+const { parse: parseYaml } = createRequire(path.join(root, 'packages/cli/package.json'))('yaml');
+const { Target, coverageNotes } = await import(
+  pathToFileURL(path.join(root, 'packages/core/dist/index.js')).href
+);
 const { values } = parseArgs({
   options: { date: { type: 'string', default: new Date().toISOString().slice(0, 10) } },
 });
@@ -120,6 +126,23 @@ if (probation.length > 0) {
   }
   out.push('');
 }
+// What each check does not cover: one sentence per kind of content a target's config leaves out or replaces, generated from the config by
+// coverageNotes() in @qsr/core (the tool page uses the same function). Listed for every target that has any, whatever its status.
+const notesList = readdirSync(path.join(root, 'targets'))
+  .filter((file) => file.endsWith('.yaml'))
+  .map((file) => Target.parse(parseYaml(readFileSync(path.join(root, 'targets', file), 'utf8'))))
+  .map((t) => ({ slug: t.slug, notes: coverageNotes(t) }))
+  .filter((t) => t.notes.length > 0)
+  .sort((a, b) => a.slug.localeCompare(b.slug));
+out.push(
+  '### What each check does not cover',
+  '',
+  'Generated from each target file (placeholders, tabs, variants, content left out and why), never typed here. The tool page shows the same sentences.',
+  '',
+  ...notesList.map((t) => `- **${t.slug}**: ${t.notes.join(' ')}`),
+  '',
+);
+
 out.push('');
 
 const doc = readFileSync(docPath, 'utf8');

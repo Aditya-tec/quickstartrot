@@ -23,6 +23,7 @@ const tool = (slug: string, over: Partial<ToolSummary> = {}): ToolSummary => ({
   strip: [],
   optedOutAt: null,
   historyHidden: false,
+  coverageNotes: [],
   openIncidentId: null,
   ...over,
 });

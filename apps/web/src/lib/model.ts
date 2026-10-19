@@ -44,6 +44,8 @@ export interface ToolSummary {
   optedOutAt: string | null;
   /** The vendor asked for the past results to be hidden: the page shows none. */
   historyHidden: boolean;
+  /** What this check does not cover: one generated sentence per kind of content the target's config leaves out or replaces. */
+  coverageNotes: string[];
   /** The last runs, oldest first. */
   strip: Dot[];
   openIncidentId: string | null;
@@ -92,6 +94,7 @@ export function buildToolSummaries(
       streak: { kind: t.streak_kind ?? 'pass', count: t.current_streak ?? 0 },
       optedOutAt: t.opted_out_at,
       historyHidden: t.history_hidden,
+      coverageNotes: t.coverage_notes,
       // a history the vendor asked to hide has no dots, whatever the data layer below still holds
       strip: t.history_hidden ? [] : strip,
       openIncidentId: open?.id ?? null,

@@ -120,6 +120,8 @@ export const Target = z.object({
     codeBlocks: z.string().min(1).default('pre code'),
     tab: z.string().optional(),
     ignoreBlocksMatching: z.array(z.string()).default([]),
+    /** Why blocks are left out; required with ignoreBlocksMatching, so the page can say so (coverage-notes.ts has the sentence). */
+    ignoreWhy: z.enum(['credentials']).optional(),
     variants: VariantsConfig.optional(),
     /** Absent for every target but the few whose page shows a rotating token; absent stays absent after parsing. */
     hashIgnore: z.array(HashIgnoreRule).max(HASH_IGNORE_LIMITS.maxRules).optional(),

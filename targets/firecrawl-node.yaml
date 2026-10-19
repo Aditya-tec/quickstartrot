@@ -10,6 +10,7 @@ extract:
   root: main
   ignoreBlocksMatching:
     - ^Get an API key from firecrawl\.dev$
+  ignoreWhy: credentials
 grounding:
   installFromComment: true
   reason: The page shows its install command only as a comment in the first code block.

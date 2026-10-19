@@ -78,6 +78,13 @@
       "when": 1792379977414,
       "tag": "0010_probation",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792387069485,
+      "tag": "0011_coverage_notes",
+      "breakpoints": true
     }
   ]
 }

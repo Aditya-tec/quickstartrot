@@ -401,3 +401,15 @@ describe('sanitizeRun: the last line of defence', () => {
     expect(safe.failure_class).toBe('CRAWL_ERROR');
   });
 });
+
+describe('coverage_notes on a public_tools row', () => {
+  it('defaults to none, so a database that has not applied migration 0011 still parses', () => {
+    expect(PublicToolRow.parse(toolRow()).coverage_notes).toEqual([]);
+  });
+
+  it('carries the sentences the tool page shows', () => {
+    const notes = ['Only the "Python SDK" tab of the page is checked.'];
+    expect(PublicToolRow.parse(toolRow({ coverage_notes: notes })).coverage_notes).toEqual(notes);
+    expect(PublicToolRow.safeParse(toolRow({ coverage_notes: [1] })).success).toBe(false);
+  });
+});

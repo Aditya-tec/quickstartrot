@@ -48,6 +48,8 @@ export const PublicToolRow = z.object({
   // Defaults, so a database that has not applied 0009 yet still parses.
   opted_out_at: Timestamp.nullable().default(null),
   history_hidden: z.boolean().default(false),
+  // "What this check does not cover" (migration 0011): the sentences generated from the target's config. None for an older database.
+  coverage_notes: z.array(z.string()).default([]),
 });
 export type PublicToolRow = z.infer<typeof PublicToolRow>;
 

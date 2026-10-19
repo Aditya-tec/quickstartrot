@@ -6,6 +6,7 @@ import {
   PublicRunRow,
   PublicToolRow,
   type RunKind,
+  COVERAGE_SENTENCES,
 } from '@qsr/core/public';
 import type { DataSource } from './source';
 
@@ -67,6 +68,8 @@ interface ToolSpec {
   staleNewest?: boolean;
   truncated?: boolean;
   docsUrl: string;
+  /** What this check does not cover: generated sentences (the real ones come from coverageNotes in @qsr/core). */
+  coverageNotes?: string[];
   /** The vendor opted out: when probing stopped. */
   optedOutAt?: string;
   /** The vendor asked for the past results to be hidden: the tool row carries none of them. */
@@ -85,6 +88,7 @@ const specs: ToolSpec[] = [
     passRate: 0.9667,
     kindAt: (i) => (i === 17 ? 'fail' : 'pass'),
     docsUrl: 'https://resend.com/docs/send-with-nodejs',
+    coverageNotes: [COVERAGE_SENTENCES.placeholders],
   },
   {
     slug: FIXTURE_SLUGS.l2,
@@ -541,6 +545,7 @@ function build(): Built {
             : Math.min(spec.runs, spec.slug === FIXTURE_SLUGS.manyRuns ? 100 : spec.runs),
         opted_out_at: spec.optedOutAt ?? null,
         history_hidden: spec.historyHidden ?? false,
+        coverage_notes: spec.coverageNotes ?? [],
       }),
     );
   });

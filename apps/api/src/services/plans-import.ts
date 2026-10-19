@@ -10,6 +10,7 @@ import {
 import {
   applyHashIgnore,
   compileConfigHash,
+  coverageNotes,
   contentHash,
   hashJson,
   Target,
@@ -151,6 +152,7 @@ export async function importPlan(
         disabledReason: target.enabled === false ? 'target_disabled' : null,
         // a tool the push creates is held back from the public views from this moment, not from the next sync
         probation: target.probation !== undefined,
+        coverageNotes: coverageNotes(target),
       })
       .onConflictDoNothing();
     [tool] = await db.select().from(tools).where(eq(tools.slug, target.slug));

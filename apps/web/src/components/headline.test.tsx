@@ -22,6 +22,7 @@ const tool = (slug: string, level: number): ToolSummary => ({
   strip: [],
   optedOutAt: null,
   historyHidden: false,
+  coverageNotes: [],
   openIncidentId: null,
 });
 

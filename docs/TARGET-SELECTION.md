@@ -382,3 +382,38 @@ Enabled and probed every cycle, but in none of the counts above and not on the s
 | langfuse-node     | vendor | L2           | PASS reached L2 of L2, 12.2 s                   | 3799         |
 | langfuse-python   | vendor | L2           | PASS reached L2 of L2, 21.2 s                   | 7563         |
 | replicate-node    | vendor | L2           | PASS reached L2 of L2, 3.1 s                    | 7750         |
+
+### What each check does not cover
+
+Generated from each target file (placeholders, tabs, variants, content left out and why), never typed here. The tool page shows the same sentences.
+
+- **ably-node**: A value on the page that changes on every visit is ignored when checking whether the docs changed.
+- **ably-python**: A value on the page that changes on every visit is ignored when checking whether the docs changed.
+- **anthropic-node**: Only the "TypeScript" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **anthropic-python**: Only the "Python" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **assemblyai-python**: Only the "Python SDK" tab of the page is checked.
+- **cerebras-python**: Only the "Python" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **chroma-python**: Only the "Python" tab of the page is checked.
+- **fastify-node**: The docs show alternatives in one code block; only the one matching "ESM" is checked.
+- **firebase-admin-node**: Only the "Node.js" tab of the page is checked.
+- **firecrawl-node**: Account and API-key steps from the docs are not exercised at this level.
+- **groq-node**: Only the "JavaScript" tab of the page is checked.
+- **langfuse-node**: Only the "JS/TS SDK" tab of the page is checked. Account and API-key steps from the docs are not exercised at this level.
+- **langfuse-python**: Only the "Python SDK" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **launchdarkly-node**: Only the "JavaScript" tab of the page is checked.
+- **openrouter-node**: Only the "TypeScript" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **posthog-python**: Only the "Python" tab of the page is checked.
+- **prisma-node**: Only the "npm" tab of the page is checked.
+- **replicate-python**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **resend-node**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **resend-python**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **rollbar-node**: Only the "JavaScript" tab of the page is checked.
+- **sendgrid-node**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **together-node**: Only the "TypeScript" tab of the page is checked. Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **turso-libsql-node**: Only the "Node.js" tab of the page is checked.
+- **twilio-node**: Only the "Node.js" tab of the page is checked.
+- **twilio-python**: Only the "Python" tab of the page is checked.
+- **upstash-qstash-node**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **upstash-redis-node**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **upstash-vector-node**: Credentials shown in the docs are replaced by a dummy value, so nothing is checked against a real account.
+- **vercel-ai-node**: Only the "npm" tab of the page is checked.

@@ -220,6 +220,19 @@ export default async function ToolPage({ params }: { params: Params }) {
         </>
       )}
 
+      {tool.coverageNotes.length > 0 ? (
+        <section aria-labelledby="not-covered" className="mt-10">
+          <h2 id="not-covered" className="text-xl font-semibold tracking-tight">
+            What this check does not cover
+          </h2>
+          <ul className="mt-3 grid max-w-3xl gap-2 text-sm text-muted">
+            {tool.coverageNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       {optedOut ? null : <BadgeSnippets slug={tool.slug} />}
     </>
   );
