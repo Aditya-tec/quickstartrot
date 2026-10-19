@@ -8,7 +8,7 @@ test.describe('home', () => {
     await page.goto('/');
     const h1 = page.getByRole('heading', { level: 1 });
     await expect(h1).toContainText(/\d+ of \d+/);
-    await expect(h1).toContainText('developer quickstarts work on a fresh machine right now');
+    await expect(h1).toContainText('quickstarts pass their checks today');
     await expect(page.getByText(/As of Oct 17/)).toBeVisible();
     // the manual-stop tool is not part of X or Y
     const text = await h1.innerText();

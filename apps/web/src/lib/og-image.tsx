@@ -1,8 +1,8 @@
 import { ImageResponse } from 'next/og';
 import { OG_COLORS, type MethodologyCard, type OgCard } from './og';
 import type { Headline } from '@qsr/core/public';
-import { FACTS, words } from './facts';
-import { headlineText } from './headline';
+import { FACTS } from './facts';
+import { homeCopy } from './home-copy';
 
 // The drawing of the Open Graph images (1200x630). Satori renders text as glyphs, never as markup, so a name or an
 // error line cannot inject anything. The font is the one bundled with next/og: no request to a font host.
@@ -75,7 +75,7 @@ export function toolImage(card: OgCard): ImageResponse {
         ) : null}
       </div>
       <div style={{ display: 'flex', fontSize: 28, color: MUTED }}>
-        Does the quickstart work on a fresh machine?
+        Is the quickstart passing its checks?
       </div>
     </div>,
   );
@@ -122,7 +122,14 @@ export function methodologyImage(card: MethodologyCard): ImageResponse {
 }
 
 export function homeImage(headline: Headline): ImageResponse {
-  const text = headlineText(headline.passing, headline.tested);
+  const text = homeCopy({
+    passing: headline.passing,
+    tested: headline.tested,
+    testedAtL3: headline.testedAtL3,
+    testedAtL2: headline.testedAtL2,
+    testedAtL1: headline.testedAtL1,
+    cycleHours: FACTS.cycleHours,
+  });
   return respond(
     <div
       style={{
@@ -155,9 +162,7 @@ export function homeImage(headline: Headline): ImageResponse {
           {text.rest}
         </div>
       </div>
-      <div style={{ display: 'flex', fontSize: 28, color: MUTED }}>
-        Developer quickstarts, run on a clean machine every {words(FACTS.cycleHours)} hours.
-      </div>
+      <div style={{ display: 'flex', fontSize: 28, color: MUTED }}>{text.detail}</div>
     </div>,
   );
 }

@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       ? `${tool.name}: ${OPT_OUT.pageLabel.toLowerCase()}.`
       : tool.status === 'failing'
         ? `${tool.name} quickstart failing since ${formatDay(tool.failingSince)}.`
-        : `Does the ${tool.name} quickstart work on a fresh machine? Tested every ${words(FACTS.cycleHours)} hours.`;
+        : `Is the ${tool.name} quickstart passing its checks? Installed and tested on a fresh machine about every ${words(FACTS.cycleHours)} hours.`;
   const og = `${siteUrl()}/api/og/${tool.slug}`;
   return {
     title,

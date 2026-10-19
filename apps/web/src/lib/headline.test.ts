@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { headlineText, tierBreakdown } from './headline.js';
+import { tierBreakdown } from './headline.js';
 import type { ToolSummary } from './model.js';
 import type { PublicStatus } from '@qsr/core/public';
 
@@ -65,28 +65,5 @@ describe('tierBreakdown', () => {
 
   it('is empty for no tools', () => {
     expect(tierBreakdown([])).toEqual([]);
-  });
-});
-
-describe('headlineText', () => {
-  it('is "X of Y developer quickstarts work on a fresh machine right now"', () => {
-    expect(headlineText(7, 9)).toEqual({
-      lead: '7 of 9',
-      rest: 'developer quickstarts work on a fresh machine right now',
-    });
-  });
-
-  it('handles nothing tested yet without a misleading "0 of 0"', () => {
-    expect(headlineText(0, 0)).toEqual({
-      lead: 'No quickstarts',
-      rest: 'have been tested yet',
-    });
-  });
-
-  it('uses the singular for one', () => {
-    expect(headlineText(1, 1)).toEqual({
-      lead: '1 of 1',
-      rest: 'developer quickstart works on a fresh machine right now',
-    });
   });
 });

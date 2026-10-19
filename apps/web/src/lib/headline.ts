@@ -41,11 +41,3 @@ export function tierBreakdown(tools: readonly ToolSummary[]): Tier[] {
   }
   return (['L3', 'L2', 'L1'] as const).flatMap((k) => rows.get(k) ?? []);
 }
-
-export function headlineText(passing: number, tested: number): { lead: string; rest: string } {
-  if (tested === 0) return { lead: 'No quickstarts', rest: 'have been tested yet' };
-  return {
-    lead: `${passing} of ${tested}`,
-    rest: `developer quickstart${tested === 1 ? '' : 's'} work${tested === 1 ? 's' : ''} on a fresh machine right now`,
-  };
-}

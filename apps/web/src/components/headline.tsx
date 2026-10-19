@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import type { Headline as HeadlineData } from '@qsr/core/public';
 import { formatDateTime } from '@/lib/format';
-import { FACTS, plural, words, type Facts } from '@/lib/facts';
-import { headlineText, tierBreakdown } from '@/lib/headline';
+import { FACTS, type Facts } from '@/lib/facts';
+import { homeCopy } from '@/lib/home-copy';
+import { tierBreakdown } from '@/lib/headline';
 import type { ToolSummary } from '@/lib/model';
 import { HeroArt } from '@/components/hero-art';
 import { cn } from '@/lib/utils';
@@ -42,7 +43,14 @@ export function Headline({
   asOf: string | null;
   facts?: Facts;
 }) {
-  const text = headlineText(headline.passing, headline.tested);
+  const copy = homeCopy({
+    passing: headline.passing,
+    tested: headline.tested,
+    testedAtL3: headline.testedAtL3,
+    testedAtL2: headline.testedAtL2,
+    testedAtL1: headline.testedAtL1,
+    cycleHours: facts.cycleHours,
+  });
   const tiers = tierBreakdown(tested);
   return (
     <section aria-labelledby="headline" className="mb-10">
@@ -50,14 +58,14 @@ export function Headline({
         <HeroArt />
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.72),rgba(0,0,0,0.12)_75%)]"
+          className="absolute inset-0 -z-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0.66),rgba(0,0,0,0.05)_78%)]"
         />
         <div className="relative mx-auto max-w-3xl">
           <h1
             id="headline"
             className="font-display text-balance text-4xl font-medium italic leading-tight tracking-tight text-gold sm:text-6xl"
           >
-            <span className="tabular">{text.lead}</span> {text.rest}
+            <span className="tabular">{copy.lead}</span> {copy.rest}
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-sm leading-6 text-white/90 sm:text-base">
             {asOf ? (
@@ -66,8 +74,7 @@ export function Headline({
                 {'. '}
               </>
             ) : null}
-            Every quickstart is run on a fresh machine every {words(facts.cycleHours)}{' '}
-            {plural(facts.cycleHours, 'hour')}.
+            {copy.detail}
             {headline.failing > 0 || headline.verifying > 0 ? (
               <>
                 {' '}

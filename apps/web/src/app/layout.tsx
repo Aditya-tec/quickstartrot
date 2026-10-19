@@ -5,22 +5,22 @@ import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import { siteUrl } from '@/lib/env';
+import { HOME_META } from '@/lib/home-copy';
 import './globals.css';
 
 const TITLE = 'QuickstartRot';
-const DESCRIPTION =
-  'We run developer quickstarts on a fresh machine every few hours and publish which ones still work, with the logs and the docs diff as evidence.';
+const DESCRIPTION = HOME_META.description;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
-  title: { default: `${TITLE}: do developer quickstarts still work?`, template: `%s · ${TITLE}` },
+  title: { default: HOME_META.title, template: `%s · ${TITLE}` },
   description: DESCRIPTION,
   applicationName: TITLE,
   alternates: { canonical: '/' },
   openGraph: {
     type: 'website',
     siteName: TITLE,
-    title: `${TITLE}: do developer quickstarts still work?`,
+    title: HOME_META.title,
     description: DESCRIPTION,
     images: [
       { url: '/api/og/home', width: 1200, height: 630, alt: 'QuickstartRot headline number' },

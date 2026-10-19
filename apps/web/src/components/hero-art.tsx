@@ -20,9 +20,9 @@ export function HeroArt() {
           />
           <feColorMatrix in="clouds" type="saturate" values="0" result="grey" />
           <feComponentTransfer in="grey" result="posterised">
-            <feFuncR type="discrete" tableValues="0 0.03 0.12 0.45 0.92 1" />
-            <feFuncG type="discrete" tableValues="0 0.03 0.12 0.45 0.92 1" />
-            <feFuncB type="discrete" tableValues="0 0.03 0.12 0.45 0.92 1" />
+            <feFuncR type="discrete" tableValues="0 0 0.08 0.5 0.97 1" />
+            <feFuncG type="discrete" tableValues="0 0 0.08 0.5 0.97 1" />
+            <feFuncB type="discrete" tableValues="0 0 0.08 0.5 0.97 1" />
           </feComponentTransfer>
           <feTurbulence
             type="fractalNoise"
