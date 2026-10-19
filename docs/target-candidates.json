@@ -492,7 +492,7 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://replicate.com/docs/get-started/nodejs",
-    "status": "probation",
+    "status": "enabled",
     "reason": "Run explained: see the notes in the target file",
     "level": 2
   },
@@ -1261,7 +1261,7 @@
     "group": "vendor",
     "language": "python",
     "docsUrl": "https://www.assemblyai.com/docs/getting-started/transcribe-an-audio-file",
-    "status": "probation",
+    "status": "enabled",
     "reason": "Run explained: see the notes in the target file",
     "level": 2
   },
@@ -1530,7 +1530,7 @@
     "group": "vendor",
     "language": "python",
     "docsUrl": "https://langfuse.com/docs/observability/sdk/python/overview",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },
@@ -1540,7 +1540,7 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://langfuse.com/docs/observability/sdk/python/overview",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },
@@ -1550,7 +1550,7 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://infisical.com/docs/sdks/languages/node",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },
@@ -1560,7 +1560,7 @@
     "group": "vendor",
     "language": "python",
     "docsUrl": "https://infisical.com/docs/sdks/languages/python",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },
@@ -1570,7 +1570,7 @@
     "group": "vendor",
     "language": "node",
     "docsUrl": "https://docs.firecrawl.dev/sdks/node",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },
@@ -1580,7 +1580,7 @@
     "group": "vendor",
     "language": "python",
     "docsUrl": "https://docs.firecrawl.dev/sdks/python",
-    "status": "probation",
+    "status": "enabled",
     "level": 2,
     "reason": "Run explained: see the notes in the target file"
   },

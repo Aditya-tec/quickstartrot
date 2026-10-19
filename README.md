@@ -13,16 +13,16 @@ Live site: <https://quickstartrot.vercel.app>. It reports what happened and does
 
 <!-- qsr:status:start -->
 
-**50 of 50** quickstarts work on a fresh machine right now. Every quickstart is run on a fresh machine every 6 hours, and a failure is shown as "being verified" until a person has confirmed it.
+**58 of 58** quickstarts work on a fresh machine right now. Every quickstart is run on a fresh machine every 6 hours, and a failure is shown as "being verified" until a person has confirmed it.
 
 | Tested up to                           | Passing | Being verified | Confirmed failing | Tested |
 | -------------------------------------- | ------: | -------------: | ----------------: | -----: |
 | L3 (reached the vendor's API)          |       3 |              0 |                 0 |      3 |
-| L2 (installs, builds, imports resolve) |      47 |              0 |                 0 |     47 |
+| L2 (installs, builds, imports resolve) |      55 |              0 |                 0 |     55 |
 
 1 more needs a person (a sign-up or an interactive step); they are not counted above.
 
-As of 2026-10-18 20:57 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
+As of 2026-10-19 05:54 UTC, from the [site's status counts](https://quickstartrot.vercel.app/api/status).
 <!-- qsr:status:end -->
 
 ## What each level proves
